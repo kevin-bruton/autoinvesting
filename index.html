@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Authorization using JSON Web Tokens and PHP</title>
-  <link href="/css/bootstrap.min.css" rel="stylesheet">
-  <link href="/css/signin.css" rel="stylesheet">
+  <link href="dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="dist/css/signin.css" rel="stylesheet">
 </head>
 
 <body class="text-center">
@@ -54,7 +54,7 @@
         },
         body: JSON.stringify({
           username: form.inputEmail.value,
-          password: form.inputPassword.value
+          passwd: form.inputPassword.value
         })
       });
       if (res.status >= 200 && res.status <= 299) {
