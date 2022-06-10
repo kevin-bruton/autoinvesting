@@ -5,13 +5,12 @@ declare(strict_types=1);
 use Firebase\JWT\JWT;
 
 
-function authenticate () {
+function authenticate ($accountType, $username) {
     $secretKey  = $_ENV['JWT_SECRET'];
     $tokenId    = base64_encode(random_bytes(16));
     $issuedAt   = new DateTimeImmutable();
     $expire     = $issuedAt->modify('+60 minutes')->getTimestamp();      // Add 60 seconds
     $serverName = $_SERVER['SERVER_NAME'];
-    $username   = "username";                                           // Retrieved from filtered POST data
 
     // Create the token as an array
     $data = [
@@ -22,9 +21,10 @@ function authenticate () {
         'exp'  => $expire,                      // Expire
         'data' => [                             // Data related to the signer user
             'userName' => $username,            // User name
+            'accountType' => $accountType       
         ]
     ];
-
+    
     // Encode the array to a JWT string.
     $jwt = JWT::encode(
       $data,      //Data to be encoded in the JWT
@@ -44,9 +44,10 @@ function validate ($httpAuth) {
   }
   
   $jwt = $matches[1];
-  if (! $jwt) {
+  if (! $jwt || $jwt == 'null') {
       // No token was able to be extracted from the authorization header
       header('HTTP/1.0 400 Bad Request');
+      echo 'Token not provided';
       exit;
   }
   

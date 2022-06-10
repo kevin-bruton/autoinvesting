@@ -41,9 +41,9 @@ $db = connect();
 
 if ($path[0] == 'authenticate') {
   $payload = json_decode($payload);
-  $isRegisteredUser = validateUser($db, $payload->username, $payload->passwd);
-  if ($isRegisteredUser) {
-    authenticate();
+  $accountType = validateUser($db, $payload->username, $payload->passwd);
+  if ($accountType) {
+    authenticate($accountType, $payload->username);
   }
   header('HTTP/1.0 403 Forbidden');
   die('Invalid user credentials');
@@ -52,6 +52,6 @@ if ($path[0] == 'authenticate') {
 validate($httpAuth);
 
 switch($path[0]) {
-  case 'time': getTime();
+  case 'time': getTime(); break;
 }
 ?>

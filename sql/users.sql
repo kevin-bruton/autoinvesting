@@ -6,7 +6,8 @@ CREATE TABLE Users (
     firstName varchar(55),
     lastName varchar(55),
     city varchar(55),
-    country varchar(55)
+    country varchar(55),
+    accountType varchar(55) DEFAULT 'investor'
 );
 
 INSERT INTO Users (username,passwd,firstName,lastName,city,country,email)

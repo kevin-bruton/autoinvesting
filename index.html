@@ -4,82 +4,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Authorization using JSON Web Tokens and PHP</title>
-  <link href="dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="dist/css/signin.css" rel="stylesheet">
+  <title>Auto Investor</title>
+  <link rel="icon" type="image/x-icon" href="/front/favicon.ico">
+  <link href="front/node_modules/@kor-ui/kor/kor-styles.css" rel="stylesheet">
 </head>
 
-<body class="text-center">
-  <main class="form-signin">
-    <form id="frmLogin">
-      <h1 class="h3 mb-3 fw-normal">Login In</h1>
-
-      <label for="inputEmail" class="visually-hidden">Email address</label>
-      <input type="text" id="inputEmail" class="form-control" placeholder="Email address or username" required
-        autofocus="">
-
-      <label for="inputPassword" class="visually-hidden">Password</label>
-      <input type="password" id="inputPassword" class="form-control" placeholder="Password" required>
-
-      <div class="checkbox mb-3">
-        <label>
-          <input type="checkbox" value="remember-me"> Remember me
-        </label>
-      </div>
-
-      <button class="w-100 btn btn-lg btn-primary" type="submit">Sign in</button>
-
-      <p class="mt-5 mb-3 text-muted">&copy; 2017-2021</p>
-    </form>
-
-    <button id="btnGetResource">Get current timestamp</button>
-  </main>
-
-  <script>
-    const store = {
-      setJWT: data => (this.JWT = data),
-      getJWT: () => this.JWT
-    };
-    const loginButton = document.querySelector('#frmLogin');
-    const btnGetResource = document.querySelector('#btnGetResource');
-    const form = document.forms[0];
-
-    loginButton.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      const res = await fetch('/api/authenticate', {
-        method: 'POST',
-        headers: {
-          'Content-type': 'application/json; charset=utf-8'
-        },
-        body: JSON.stringify({
-          username: form.inputEmail.value,
-          passwd: form.inputPassword.value
-        })
-      });
-      if (res.status >= 200 && res.status <= 299) {
-        const jwt = await res.text();
-        console.log('Text response from authenticate:', jwt)
-        store.setJWT(JSON.parse(jwt).t);
-        frmLogin.style.display = 'none';
-        btnGetResource.style.display = 'block';
-      } else {
-        // Handle errors
-        console.log(res.status, res.statusText);
-      }
-    });
-
-    btnGetResource.addEventListener('click', async (e) => {
-      const jwt = store.getJWT();
-      const res = await fetch('/api/time?param=hello', {
-        headers: {
-          'Authorization': `Bearer ${jwt}`
-        }
-      });
-      const timeStamp = await res.text();
-      console.log(timeStamp);
-    });
-  </script>
+<body>
+  <auto-investor-app>
+  </auto-investor-app>
+  <script type="module" src="./front/auto-investor-app.js"></script>
+  <script type="module" src="./front/login.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/page/index.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/app-bar/index.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/card/index.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/input/index.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/button/index.js"></script>
+  <script type="module" src="./front/node_modules/@kor-ui/kor/components/text/index.js"></script>
 </body>
-
 </html>
