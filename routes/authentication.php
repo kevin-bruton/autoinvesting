@@ -5,7 +5,7 @@ declare(strict_types=1);
 use Firebase\JWT\JWT;
 
 
-function authenticate ($accountType, $username) {
+function authenticate ($user) {
     $secretKey  = $_ENV['JWT_SECRET'];
     $tokenId    = base64_encode(random_bytes(16));
     $issuedAt   = new DateTimeImmutable();
@@ -20,8 +20,10 @@ function authenticate ($accountType, $username) {
         'nbf'  => $issuedAt->getTimestamp(),    // Not before
         'exp'  => $expire,                      // Expire
         'data' => [                             // Data related to the signer user
-            'userName' => $username,            // User name
-            'accountType' => $accountType       
+            'username' => $user['username'],
+            'firstname' => $user['firstname'],
+            'lastname' => $user['lastname'],
+            'accountType' => $user['accountType']       
         ]
     ];
     
@@ -38,15 +40,15 @@ function authenticate ($accountType, $username) {
 
 function validate ($httpAuth) {
   if (! preg_match('/Bearer\s(\S+)/', $httpAuth, $matches)) {
-      header('HTTP/1.0 400 Bad Request');
-      echo 'Token not found in request';
+      header('HTTP/1.1 401 Unautorized');
+      echo 'Token not provided';
       exit;
   }
   
   $jwt = $matches[1];
-  if (! $jwt || $jwt == 'null') {
+  if (! $jwt || $jwt == 'null') { 
       // No token was able to be extracted from the authorization header
-      header('HTTP/1.0 400 Bad Request');
+      header('HTTP/1.1 401 Unauthorized');
       echo 'Token not provided';
       exit;
   }
@@ -62,6 +64,7 @@ function validate ($httpAuth) {
       $token->exp < $now->getTimestamp())
   {
       header('HTTP/1.1 401 Unauthorized');
+      echo 'Invalid credentials';
       exit;
   }
 }

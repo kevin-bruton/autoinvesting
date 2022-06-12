@@ -20,7 +20,7 @@ function connect () {
 }
 
 function validateUser ($db, $username, $passwd) {
-  $sql = 'SELECT userId, username, accountType FROM Users WHERE username=? AND passwd=?';
+  $sql = 'SELECT userId, username, firstname, lastname, accountType FROM Users WHERE username=? AND passwd=?';
   try {
     $stmt = $db->stmt_init();
     /* Prepared statement, stage 1: prepare */
@@ -34,7 +34,7 @@ function validateUser ($db, $username, $passwd) {
     $result = $stmt->get_result();
     $user = $result->fetch_assoc();
     if ($user) {
-      return $user['accountType'];
+      return $user;
     }
     return null;
   } catch (mysqli_exception $e) {

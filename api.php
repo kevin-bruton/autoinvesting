@@ -41,9 +41,10 @@ $db = connect();
 
 if ($path[0] == 'authenticate') {
   $payload = json_decode($payload);
-  $accountType = validateUser($db, $payload->username, $payload->passwd);
-  if ($accountType) {
-    authenticate($accountType, $payload->username);
+  $user = validateUser($db, $payload->username, $payload->passwd);
+  
+  if ($user['accountType']) {
+    authenticate($user);
   }
   header('HTTP/1.0 403 Forbidden');
   die('Invalid user credentials');
