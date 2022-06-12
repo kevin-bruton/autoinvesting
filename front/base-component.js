@@ -2,12 +2,23 @@ export class BaseComponent extends window.HTMLElement {
   constructor () {
     super()
     this.attachShadow({ mode: 'open' })
-    this.listenerStore = []
+    // this.listenerStore = []
   }
 
   connectedCallback () {
+    this.shadowRoot.innerHTML = `
+      <style>${this.css}</style>
+      ${this.html}`
+  }
+
+  navigateToHash (hash) {
+    if (window.location.hash !== hash) {
+      window.location.hash = hash
+    }
+  }
+
+/*   connectedCallback () {
     this.updateTemplate()
-    this.update()
   }
 
   disconnectedCallback () {
@@ -21,15 +32,21 @@ export class BaseComponent extends window.HTMLElement {
     this.listenerStore = []
   }
 
+  setState (node, value) {
+    this.state = { ...this.state, ...{ [node]: value } }
+    this.updateTemplate()
+  }
+
   updateTemplate () {
-    // this.removeEventListeners()
+    this.removeEventListeners()
     this.shadowRoot.innerHTML = `
       <style>${this.css}</style>
       ${this.html}`
-    this.update()
+    this.updateBindings()
   }
 
-  update () {
+  updateBindings () {
+    console.log('Update bindings. path:', this.state.path)
     // console.log('Update with state:', this.state)
     // apply innerHTML binds
     const textUpdateEls = this.shadowRoot.querySelectorAll('[b-innerhtml]')
@@ -73,7 +90,7 @@ export class BaseComponent extends window.HTMLElement {
       attrValEl.setAttribute(attrName, attrVal)
     })
   }
-
+ */
   publish (evName, data) {
     const evConfig = {
       detail: data,

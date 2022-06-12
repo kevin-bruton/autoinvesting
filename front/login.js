@@ -4,9 +4,14 @@ import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.esm.js'
 class KLogin extends BaseComponent {
   constructor () {
     super()
-    this.state = {
+    this.login = this.login.bind(this)
+  }
 
-    }
+  connectedCallback () {
+    super.connectedCallback()
+    this.publish('endSession')
+    this.shadowRoot.querySelector('#signin-btn').addEventListener('click', this.login)
+    // this.publish('loginResult', 'logged_out')
   }
 
   get css () {
@@ -32,17 +37,17 @@ class KLogin extends BaseComponent {
     return `
       <div class="login-page">
         <kor-card class="login-box" icon="login" label="Login">
-          <kor-input type="text" label="Username"></kor-input>
-          <kor-input type="password" label="Password"></kor-input>
-          <kor-button label="Sign in" b-listener="click.login"></kor-button>
+          <kor-input type="text" label="Username" id="username-input"></kor-input>
+          <kor-input type="password" label="Password" id="password-input"></kor-input>
+          <kor-button id="signin-btn" label="Sign in" b-listener="click.login"></kor-button>
         </kor-card>
       </div>
       `
   }
 
   async login () {
-    const username = this.shadowRoot.querySelector('[label="Username"]').value
-    const passwd = this.shadowRoot.querySelector('[label="Password"]').value
+    const username = this.shadowRoot.querySelector('#username-input').value
+    const passwd = this.shadowRoot.querySelector('#password-input').value
 
     console.log('Login. Username:', username, 'Password:', passwd)
     const requestConfig = {

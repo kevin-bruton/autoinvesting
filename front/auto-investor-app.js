@@ -1,9 +1,9 @@
 import { BaseComponent } from './base-component.js'
-// import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.js'
+import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.esm.js'
 
 const homePage = 'Home Page'
 const loginPage = '<k-login b-listener="loginResult.result"></k-login>'
-const addStrategyPage = 'Add Strategy Page'
+const addStrategyPage = '<add-strategy></add-strategy>'
 
 const routes = {
   '#/': homePage,
@@ -13,25 +13,73 @@ const routes = {
 
 const defaultRoute = '#/'
 
+const investorAppBarBtns = `
+  <a href="#/" nav-link><kor-text size="header-1" color="blue">Home</kor-text></a>
+  <a href="#/login" nav-link><kor-text size="header-1" color="blue">Log out</kor-text></a>`
+const adminAppBarBtns = `
+  <a href="#/" nav-link><kor-text size="header-1" color="blue">Home</kor-text></a>
+  <a href="#/add-strategy" nav-link><kor-text size="header-1" color="blue">Add Strategy</kor-text></a>
+  <a href="#/login" nav-link><kor-text size="header-1" color="blue">Log out</kor-text></a>`
+
 class AutoInvestorApp extends BaseComponent {
   constructor () {
     super()
-    this.state = {
-      account: 'logged_out',
-      path: '/#/'
-    }
+    window.AUTO_INVESTOR = { user: { accountType: 'logged_out' } }
+    this.gotLoginResult = this.gotLoginResult.bind(this)
+    this.onHashChange = this.onHashChange.bind(this)
+    this.endSession = this.endSession.bind(this)
   }
 
   connectedCallback () {
     super.connectedCallback()
     this.validateSession()
-    this.setupNavigationHandling()
-    window.history.pushState(null, null, defaultRoute)
+    this.addEventListener('loginResult', e => this.gotLoginResult(e.detail))
+    this.addEventListener('endSession', this.endSession)
+    window.onhashchange = this.onHashChange
+  }
+
+  disconnectedCallback () {
+    super.disconnectedCallback()
+    this.removeEventListener('loginResult', e => this.gotLoginResult(e.detail))
+    this.removeEventListener('endSession', this.endSession)
+  }
+
+  gotLoginResult (accountType) {
+    const appBarBtns = {
+      investor: investorAppBarBtns,
+      admin: adminAppBarBtns
+    }[accountType] || ''
+    const isAuthenticated = (accountType === 'investor' || accountType === 'admin')
+    const hashGoTo = isAuthenticated
+      ? '#/'
+      : '#/login'
+    this.navigateToHash(hashGoTo)
+    this.shadowRoot.querySelector('.app-bar-nav').innerHTML = appBarBtns
+    this.shadowRoot.querySelector('#page-slot').innerHTML = routes[hashGoTo]
+    this.shadowRoot.querySelector('#accountTypeStatus').innerHTML = accountType
+    window.AUTO_INVESTOR.user.accountType = accountType
+  }
+
+  endSession () {
+    this.shadowRoot.querySelector('.app-bar-nav').innerHTML = ''
+    this.shadowRoot.querySelector('#accountTypeStatus').innerHTML = 'logged_out'
+    window.sessionStorage.removeItem('t')
+    window.AUTO_INVESTOR.user = { accountType: 'logged_out' }
   }
 
   setupNavigationHandling () {
-    window.onhashchange = ev => {
-      const url = ev.newURL.replace('https://', '').replace('http://', '')
+    window.history.pushState(null, null, defaultRoute)
+  }
+
+  onHashChange (e) {
+    if (window.AUTO_INVESTOR.user.accountType === 'logged_out') {
+      if (window.location.hash !== '#/login') {
+        const hashPath = '#/login'
+        this.navigateToHash(hashPath)
+        this.shadowRoot.querySelector('#page-slot').innerHTML = routes[hashPath]
+      }
+    } else {
+      const url = e.newURL.replace('https://', '').replace('http://', '')
       const hashPath = url.substring(url.indexOf('/') + 1)
       this.shadowRoot.querySelector('#page-slot').innerHTML = routes[hashPath]
     }
@@ -45,11 +93,16 @@ class AutoInvestorApp extends BaseComponent {
       }
     }).then(res => {
       if (res.status >= 200 && res.status <= 209) {
-        /* const decodedJwt = decodeJwt(window.sessionStorage.getItem('t'))
-        console.log('Decoded JWT:', decodedJwt) */
+        const decodedJwt = decodeJwt(window.sessionStorage.getItem('t'))
+        console.log('User already logged in! Decoded JWT:', decodedJwt)
+        window.AUTO_INVESTOR.user = decodedJwt.data
+        const accountType = decodedJwt.data.accountType
+        this.gotLoginResult(accountType)
+      } else {
+        window.AUTO_INVESTOR.user = { accountType: 'logged_out' }
+        this.gotLoginResult('logged_out')
       }
     })
-    // this.addEventListener('loginresult', e => console.log('Login result:', e))
   }
 
   get css () {
@@ -71,20 +124,13 @@ class AutoInvestorApp extends BaseComponent {
           slot="top"
           logo="https://www.svgrepo.com/show/344884/graph-up.svg"
           label="Auto Investor"
+          b-innerhtml="account"
         >
-          ${this.state.account}
-          <div class="app-bar-nav">
-            <a href="#/" nav-link><kor-text size="header-1" color="blue">Home</kor-text></a>
-            <a href="#/login" nav-link><kor-text size="header-1" color="blue">Login</kor-text></a>
-            <a href="#/add-strategy" nav-link><kor-text size="header-1" color="blue">Add Strategy</kor-text></a>
-          </div>
+          <div class="app-bar-nav"></div>
+          <div id="accountTypeStatus">logged_out</div>
         </kor-app-bar>
-        <div id="page-slot">${routes[defaultRoute]}</div>
+        <div id="page-slot" b-innerhtml="page">${routes[defaultRoute]}</div>
       `
-  }
-
-  result (e) {
-    console.log('loginResult:', e)
   }
 }
 
