@@ -11,4 +11,4 @@ CREATE TABLE Users (
 );
 
 INSERT INTO Users (username,passwd,firstName,lastName,city,country,email)
-VALUES ('user123', 'secret', 'joe.blow@mail.com', 'Joe', 'Blow', 'Sydney', 'Australia');
+VALUES ('user123', 'secret', 'Joe', 'Blow', 'Sydney', 'Australia', 'joe.blow@mail.com');
