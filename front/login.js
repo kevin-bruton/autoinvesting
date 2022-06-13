@@ -46,14 +46,14 @@ class KLogin extends BaseComponent {
   }
 
   async login () {
-    const username = this.shadowRoot.querySelector('#username-input').value
-    const passwd = this.shadowRoot.querySelector('#password-input').value
+    const usernameInput = this.shadowRoot.querySelector('#username-input')
+    const passwordInput = this.shadowRoot.querySelector('#password-input')
 
-    console.log('Login. Username:', username, 'Password:', passwd)
+    console.log('Login. Username:', usernameInput.value, 'Password:', passwordInput.value)
     const requestConfig = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
-      body: JSON.stringify({ username, passwd })
+      body: JSON.stringify({ username: usernameInput.value, passwd: passwordInput.value })
     }
     const res = await window.fetch('api/authenticate', requestConfig)
     if (res.status >= 200 && res.status <= 209) {
@@ -62,10 +62,14 @@ class KLogin extends BaseComponent {
       const decodedJwt = decodeJwt(jwt.t)
       console.log('KLogin decodedJwt:', decodedJwt)
       const accountType = decodedJwt.data.accountType
-      this.publish('loginResult', accountType)
       // this.dispatchEvent(new window.CustomEvent('loginresult', { detail: accountType, bubbles: true, composed: true}))
+      usernameInput.setAttribute('status', 'success')
+      passwordInput.setAttribute('status', 'success')
+      setTimeout(() => this.publish('loginResult', accountType), 1000)
     } else {
       console.log('Auth response error:', res.status, res.statusText)
+      usernameInput.setAttribute('status', 'error')
+      passwordInput.setAttribute('status', 'error')
     }
   }
 }

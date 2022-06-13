@@ -17,7 +17,40 @@ export class BaseComponent extends window.HTMLElement {
     }
   }
 
-/*   connectedCallback () {
+  getEl (id) {
+    return this.shadowRoot.getElementById(id)
+  }
+
+  async httpGet (url, params) {
+    const searchParams = new URLSearchParams(params).toString()
+    const jwt = window.sessionStorage.getItem('t')
+    const res = await window.fetch(url + searchParams, { headers: { Authorization: `Bearer ${jwt}` } })
+    if (res.status >= 200 && res.status <= 209) {
+      const data = await res.json()
+      return { ...data, ...{ status: res.status } }
+    }
+    return { status: res.status, statusText: res.statusText }
+  }
+
+  async httpPost (url, data) {
+    const jwt = window.sessionStorage.getItem('t')
+    const res = await window.fetch(url, { headers: { Authorization: `Bearer ${jwt}` }, body: JSON.stringify(data) })
+    if (res.status >= 200 && res.status <= 209) {
+      const data = await res.json()
+      return { ...data, ...{ status: res.status } }
+    }
+    return { status: res.status, statusText: res.statusText }
+  }
+
+  async httpPostFile (fileName) {
+    const jwt = window.sessionStorage.getItem('t')
+    const formData = new window.FormData()
+    formData.append('file', fileName)
+    const res = await window.fetch('/api/files', { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: formData })
+    return { status: res.status, statusText: res.statusText }
+  }
+
+  /*   connectedCallback () {
     this.updateTemplate()
   }
 

@@ -54,5 +54,11 @@ validate($httpAuth);
 
 switch($path[0]) {
   case 'time': getTime(); break;
+  case 'strategy':
+    if ($method == 'POST') saveStrategy($payload);
+    break;
+  case 'file':
+    if ($method == 'POST') saveFile($payload);
+    break;
 }
 ?>
