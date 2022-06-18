@@ -10,5 +10,3 @@ CREATE TABLE Users (
     accountType varchar(55) DEFAULT 'investor'
 );
 
-INSERT INTO Users (username,passwd,firstName,lastName,city,country,email)
-VALUES ('user123', 'secret', 'Joe', 'Blow', 'Sydney', 'Australia', 'joe.blow@mail.com');

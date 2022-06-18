@@ -9,7 +9,7 @@ function authenticate ($user) {
     $secretKey  = $_ENV['JWT_SECRET'];
     $tokenId    = base64_encode(random_bytes(16));
     $issuedAt   = new DateTimeImmutable();
-    $expire     = $issuedAt->modify('+60 minutes')->getTimestamp();      // Add 60 seconds
+    $expire     = $issuedAt->modify('+1440 minutes')->getTimestamp();      // Add 60 seconds
     $serverName = $_SERVER['SERVER_NAME'];
 
     // Create the token as an array
@@ -54,7 +54,13 @@ function validate ($httpAuth) {
   }
   
   $secretKey  = $_ENV['JWT_SECRET'];
-  $token = JWT::decode($jwt, $secretKey, ['HS512']);
+  try {
+    $token = JWT::decode($jwt, $secretKey, ['HS512']);
+  } catch (Firebase\JWT\ExpiredException $e) {
+    header('HTTP/1.1 401 Unauthorized');
+    echo 'Session expired';
+    exit;
+  }
   $now = new DateTimeImmutable();
   $serverName = $_SERVER['SERVER_NAME'];
   

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require_once('./vendor/autoload.php');
 
-$dotenv = Dotenv\Dotenv::createImmutable(__DIR__.'.');
-$dotenv->safeLoad();
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -15,12 +15,14 @@ else
   $httpAuth = '';
 $method = $_SERVER['REQUEST_METHOD'];
 $requestUri = $_SERVER['REQUEST_URI'];
+
 $path = array_values(array_filter(
   explode('/', str_replace('/api', '', explode('?', $requestUri)[0])),
   function ($val) { return $val != ""; }
 ));
 $params = $_REQUEST;
 $payload = file_get_contents('php://input');
+$file = isset($_FILES['file']) ? $_FILES['file'] : NULL;
 
 /* echo json_encode([
   'httpAuth' => $httpAuth,
@@ -32,16 +34,19 @@ $payload = file_get_contents('php://input');
 ]);
 exit; */
 
-require_once('./db/base.php');
-require_once('./routes/authentication.php');
-require_once('./routes/time.php');
+require_once('./db/db.php');
+require_once('./controllers/authentication.php');
+require_once('./controllers/time.php');
+require_once('./controllers/strategy.php');
+require_once('./controllers/file.php');
+require_once('./controllers/trades.php');
 
 global $db;
 $db = connect();
 
 if ($path[0] == 'authenticate') {
   $payload = json_decode($payload);
-  $user = validateUser($db, $payload->username, $payload->passwd);
+  $user = validateUser($payload->username, $payload->passwd);
   
   if ($user['accountType']) {
     authenticate($user);
@@ -55,10 +60,13 @@ validate($httpAuth);
 switch($path[0]) {
   case 'time': getTime(); break;
   case 'strategy':
-    if ($method == 'POST') saveStrategy($payload);
+    if ($method == 'POST') saveStrategy(json_decode($payload));
     break;
-  case 'file':
-    if ($method == 'POST') saveFile($payload);
+  case 'files':
+    if ($method == 'POST') saveFile($file);
+    break;
+  case 'trades':
+    if ($method === 'POST') saveTrades($file, $_POST);
     break;
 }
 ?>

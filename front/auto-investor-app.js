@@ -115,6 +115,10 @@ class AutoInvestorApp extends BaseComponent {
       .app-bar-nav > a {
         text-decoration: none;
       }
+      .page-slot {
+        overflow: scroll;
+        height: 100%;
+      }
     `
   }
 
@@ -129,7 +133,7 @@ class AutoInvestorApp extends BaseComponent {
           <div class="app-bar-nav"></div>
           <div id="accountTypeStatus">logged_out</div>
         </kor-app-bar>
-        <div id="page-slot" b-innerhtml="page">${routes[defaultRoute]}</div>
+        <div id="page-slot" class="page-slot">${routes[defaultRoute]}</div>
       `
   }
 }
