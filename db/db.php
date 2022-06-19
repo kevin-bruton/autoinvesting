@@ -58,21 +58,19 @@ function insertStrategy ($strategyDetails) {
   global $db;
   /* echo $strategyDetails->magic;
   exit; */
-  $sql = 'INSERT INTO Strategies (strategyName, magic, symbols, timeframes, generationDate, demoDate, liveDate, mq4StrategyFile, sqxStrategyFile) VALUES (?,?,?,?,?,?,?,?,?)';
+  $sql = 'INSERT INTO Strategies (strategyName, magic, symbols, timeframes, demoStart, mq4StrategyFile, sqxStrategyFile) VALUES (?,?,?,?,?,?,?)';
   try {
     /* Prepared statement, stage 1: prepare */
     $stmt = $db->prepare($sql);
 
     /* Prepared statement, stage 2: bind and execute */
     $stmt->bind_param(
-      "sisssssss",
+      "sisssss",
       $strategyDetails->strategyName,
       $strategyDetails->magic,
       $strategyDetails->symbols,
       $strategyDetails->timeframes,
-      $strategyDetails->generationDate,
-      $strategyDetails->demoDate,
-      $strategyDetails->liveDate,
+      $strategyDetails->demoStart,
       $strategyDetails->mt4StrategyFile,
       $strategyDetails->sqxStrategyFile
     ); // "is" means that $id is bound as an integer and $label as a string
@@ -83,21 +81,74 @@ function insertStrategy ($strategyDetails) {
   die('{"success": '.boolval($stmt->affected_rows).'}');
 }
 
-function insertTrade($strategyName, $symbol, $environment, $platform, $direction, $size, $profit, $openTime, $closeTime, $openPrice, $closePrice, $closeType, $comment) {
-  // $openTime = "2020-04-05 06:00:00";
-  // $closeTime = "2020-04-05 07:00:00";
+function updateStrategy ($strategyName, $btStart, $btEnd, $btDeposit, $btTrades, $btKpis) {
   global $db;
-  $sql = 'INSERT INTO Trades (strategyName, symbol, environment, platform, direction, size, profit, openTime, closeTime, openPrice, closePrice, closeType, comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)';
+  $sql = 'UPDATE Strategies SET btStart = ?, btEnd = ?, btDeposit = ?, btTrades = ?, btKpis = ? WHERE StrategyName = ?';
   try {
     $stmt = $db->prepare($sql);
-
     $stmt->bind_param(
-      'sssssddssddss',
-      $strategyName, $symbol, $environment, $platform, $direction, $size, $profit, $openTime, $closeTime, $openPrice, $closePrice, $closeType, $comment
+      "ssdsss",
+      $btStart, $btEnd, $btDeposit, $btTrades, $btKpis, $strategyName
     );
     $stmt->execute();
   } catch (\mysqli_sql_exception $e) {
     die(errorToJson($e));
   }
+  die('{ "success": '.boolval($stmt->affected_rows).' }');
+}
+
+/* function insertTrade($strategyName, $magic, $symbol, $environment, $platform, $direction, $size, $profit, $openTime, $closeTime, $openPrice, $closePrice, $closeType, $comment) {
+  // $openTime = "2020-04-05 06:00:00";
+  // $closeTime = "2020-04-05 07:00:00";
+  global $db;
+  $sql = 'INSERT INTO Trades (strategyName, magic, symbol, environment, platform, direction, size, profit, openTime, closeTime, openPrice, closePrice, closeType, comment) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)';
+  try {
+    $stmt = $db->prepare($sql);
+
+    $stmt->bind_param(
+      'sissssddssddss',
+      $strategyName, $magic, $symbol, $environment, $platform, $direction, $size, $profit, $openTime, $closeTime, $openPrice, $closePrice, $closeType, $comment
+    );
+    $stmt->execute();
+  } catch (\mysqli_sql_exception $e) {
+    die(errorToJson($e));
+  }
+} */
+
+function selectStrategies() {
+  global $db;
+  $sql = 'SELECT * FROM Strategies';
+  try {
+    $result = $db->query($sql);
+  } catch (\mysqli_sql_exception $e) {
+    die(errorToJson($e));
+  }
+  $strategies = array();
+  while ($row = $result->fetch_assoc()) {
+    array_push($strategies, $row);
+  }
+  $result->free();
+  return $strategies;
+}
+
+function selectTrades() {
+  global $db;
+  $sql = 'SELECT * FROM Trades';
+  try {
+    $result = $db->query($sql);
+  } catch (\mysqli_sql_exception $e) {
+    die(errorToJson($e));
+  }
+  $trades = array();
+  while ($row = $result->fetch_assoc()) {
+    $row['profit'] = (float)$row['profit'];
+    $row['tradeId'] = (float)$row['tradeId'];
+    $row['size'] = (float)$row['size'];
+    $row['openPrice'] = (float)$row['openPrice'];
+    $row['closePrice'] = (float)$row['closePrice'];
+    array_push($trades, $row);
+  }
+  $result->free();
+  return $trades;
 }
 ?>

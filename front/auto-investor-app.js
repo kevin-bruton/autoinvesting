@@ -1,9 +1,9 @@
 import { BaseComponent } from './base-component.js'
 import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.esm.js'
 
-const homePage = 'Home Page'
-const loginPage = '<k-login b-listener="loginResult.result"></k-login>'
-const addStrategyPage = '<add-strategy></add-strategy>'
+const homePage = '<home-page></home-page>'
+const loginPage = '<login-page></login-page>'
+const addStrategyPage = '<add-strategy-page></add-strategy-page>'
 
 const routes = {
   '#/': homePage,
@@ -94,7 +94,6 @@ class AutoInvestorApp extends BaseComponent {
     }).then(res => {
       if (res.status >= 200 && res.status <= 209) {
         const decodedJwt = decodeJwt(window.sessionStorage.getItem('t'))
-        console.log('User already logged in! Decoded JWT:', decodedJwt)
         window.AUTO_INVESTOR.user = decodedJwt.data
         const accountType = decodedJwt.data.accountType
         this.gotLoginResult(accountType)

@@ -1,7 +1,7 @@
-import { BaseComponent } from './base-component.js'
-import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.esm.js'
+import { BaseComponent } from '../base-component.js'
+import decodeJwt from '../node_modules/jwt-decode/build/jwt-decode.esm.js'
 
-class KLogin extends BaseComponent {
+class LoginPage extends BaseComponent {
   constructor () {
     super()
     this.login = this.login.bind(this)
@@ -49,7 +49,6 @@ class KLogin extends BaseComponent {
     const usernameInput = this.shadowRoot.querySelector('#username-input')
     const passwordInput = this.shadowRoot.querySelector('#password-input')
 
-    console.log('Login. Username:', usernameInput.value, 'Password:', passwordInput.value)
     const requestConfig = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
@@ -60,18 +59,16 @@ class KLogin extends BaseComponent {
       const jwt = await res.json()
       window.sessionStorage.setItem('t', jwt.t)
       const decodedJwt = decodeJwt(jwt.t)
-      console.log('KLogin decodedJwt:', decodedJwt)
       const accountType = decodedJwt.data.accountType
-      // this.dispatchEvent(new window.CustomEvent('loginresult', { detail: accountType, bubbles: true, composed: true}))
       usernameInput.setAttribute('status', 'success')
       passwordInput.setAttribute('status', 'success')
       setTimeout(() => this.publish('loginResult', accountType), 1000)
     } else {
-      console.log('Auth response error:', res.status, res.statusText)
+      // console.log('Auth response error:', res.status, res.statusText)
       usernameInput.setAttribute('status', 'error')
       passwordInput.setAttribute('status', 'error')
     }
   }
 }
 
-window.customElements.define('k-login', KLogin)
+window.customElements.define('login-page', LoginPage)

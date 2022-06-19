@@ -39,7 +39,7 @@ require_once('./controllers/authentication.php');
 require_once('./controllers/time.php');
 require_once('./controllers/strategy.php');
 require_once('./controllers/file.php');
-require_once('./controllers/trades.php');
+require_once('./controllers/backtest.php');
 
 global $db;
 $db = connect();
@@ -58,15 +58,32 @@ if ($path[0] == 'authenticate') {
 validate($httpAuth);
 
 switch($path[0]) {
-  case 'time': getTime(); break;
-  case 'strategy':
-    if ($method == 'POST') saveStrategy(json_decode($payload));
+  case 'time':
+    getTime();
+    break;
+  case 'strategies':
+    switch ($method) {
+      case 'POST':
+        saveStrategy(json_decode($payload));
+        break;
+      case 'GET':
+        switch (count($path)) {
+          case 1: getStrategies(); break;
+          case 2: getStrategy($path[1]); break;
+        }
+        break;
+    }
     break;
   case 'files':
-    if ($method == 'POST') saveFile($file);
+    switch ($method) {
+      case 'POST': saveFile($file); break;
+    };
     break;
-  case 'trades':
-    if ($method === 'POST') saveTrades($file, $_POST);
+  case 'backtest':
+    switch ($method) {
+      case 'POST': saveBacktest($file, $_POST); break;
+      case 'GET': getBacktest(); break;
+    }
     break;
 }
 ?>
