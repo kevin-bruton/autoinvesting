@@ -2,12 +2,14 @@ export class BaseComponent extends window.HTMLElement {
   constructor () {
     super()
     this.attachShadow({ mode: 'open' })
+    this.isHtmlSet = false
   }
 
   connectedCallback () {
     this.shadowRoot.innerHTML = `
       <style>${this.css}</style>
       ${this.html}`
+    this.isHtmlSet = true
   }
 
   navigateToHash (hash) {
@@ -34,11 +36,25 @@ export class BaseComponent extends window.HTMLElement {
     return files.length ? files[0].name : null
   }
 
+  async getInputFileContent (id) {
+    return new Promise(resolve => {
+      const files = this.shadowRoot?.getElementById(id).files
+      if (!files.length)
+        return null
+      const file = files[0]
+      const reader = new FileReader()
+      reader.addEventListener('load', ev => {
+        resolve(ev.target.result)
+      }, false)
+      reader.readAsText(file);
+    })
+  }
+
   setInnerHtml (id, html) {
     this.shadowRoot.getElementById(id).innerHTML = html
   }
 
-  setAttribute (id, attrName, attrVal) {
+  setAttrib (id, attrName, attrVal) {
     this.shadowRoot?.getElementById(id).setAttribute(attrName, attrVal)
   }
 

@@ -81,7 +81,7 @@ switch($path[0]) {
     break;
   case 'backtest':
     switch ($method) {
-      case 'POST': saveBacktest($file, $_POST); break;
+      case 'POST': saveBacktest(json_decode($payload)); break;
       case 'GET': getBacktest(); break;
     }
     break;

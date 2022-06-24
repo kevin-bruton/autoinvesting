@@ -81,7 +81,8 @@ function insertStrategy ($strategyDetails) {
   die('{"success": '.boolval($stmt->affected_rows).'}');
 }
 
-function updateStrategy ($strategyName, $btStart, $btEnd, $btDeposit, $btTrades, $btKpis) {
+function updateStrategyWithBacktest ($strategyName, $btStart, $btEnd, $btDeposit, $btTrades, $btKpis) {
+  // die('strategyName: '.$strategyName.'; start: '.$btStart.'; end: '.$btEnd.'; deposit: '.$btDeposit.'; trades: '.$btTrades.'; kpis: '.$btKpis);
   global $db;
   $sql = 'UPDATE Strategies SET btStart = ?, btEnd = ?, btDeposit = ?, btTrades = ?, btKpis = ? WHERE StrategyName = ?';
   try {
@@ -94,7 +95,10 @@ function updateStrategy ($strategyName, $btStart, $btEnd, $btDeposit, $btTrades,
   } catch (\mysqli_sql_exception $e) {
     die(errorToJson($e));
   }
-  die('{ "success": '.boolval($stmt->affected_rows).' }');
+  return boolval($stmt->affected_rows);
+  // die('Num rows: '.$stmt->affected_rows.'; error: '.$stmt->error);
+  // return boolval($stmt->affected_rows);
+  // die('{ "success": '.boolval($stmt->affected_rows).' }');
 }
 
 /* function insertTrade($strategyName, $magic, $symbol, $environment, $platform, $direction, $size, $profit, $openTime, $closeTime, $openPrice, $closePrice, $closeType, $comment) {

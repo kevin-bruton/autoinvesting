@@ -1,5 +1,6 @@
 import { BaseComponent } from '../base-component.js'
 import getRandomName from '../getRandomName.js'
+import { getMetrics } from '../utils/metrics.js'
 
 class AddStrategyPage extends BaseComponent {
   constructor () {
@@ -43,13 +44,13 @@ class AddStrategyPage extends BaseComponent {
     for await (const id of Object.keys(files)) {
       const file = files[id]
       if (!file) {
-        this.setAttribute(id, 'status', 'warning')
+        this.setAttrib(id, 'status', 'warning')
       } else {
         const resp = await this.httpPostFile(file)
         if (resp.success) {
-          this.setAttribute(id + 'Badge', 'status', 'success')
+          this.setAttrib(id + 'Badge', 'status', 'success')
         } else {
-          this.setAttribute(id + 'Badge', 'status', 'error')
+          this.setAttrib(id + 'Badge', 'status', 'error')
         }
         this.setInnerHtml(id + 'Result', resp.message)
       }
@@ -58,16 +59,57 @@ class AddStrategyPage extends BaseComponent {
 
   async saveBacktest () {
     const strategyName = this.getVal('btStrategyName')
-    const btStart = this.getVal('btStart')
-    const btEnd = this.getVal('btEnd')
-    const btDeposit = this.getVal('btDeposit')
+    const startDate = this.getVal('btStart')
+    const endDate = this.getVal('btEnd')
+    const deposit = this.getVal('btDeposit')
     const tradesFilename = this.getInputFilename('btTradesFile')
-    const tradesFile = this.getInputFile('btTradesFile')
-    const resp = await this.httpPostBacktest(tradesFile, strategyName, btStart, btEnd, btDeposit)
+    const fileContent = await this.getInputFileContent('btTradesFile')
+    const saniDate = d => d.replace(/\./g, '-')
+    const csvTradesToJs = csvStr => {
+      const trades = []
+      const lines = csvStr.split('\n')
+      for (const line of lines.splice(1)) {
+        const cells = line.split(';').map(c => c.replace(/"/g, ''))
+        if (cells.length === 16) {
+          const trade = {
+            symbol: cells[1],
+            direction: cells[2], 
+            openTime: saniDate(cells[3]),
+            openPrice: Number(cells[4]),
+            size: Number(cells[5]),
+            closeTime: saniDate(cells[6]),
+            closePrice: Number(cells[7]),
+            profit: Number(cells[8]),
+            balance: Number(cells[9]),
+            closeType: cells[11],
+            comment: cells[15].trim()
+          }
+          trades.push(trade)
+        }
+      }
+      return trades
+    }
+    const trades = csvTradesToJs(fileContent)
+    const balances = trades.map(t => t.balance)
+    balances.unshift(deposit)
+    const profit = trades.map(t => t.profit)
+    const kpis = getMetrics(deposit, startDate, endDate, balances, profit)
+    const data = {
+      strategyName,
+      startDate,
+      endDate,
+      deposit,
+      trades,
+      kpis
+    }
+    const resp = await this.httpPost('/api/backtest', data)
+    /* const tradesFile = this.getInputFile('btTradesFile')
+    const resp = await this.httpPostBacktest(tradesFile, strategyName, btStart, btEnd, btDeposit) */
+
     if (resp.success) {
-      this.setAttribute('tradesBadge', 'status', 'success')
+      this.setAttrib('tradesBadge', 'status', 'success')
     } else {
-      this.setAttribute('tradesBadge', 'status', 'error')
+      this.setAttrib('tradesBadge', 'status', 'error')
     }
     this.setInnerHtml('tradesResult', resp.message)
   }

@@ -4,6 +4,19 @@ declare(strict_types=1);
 
 require_once('./db/db.php');
 
+function saveBacktest ($payload) {
+  global $db;
+  $strategyName = $payload->strategyName;
+  $startDate = $payload->startDate;
+  $endDate = $payload->endDate;
+  $deposit = $payload->deposit;
+  $trades = $payload->trades;
+  $kpis = $payload->kpis;
+  $changed = updateStrategyWithBacktest($strategyName, $startDate, $endDate, $deposit, json_encode($trades), json_encode($kpis));
+  // $changed = updateStrategyWithBacktest($strategyName, null, null, null, null, null);
+  die('{ "success": true, "message": "Backtest changed='.($changed ? 'true' : 'false').'" }');
+}
+/* 
 function noCom ($str) {
   return str_replace('"', '', $str);
 }
@@ -57,7 +70,7 @@ function saveBacktest ($file, $payload) {
     echo '{ "success": false, "message": "Not a valid backtest file" }';
     exit;
   }
-}
+} */
 
 function getBacktest () {
   $trades = selectTrades();
