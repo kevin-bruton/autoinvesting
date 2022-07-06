@@ -1,4 +1,4 @@
-export const baseUrl = 'http://autoinvesting.local:5000'
+export const baseUrl = window.AUTOINVESTING.apiUrl
 
 export class BaseComponent extends window.HTMLElement {
   constructor () {
