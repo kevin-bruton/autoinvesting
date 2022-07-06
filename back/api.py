@@ -1,0 +1,90 @@
+from flask import Flask, request, jsonify
+from dotenv import load_dotenv
+from os import getenv
+from flask_cors import CORS
+from auth import generate_user_token, validate_token, token_required, admin_only
+from upload_file import upload_file
+from db import get_strategies, save_strategy, save_backtest
+from utils import get_kpis
+
+load_dotenv()
+
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": getenv('ORIGIN')}})
+
+@app.route('/')
+def hello_world():
+    return 'Hello World! '
+
+
+@app.route('/api/authenticate', methods=['POST']) 
+def authenticate_request():
+  req = request.get_json()
+  host = request.environ['HTTP_HOST']
+
+  if not req or not req['username'] or not req['passwd']:
+    return (jsonify({'error': 'Credentials not provided'}), 401)
+
+  try:
+    token = generate_user_token(req['username'], req['passwd'], host)
+    return (jsonify({'t' : token}), 200)
+  except Exception as e:
+    print('CAUGHT ERROR: ', e)
+    return (jsonify({'error': str(e)}), 401)
+
+@app.route('/api/validate', methods=['GET'])
+def validate_request():
+  try:
+    validate_token(request.headers)
+    return (jsonify({'message': 'OK'}), 200)
+  except Exception as e:
+    return (jsonify({'error': str(e)}), 401)
+
+@app.route('/api/strategies', methods=['GET'])
+@token_required
+def get_strategies_request(user):
+  return (jsonify({'success': True, 'data': get_strategies()}), 200)
+
+@app.route('/api/strategies/<strategy_id>', methods=['GET'])
+@token_required
+def get_strategy_request(user):
+  return (jsonify(user), 200)
+
+@app.route('/api/strategies', methods=['POST'])
+@admin_only
+def save_strategy_request(user):
+  try:
+    save_strategy(request.get_json())
+    return (jsonify({'message': 'Saved strategy successfully'}), 200)
+  except Exception as e:
+    error_msg = repr(e)
+    print(error_msg)
+    if 'Duplicate entry' in error_msg:
+      error_msg = error_msg[error_msg.find('Duplicate entry'), error_msg.find(' for key')]
+    return (jsonify({'error': error_msg}), 200)
+
+@app.route('/api/files', methods=['POST'])
+@admin_only
+def upload_file_request(user):
+  try:
+    upload_file(user, request)
+    return (jsonify({'message': 'File uploaded successfully'}))
+  except Exception as e:
+    return (jsonify({'error': repr(e)}), 200)
+
+@app.route('/api/backtest', methods=['POST'])
+@admin_only
+def save_backtest_request(user):
+  try:
+    data = request.get_json()
+    # add kpis to data ?
+    save_backtest(data)
+    return (jsonify({'message': 'Saved backtest successfully'}), 200)
+  except Exception as e:
+    print(repr(e))
+    return(jsonify({'error': repr(e)}), 200)
+
+
+if __name__ == '__main__':
+    app.run()
+
