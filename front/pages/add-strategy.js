@@ -22,7 +22,7 @@ class AddStrategyPage extends BaseComponent {
 
   async saveStrategy () {
     const textInputIds = ['strategyName', 'magic', 'symbols', 'timeframes', 'demoStart']
-    const fileInputIds = ['mt4StrategyFile', 'sqxStrategyFile']
+    const fileInputIds = ['mq4StrategyFile', 'sqxStrategyFile']
     const textInputEls = textInputIds.map(id => this.getEl(id))
     const textDetails = textInputIds.reduce((det, id) => ({ ...det, ...{ [id]: id === 'magic' ? Number(this.getEl(id).value) : this.getEl(id).value }}), {})
     const fileDetails = fileInputIds.reduce((det, id) => {
@@ -34,7 +34,9 @@ class AddStrategyPage extends BaseComponent {
     const detailsResp = await this.httpPost('/api/strategies', { ...textDetails, ...fileDetails })
     const detailsStatus = (detailsResp.status >= 200 && detailsResp.status <= 209) ? 'success' : 'error'
     textInputEls.forEach(el => el.setAttribute('status', detailsStatus))
-
+    this.setAttrib('saveStrategyResultBadge', 'status', detailsResp.error ? 'error' : 'success')
+    this.setInnerHtml('saveStrategyResultText', detailsResp.error ? detailsResp.error : detailsResp.message)
+    
     // Send files and report result for each
     const files = fileInputIds.reduce((det, id) => {
       const inputFiles = this.getEl(id).files
@@ -47,18 +49,15 @@ class AddStrategyPage extends BaseComponent {
         this.setAttrib(id, 'status', 'warning')
       } else {
         const resp = await this.httpPostFile(file)
-        if (resp.success) {
-          this.setAttrib(id + 'Badge', 'status', 'success')
-        } else {
-          this.setAttrib(id + 'Badge', 'status', 'error')
-        }
-        this.setInnerHtml(id + 'Result', resp.message)
+        this.setAttrib(id + 'Badge', 'status', resp.error ? 'error' : 'success')
+        this.setInnerHtml(id + 'Result', resp.error ? resp.error : resp.message)
       }
     }
   }
 
   async saveBacktest () {
     const strategyName = this.getVal('btStrategyName')
+    const magic = this.getVal('btMagic')
     const startDate = this.getVal('btStart')
     const endDate = this.getVal('btEnd')
     const deposit = this.getVal('btDeposit')
@@ -96,6 +95,7 @@ class AddStrategyPage extends BaseComponent {
     const kpis = getMetrics(deposit, startDate, endDate, balances, profit)
     const data = {
       strategyName,
+      magic,
       startDate,
       endDate,
       deposit,
@@ -106,12 +106,8 @@ class AddStrategyPage extends BaseComponent {
     /* const tradesFile = this.getInputFile('btTradesFile')
     const resp = await this.httpPostBacktest(tradesFile, strategyName, btStart, btEnd, btDeposit) */
 
-    if (resp.success) {
-      this.setAttrib('tradesBadge', 'status', 'success')
-    } else {
-      this.setAttrib('tradesBadge', 'status', 'error')
-    }
-    this.setInnerHtml('tradesResult', resp.message)
+    this.setAttrib('saveBacktestResultBadge', 'status', resp.error ? 'error' : 'success')
+    this.setInnerHtml('saveBacktestResultText', resp.error ? resp.error : resp.message)
   }
 
   get css () {
@@ -122,12 +118,15 @@ class AddStrategyPage extends BaseComponent {
         justify-content: flex-start;
         gap: 30px;
         margin: 30px;
-        overflow: scroll;
       }
 
       .fileUpload {
         display: flex;
         align-items: baseline;
+      }
+
+      .saveStrategyBox {
+        display: flex; 
       }
     `
   }
@@ -141,17 +140,26 @@ class AddStrategyPage extends BaseComponent {
           <kor-input type="text" label="Symbols that the strategy operates on (separated by commas)" id="symbols"></kor-input>
           <kor-input type="text" label="Timeframes that the strategy operates on (separated by commas)" id="timeframes"></kor-input>
           <kor-input type="text" label="Demo start date (format YYYY-MM-DD)" id="demoStart"></kor-input>
-          <div class="fileUpload"><kor-text size="body-1">MT4 strategy file: <input type="file" label="MT4 strategy file" id="mt4StrategyFile"></input></kor-text><kor-badge id="mt4StrategyFileBadge" status=""></kor-badge><kor-text size="body-2" id="mt4StrategyFileResult"></kor-text></div>
+          <div class="fileUpload"><kor-text size="body-1">MT4 strategy file: <input type="file" label="MT4 strategy file" id="mq4StrategyFile"></input></kor-text><kor-badge id="mq4StrategyFileBadge" status=""></kor-badge><kor-text size="body-2" id="mq4StrategyFileResult"></kor-text></div>
           <div class="fileUpload"><kor-text size="body-1">SQX strategy file: <input type="file" label="SQX strategy file" id="sqxStrategyFile"></input></kor-text><kor-badge id="sqxStrategyFileBadge" status=""></kor-badge><kor-text size="body-2" id="sqxStrategyFileResult"></kor-text></div>
-          <kor-button id="saveStrategy" label="Save"></kor-button>
+          <div class="saveStrategyBox">
+            <kor-button id="saveStrategy" label="Save"></kor-button>
+            <kor-badge id="saveStrategyResultBadge" status=""></kor-badge>
+            <kor-text size="body-2" id="saveStrategyResultText"></kor-text>
+          </div>
         </kor-card>
         <kor-card icon="add_chart" label="Save SQX Backtest">
           <kor-input type="text" label="Strategy Name" id="btStrategyName" value="${this.strategyName}"></kor-input>
+          <kor-input type="number" label="magic" id="btMagic" value=""></kor-input>
           <kor-input type="text" label="Backtest start date (format YYYY-MM-DD)" id="btStart"></kor-input>
           <kor-input type="text" label="Backtest end date (format YYYY-MM-DD)" id="btEnd"></kor-input>
           <kor-input type="text" label="Backtest inicial capital" id="btDeposit" value="10000"></kor-input>
           <div class="fileUpload"><kor-text size="body-1">Trades CSV file: <input type="file" label="SQX strategy file" id="btTradesFile"></input></kor-text><kor-badge id="tradesBadge" status=""></kor-badge><kor-text size="body-2" id="tradesResult"></kor-text></div>
-          <kor-button id="saveBacktest" label="Save"></kor-button>
+          <div class="saveStrategyBox">
+            <kor-button id="saveBacktest" label="Save"></kor-button>
+            <kor-badge id="saveBacktestResultBadge" status=""></kor-badge>
+            <kor-text size="body-2" id="saveBacktestResultText"></kor-text>
+          </div>
         </kor-card>
       </div>
       `

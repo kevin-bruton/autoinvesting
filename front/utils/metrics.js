@@ -1,5 +1,5 @@
 import { differenceInDays } from '../node_modules/date-fns/esm/index.js'
-import getSortinoRatio from './sortino.js'
+// import getSortinoRatio from './sortino.js'
 import { dec2 } from './index.js'
 
 export {
@@ -20,7 +20,7 @@ function getMetrics (deposit, startDateStr, endDateStr, balances, profit) {
   const grossLoss = profit.reduce((gl, p) => p < 0 ? gl - p : gl, 0)
   const profitFactor = dec2(grossProfit / grossLoss)
   const numBacktestDays = differenceInDays(new Date(endDateStr), new Date(startDateStr))
-  const annualPctRet = dec2(totalPctRet / (numBacktestDays / 365))
+  const annualPctRet = dec2(totalPctRet * (365 / numBacktestDays))
   const { maxDD } = balances
     .reduce(({ lastHigh, curDD, maxDD }, bal) => {
       if (bal < lastHigh) {
@@ -35,6 +35,8 @@ function getMetrics (deposit, startDateStr, endDateStr, balances, profit) {
     }, { lastHigh: deposit, curDD: 0, maxDD: 0 })
   const maxPctDD = dec2(maxDD / deposit * 100)
   const annPctRetVsDdPct = dec2(annualPctRet / maxPctDD)
-  const sortino = getSortinoRatio(profit)
-  return { annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, sortino, profitFactor }
+  // const sortino = getSortinoRatio(profit)
+  const numWins = profit.reduce((numWins, p) => p > 0 ? numWins + 1 : numWins, 0)
+  const winPct = dec2(numWins / profit.length * 100)
+  return { annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor }
 }

@@ -1,4 +1,4 @@
-import { BaseComponent } from './base-component.js'
+import { BaseComponent, baseUrl } from './base-component.js'
 import decodeJwt from './node_modules/jwt-decode/build/jwt-decode.esm.js'
 
 const homePage = '<home-page></home-page>'
@@ -86,7 +86,8 @@ class AutoInvestorApp extends BaseComponent {
   }
 
   validateSession () {
-    window.fetch('/api/validate', {
+    // window.fetch('/api/validate', {
+      window.fetch(baseUrl + '/api/validate', {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         Authorization: `Bearer ${window.sessionStorage.getItem('t')}`
@@ -94,8 +95,8 @@ class AutoInvestorApp extends BaseComponent {
     }).then(res => {
       if (res.status >= 200 && res.status <= 209) {
         const decodedJwt = decodeJwt(window.sessionStorage.getItem('t'))
-        window.AUTO_INVESTOR.user = decodedJwt.data
-        const accountType = decodedJwt.data.accountType
+        window.AUTO_INVESTOR.user = decodedJwt
+        const accountType = decodedJwt.accountType
         this.gotLoginResult(accountType)
       } else {
         window.AUTO_INVESTOR.user = { accountType: 'logged_out' }

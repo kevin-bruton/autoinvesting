@@ -1,3 +1,5 @@
+export const baseUrl = 'http://autoinvesting.local:5000'
+
 export class BaseComponent extends window.HTMLElement {
   constructor () {
     super()
@@ -61,20 +63,30 @@ export class BaseComponent extends window.HTMLElement {
   async httpGet (url, params) {
     const searchParams = new URLSearchParams(params).toString()
     const jwt = window.sessionStorage.getItem('t')
-    const res = await window.fetch(url + searchParams, { headers: { Authorization: `Bearer ${jwt}` } })
+    const res = await window.fetch(baseUrl + url + searchParams, { headers: { Authorization: `Bearer ${jwt}` } })
     if (res.status >= 200 && res.status <= 209) {
       const data = await res.json()
       return { ...data, ...{ status: res.status } }
+    }
+    if (res.status === 401) {
+      window.location.assign('#/login')
     }
     return { status: res.status, statusText: res.statusText }
   }
 
   async httpPost (url, data) {
     const jwt = window.sessionStorage.getItem('t')
-    const res = await window.fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: JSON.stringify(data) })
+    const headers = {
+      Authorization: `Bearer ${jwt}`,
+      'Content-Type': 'application/json'
+    }
+    const res = await window.fetch(baseUrl + url, { method: 'POST', headers, body: JSON.stringify(data) })
     if (res.status >= 200 && res.status <= 209) {
       const data = await res.json()
       return { ...data, ...{ status: res.status } }
+    }
+    if (res.status === 401) {
+      window.location.assign('#/login')
     }
     return { status: res.status, statusText: res.statusText }
   }
@@ -86,10 +98,13 @@ export class BaseComponent extends window.HTMLElement {
     symbol && formData.append('symbol', symbol)
     environment && formData.append('environment', environment)
     formData.append('file', file)
-    const res = await window.fetch('/api/files', { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: formData })
+    const res = await window.fetch(baseUrl + '/api/files', { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: formData })
     if (res.status >= 200 && res.status <= 209) {
       const result = res.json()
       return result
+    }
+    if (res.status === 401) {
+      window.location.assign('#/login')
     }
     return { success: false, message: `status: ${res.status} statusText: ${res.statusText}` }
   }
@@ -102,10 +117,13 @@ export class BaseComponent extends window.HTMLElement {
     formData.append('btEnd', btEnd)
     formData.append('btDeposit', btDeposit)
     formData.append('file', file)
-    const res = await window.fetch('/api/backtest', { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: formData })
+    const res = await window.fetch(baseUrl + '/api/backtest', { method: 'POST', headers: { Authorization: `Bearer ${jwt}` }, body: formData })
     if (res.status >= 200 && res.status <= 209) {
       const result = res.json()
       return result
+    }
+    if (res.status === 401) {
+      window.location.assign('#/login')
     }
     return { success: false, message: `status: ${res.status} statusText: ${res.statusText}` }
   }

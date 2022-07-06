@@ -32,14 +32,21 @@ class HomePage extends BaseComponent {
     const grossLossReducer = (gl, tr) => tr.profit < 0 ? gl - tr.profit : gl
     
     const { success, data: strategies } = await this.httpGet('/api/strategies')
+    console.log('strategies:', strategies)
     if (success) {
       this.strategyHtml = !strategies.length
         ? `No strategies found`
         : strategies.map(s => {
-          const deposit = Number(s.btDeposit)
+          const btDeposit = Number(s.btDeposit)
           const showBacktest = s.btKpis && s.btTrades
-          const kpis = showBacktest ? JSON.parse(s.btKpis) : {}
-          const chartPctRet = showBacktest ? this.getChartPctReturn(s.btTrades, s.btStart, deposit) : null
+          const btKpis = showBacktest ? JSON.parse(s.btKpis) : {}
+          const btChartPctRet = showBacktest ? this.getChartPctReturn(s.btTrades, s.btStart, btDeposit) : null
+          const demoDeposit = 1000
+          const showDemo = s.demoKpis && s.demoTrades
+          const demoKpis = showDemo ? JSON.parse(s.demoKpis) : {}
+          const demoChartPctRet = showDemo ? this.getChartPctReturn(s.demoTrades, s.demoStart, demoDeposit) : null
+          const demoEnd = (new Date()).toISOString().substring(0, 10)
+
           return `
             <kor-card class="strat-card" label="${s.strategyName}">
               <article class="strat-info">
@@ -49,21 +56,27 @@ class HomePage extends BaseComponent {
               ${showBacktest
                 ? `<kor-card class="mini-report">
                     <kor-text size="header-2">Backtest</kor-text>
-                    <article class="backtest-info">
+                    <article class="test-info">
                       <kor-input type="text" readonly label="Start date" value="${s.btStart}"></kor-input>
                       <kor-input type="text" readonly label="End date" value="${s.btEnd}"></kor-input>
                       <kor-input type="text" readonly label="Initial capital" value="${s.btDeposit}"></kor-input>
-                      <kor-input type="text" readonly label="Profit factor" value="${kpis.profitFactor}"></kor-input>
-                      <kor-input type="text" readonly label="Ann%Ret/DD%" value="${kpis.annPctRetVsDdPct}"></kor-input>
-                      <kor-input type="text" readonly label="Sortino" value="${kpis.sortino}"></kor-input>
-                      <equity-chart class="chart" id="equityChart" chart-width="280px" chart-height="150px" data='${JSON.stringify(chartPctRet)}'></equity-chart>
+                      <kor-input type="text" readonly label="Profit factor" value="${btKpis.profitFactor}"></kor-input>
+                      <kor-input type="text" readonly label="Ann%Ret/DD%" value="${btKpis.annPctRetVsDdPct}"></kor-input>
+                      <kor-input type="text" readonly label="Win %" value="${btKpis.winPct}"></kor-input>
+                      <equity-chart class="chart" id="equityChart" chart-width="280px" chart-height="150px" data='${JSON.stringify(btChartPctRet)}'></equity-chart>
                     </article>
                   </kor-card>`
                 : ``}
               <kor-card class="mini-report">
                 <kor-text size="header-2">Demo</kor-text>
-                <article class="demo-info">
+                <article class="test-info">
                   <kor-input type="text" readonly label="Demo start" value="${s.demoStart}"></kor-input>
+                  <kor-input type="text" readonly label="Demo end" value="${demoEnd}"></kor-input>
+                  <kor-input type="text" readonly label="Based on capital" value="${demoDeposit}"></kor-input>
+                  <kor-input type="text" readonly label="Profit factor" value="${demoKpis.profitFactor}"></kor-input>
+                  <kor-input type="text" readonly label="Ann%Ret/DD%" value="${demoKpis.annPctRetVsDdPct}"></kor-input>
+                  <kor-input type="text" readonly label="Win %" value="${demoKpis.winPct}"></kor-input>
+                  <equity-chart class="chart" id="equityChart" chart-width="280px" chart-height="150px" data='${JSON.stringify(demoChartPctRet)}'></equity-chart>
                 </article>
               </kor-card>
             </kor-card>
@@ -119,7 +132,7 @@ class HomePage extends BaseComponent {
         justify-content: center;
       }
 
-      .backtest-info {
+      .test-info {
         display: grid;
         grid-template-columns: 90px 100px 90px;
         grid-template-rows: 1fr 1fr 1fr;
@@ -129,27 +142,21 @@ class HomePage extends BaseComponent {
           "chart chart chart";
         height: 120px;
       }
-      .backtest-info:nth-child(1) {
+      .test-info:nth-child(1) {
         grid-area: input1;
       }
-      .backtest-info:nth-child(2) {
+      .test-info:nth-child(2) {
         grid-area: input2;
       }
-      .backtest-info:nth-child(3) {
+      .test-info:nth-child(3) {
         grid-area: input3;
       }
-      .backtest-info:nth-child(4) {
+      .test-info:nth-child(4) {
         grid-area: input4;
       }
 
-      .backtest-info equity-chart {
+      .test-info equity-chart {
         grid-area: chart;
-      }
-
-      .demo-info {
-        display: grid;
-        grid-template-columns: 90px 90px 90px;
-        grid-template-rows: 1fr;
       }
 
       .mini-report {

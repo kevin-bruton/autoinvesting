@@ -57,14 +57,16 @@ class EquityChart extends BaseComponent {
         top: 50,
         bottom: 0
       },
-      yAxis: {},
       tooltip: { trigger: 'axis' },
       dataset: {
         source: data,
         dimensions: ['timestamp', 'balance'],
       },
       xAxis: { type: 'time' },
-      yAxis: { name: '% Return'},
+      yAxis: {
+        name: '% Return',
+        type: 'value'
+      },
       series: [
         {
           name: 'trades',

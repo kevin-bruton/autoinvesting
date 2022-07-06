@@ -1,4 +1,4 @@
-import { BaseComponent } from '../base-component.js'
+import { BaseComponent, baseUrl } from '../base-component.js'
 import decodeJwt from '../node_modules/jwt-decode/build/jwt-decode.esm.js'
 
 class LoginPage extends BaseComponent {
@@ -54,12 +54,13 @@ class LoginPage extends BaseComponent {
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
       body: JSON.stringify({ username: usernameInput.value, passwd: passwordInput.value })
     }
-    const res = await window.fetch('api/authenticate', requestConfig)
+    const res = await window.fetch(baseUrl + '/api/authenticate', requestConfig)
     if (res.status >= 200 && res.status <= 209) {
       const jwt = await res.json()
       window.sessionStorage.setItem('t', jwt.t)
       const decodedJwt = decodeJwt(jwt.t)
-      const accountType = decodedJwt.data.accountType
+      console.log('JWT data:', decodedJwt)
+      const accountType = decodedJwt.accountType
       usernameInput.setAttribute('status', 'success')
       passwordInput.setAttribute('status', 'success')
       setTimeout(() => this.publish('loginResult', accountType), 1000)
