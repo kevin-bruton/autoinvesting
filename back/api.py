@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from os import getenv
 from flask_cors import CORS
@@ -11,10 +12,11 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": getenv('ORIGIN')}})
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 @app.route('/')
 def hello_world():
-    return 'Hello World! '
+    return 'Auto Investing API'
 
 
 @app.route('/api/authenticate', methods=['POST']) 
