@@ -1,0 +1,9 @@
+[Unit]
+Description=Python Waitress Server
+
+[Service]
+WorkingDirectory=/home/admin/autoinvesting/back/
+ExecStart=/home/admin/.pyenv/versions/autoinvesting-env/bin/waitress-serve api:app
+
+[Install]
+WantedBy=multi-user.target
