@@ -60,9 +60,8 @@ def save_strategy_request(user):
     return (jsonify({'message': 'Saved strategy successfully'}), 200)
   except Exception as e:
     error_msg = repr(e)
-    print(error_msg)
     if 'Duplicate entry' in error_msg:
-      error_msg = error_msg[error_msg.find('Duplicate entry'), error_msg.find(' for key')]
+      error_msg = error_msg[error_msg.find('Duplicate entry') : error_msg.find(' for key')]
     return (jsonify({'error': error_msg}), 200)
 
 @app.route('/api/files', methods=['POST'])
