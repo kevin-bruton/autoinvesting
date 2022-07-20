@@ -4,6 +4,7 @@ from runpy import _ModifiedArgv0
 from time import sleep
 from threading import Thread
 from os.path import join, exists
+from os import getenv
 from traceback import print_exc
 from random import random
 from datetime import datetime, timedelta
@@ -142,7 +143,7 @@ class read_and_save_trades():
         print('       Data: ', data) """
 
 
-MT4_files_dir = '/Users/kevin/Library/Application Support/MetaTrader 4/Bottles/metatrader64/drive_c/Program Files (x86)/MetaTrader 4/MQL4/Files/'
+MT4_files_dir = getenv('MT_FILES_DIR')
 
 processor = read_and_save_trades(MT4_files_dir)
 
