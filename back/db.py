@@ -15,6 +15,7 @@ def init_connection_pool():
   return mysql.connector.pooling.MySQLConnectionPool(
     pool_name = "db_pool",
     pool_size = 3,
+    pool_reset_session = True,
     **db_config
   )
 
@@ -29,29 +30,35 @@ def get_user (username, passwd):
   cnx = get_connection()
   sql = "SELECT * FROM Users WHERE username = %s AND passwd = %s"
   c = cnx.cursor()
-  c.execute(sql, (username, passwd))
-  user = c.fetchone()
-  cnx.close()
+  try:
+    c.execute(sql, (username, passwd))
+    user = c.fetchone()
+  finally:
+    cnx.close()
   return user
 
 def get_strategies ():
   cnx = get_connection()
   sql = "SELECT * FROM Strategies"
   c = cnx.cursor(dictionary=True)
-  c.execute(sql)
-  strategies = c.fetchall()
-  cnx.close()
+  try:
+    c.execute(sql)
+    strategies = c.fetchall()
+  finally:
+    cnx.close()
   return strategies
 
 def save_strategy (details):
   print('SAVE STRATEGY DETAILS: ', details)
   cnx = get_connection()
-  sql = "INSERT INTO Strategies (strategyName, magic, symbols, timeframes, demoStart, mq4StrategyFile, sqxStrategyFile) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+  sql = "INSERT INTO Strategies (strategyName, magic, symbols, timeframes, btStart, btEnd, btTrades, demoStart, demoTrades) VALUES (%s,%s,%s,%s,%s,%s,%s, %s, %s)"
   c = cnx.cursor()
-  c.execute(sql, (details['strategyName'], details['magic'], details['symbols'], details['timeframes'], details['demoStart'], details['mq4StrategyFile'], details['sqxStrategyFile']))
-  cnx.commit()
-  rowcount = c.rowcount
-  cnx.close()
+  try:
+    c.execute(sql, (details['strategyName'], details['magic'], details['symbols'], details['timeframes'], details['btStart'], details['btEnd'], details['btTrades'], details['demoStart'], details['demoTrades']))
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
   return bool(rowcount)
 
 def save_backtest (data):
@@ -65,9 +72,11 @@ def save_backtest (data):
     raise Exception('A strategy name or magic must be provided')
   cnx = get_connection()
   c = cnx.cursor()
-  c.execute(sql, data_to_bind)
-  cnx.commit()
-  rowcount = c.rowcount
-  cnx.close()
+  try:
+    c.execute(sql, data_to_bind)
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
   return bool(rowcount)
   
