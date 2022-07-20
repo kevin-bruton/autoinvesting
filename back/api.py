@@ -7,6 +7,7 @@ from auth import generate_user_token, validate_token, token_required, admin_only
 from upload_file import upload_file
 from db import get_strategies, save_strategy, save_backtest
 from utils import get_kpis
+from strategies_csv import save_strategies_csv
 
 load_dotenv()
 
@@ -63,6 +64,12 @@ def save_strategy_request(user):
     if 'Duplicate entry' in error_msg:
       error_msg = error_msg[error_msg.find('Duplicate entry') : error_msg.find(' for key')]
     return (jsonify({'error': error_msg}), 200)
+
+@app.route('/api/strategies-csv', methods=['POST'])
+@admin_only
+def save_strategies_csv_request(user):
+  results = save_strategies_csv(request.get_data(as_text=True))
+  return (jsonify(results), 200)
 
 @app.route('/api/files', methods=['POST'])
 @admin_only
