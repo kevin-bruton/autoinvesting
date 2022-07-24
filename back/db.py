@@ -48,6 +48,17 @@ def get_strategies ():
     cnx.close()
   return strategies
 
+def get_strategy_detail (magic):
+  cnx = get_connection()
+  sql = "SELECT * FROM Strategies WHERE magic = %s"
+  c = cnx.cursor(dictionary=True)
+  try:
+    c.execute(sql, (magic,))
+    strategy = c.fetchone()
+  finally:
+    cnx.disconnect()
+  return strategy
+
 def save_strategy (details):
   print('SAVE STRATEGY DETAILS: ', details)
   cnx = get_connection()

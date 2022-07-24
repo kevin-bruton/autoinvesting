@@ -5,7 +5,7 @@ from os import getenv
 from flask_cors import CORS
 from auth import generate_user_token, validate_token, token_required, admin_only
 from upload_file import upload_file
-from db import get_strategies, save_strategy, save_backtest
+import db
 from utils import get_kpis
 from strategies_csv import save_strategies_csv
 
@@ -46,18 +46,22 @@ def validate_request():
 @app.route('/api/strategies', methods=['GET'])
 @token_required
 def get_strategies_request(user):
-  return (jsonify({'success': True, 'data': get_strategies()}), 200)
+  return (jsonify({'success': True, 'data': db.get_strategies()}), 200)
 
 @app.route('/api/strategies/<strategy_id>', methods=['GET'])
 @token_required
-def get_strategy_request(user):
-  return (jsonify(user), 200)
+def get_strategy_request(user, strategy_id):
+  try:
+    strategy = db.get_strategy_detail(strategy_id)
+    return (jsonify(strategy), 200)
+  except Exception as e:
+    return (jsonify({ 'error': repr(e) }), 200)
 
 @app.route('/api/strategies', methods=['POST'])
 @admin_only
 def save_strategy_request(user):
   try:
-    save_strategy(request.get_json())
+    db.save_strategy(request.get_json())
     return (jsonify({'message': 'Saved strategy successfully'}), 200)
   except Exception as e:
     error_msg = repr(e)
@@ -86,7 +90,7 @@ def save_backtest_request(user):
   try:
     data = request.get_json()
     # add kpis to data ?
-    save_backtest(data)
+    db.save_backtest(data)
     return (jsonify({'message': 'Saved backtest successfully'}), 200)
   except Exception as e:
     print(repr(e))
