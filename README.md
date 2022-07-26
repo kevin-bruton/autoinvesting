@@ -41,3 +41,8 @@ google-api-python-client
 google-auth-httplib2  
 google-auth-oauthlib  
 
+## Import Strategies
+To import strategies, use the sqcli to extract the trades csv files from the sqx files  
+eg. `./sqcli.exe -tools action=orderstocsv file=“G:\path\to\folder_of_sqx_files” output=“G:\path\to\destination_folder_for_csv_files”`  
+Then upload via FTP to the `files/sqx`and the `files/trades` directories.
+On the server, run the import of strategies & trades script that uses the trades files: `python import_strategies.py`
