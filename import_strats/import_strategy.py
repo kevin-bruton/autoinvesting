@@ -46,7 +46,7 @@ def import_strategy (filename, filepath):
     'btEnd': btEnd,
     'btTrades': json.dumps(trades),
     'btDeposit': 10000,
-    'btKpis': get_bt_kpis(btStart, btEnd, trades, deposit=10000),
+    'btKpis': json.dumps(get_bt_kpis(btStart, btEnd, trades, deposit=10000)),
     'demoStart': magic[0:4] + '-' + magic[4:6] + '-' + magic[6:8],
     'demoTrades': '[]'
   }
