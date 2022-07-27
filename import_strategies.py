@@ -16,10 +16,11 @@ trades_dir = './files/trades'
 print('Importing strategies from', trades_dir, ':')
 with os.scandir(trades_dir) as files:
     for file in files:
+      print(file.name)
       filepath = os.path.join(trades_dir, file.name)
       if os.path.isfile(filepath):
         extension = file.name.split('.')[1]
         if extension == 'csv':
           import_strategy(file.name, filepath)
-          print(".", end='', flush=True)
+          # print(".", end='', flush=True)
 print('\nDone!')
