@@ -62,10 +62,10 @@ def get_strategy_detail (magic):
 def save_strategy (details):
   # print('SAVE STRATEGY DETAILS: ', details)
   cnx = get_connection()
-  sql = "INSERT INTO Strategies (strategyName, magic, symbols, timeframes, btStart, btEnd, btTrades, btDeposit, demoStart, demoTrades) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+  sql = "INSERT INTO Strategies (strategyName, magic, symbols, timeframes, btStart, btEnd, btTrades, btDeposit, btKpis, demoStart, demoTrades) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
   c = cnx.cursor()
   try:
-    c.execute(sql, (details['strategyName'], details['magic'], details['symbols'], details['timeframes'], details['btStart'], details['btEnd'], details['btTrades'], details['btDeposit'], details['demoStart'], details['demoTrades']))
+    c.execute(sql, (details['strategyName'], details['magic'], details['symbols'], details['timeframes'], details['btStart'], details['btEnd'], details['btTrades'], details['btDeposit'], details['btKpis'], details['demoStart'], details['demoTrades']))
     cnx.commit()
     rowcount = c.rowcount
   finally:
