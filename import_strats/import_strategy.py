@@ -1,7 +1,7 @@
 import json
 from import_strats.random_name import get_random_name
 from back.db import save_strategy
-from mt_connector.kpis import get_kpis
+from mt_connector.kpis import get_bt_kpis
 
 def get_strategy_trades (filepath):
   trades = []
@@ -36,16 +36,17 @@ def import_strategy (filename, filepath):
   magic = filename_parts[2]
   trades = get_strategy_trades(filepath)
   btStart = trades[0]['openTime']
+  btEnd = trades[-1]['closeTime']
   details = {
     'strategyName': get_random_name(),
     'magic': magic,
     'symbols': filename_parts[0],
     'timeframes': filename_parts[1],
     'btStart': btStart,
-    'btEnd': trades[-1]['closeTime'],
+    'btEnd': btEnd,
     'btTrades': json.dumps(trades),
     'btDeposit': 10000,
-    'btKpis': get_kpis(btStart, trades, deposit=10000),
+    'btKpis': get_bt_kpis(btStart, btEnd, trades, deposit=10000),
     'demoStart': magic[0:4] + '-' + magic[4:6] + '-' + magic[6:8],
     'demoTrades': '[]'
   }

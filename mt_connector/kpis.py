@@ -14,7 +14,18 @@ def get_max_dd (balances):
       max_dd = cur_dd
   return max_dd
 
-def get_kpis (start, trades, deposit=1000):
+def get_bt_kpis (btStart, btEnd, trades, deposit=10000):
+  time_str_format = '%Y-%m-%d %H:%M:%S'
+  start = datetime.combine(datetime.strptime(btStart, time_str_format), datetime.min.time())
+  end = datetime.strptime(btEnd, time_str_format)
+  return get_kpis(start, end, trades, deposit)
+
+def get_demo_kpis (start, trades, deposit=1000):
+  start = datetime.combine(start, datetime.min.time()) # datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
+  end = datetime.now()
+  return get_kpis(start, end, trades, deposit)
+
+def get_kpis (start, end, trades, deposit):
   if not len(trades):
     return {
       'annualPctRet': 0,
@@ -27,13 +38,11 @@ def get_kpis (start, trades, deposit=1000):
   dec2 = lambda num: round(num * 100) / 100
   profit = [t['profit'] for t in trades]
   
-  print(' ***** Profits ***** ')
-  print('        ', profit)
+  # print(' ***** Profits ***** ')
+  # print('        ', profit)
   balances = [deposit]
   for i in range(1, len(profit)):
     balances.append(balances[i-1] + profit[i])
-  start = datetime.combine(start, datetime.min.time()) # datetime.strptime(start, '%Y-%m-%d %H:%M:%S')
-  end = datetime.now()
 
   total_pct_ret = dec2((balances[-1] - deposit) / deposit * 100)
   gross_profit = 0
