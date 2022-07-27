@@ -15,6 +15,9 @@ Makefile should be placed in parent directory
 and then can be used to deploy with the commands:  
 `make deploy-front`  
 `make deploy-back`  
+or just  
+`make deploy`  
+to deploy both back and front.
 The waitress service must be previously setup  
 This was meant to be run on an Ubuntu server  
 

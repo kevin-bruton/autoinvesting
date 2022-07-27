@@ -14,7 +14,7 @@ def get_max_dd (balances):
       max_dd = cur_dd
   return max_dd
 
-def get_kpis (start, trades):
+def get_kpis (start, trades, deposit=1000):
   if not len(trades):
     return {
       'annualPctRet': 0,
@@ -25,7 +25,6 @@ def get_kpis (start, trades):
       'profitFactor': 0
     }
   dec2 = lambda num: round(num * 100) / 100
-  deposit = 1000
   profit = [t['profit'] for t in trades]
   
   print(' ***** Profits ***** ')
