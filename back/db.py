@@ -39,6 +39,7 @@ def get_user (username, passwd):
 
 def get_strategies ():
   cnx = get_connection()
+  # sql = "SELECT strategyName, magic, symbols, timeframes, btStart, btEnd, btDeposit, btKpis, demoStart, demoKpis FROM Strategies"
   sql = "SELECT * FROM Strategies"
   c = cnx.cursor(dictionary=True)
   try:
@@ -46,7 +47,20 @@ def get_strategies ():
     strategies = c.fetchall()
   finally:
     cnx.close()
-  return strategies
+  return [{
+    'strategyName': s['strategyName'],
+    'magic': s['magic'],
+    'symbols': s['symbols'],
+    'timeframes': s['timeframes'],
+    'btStart': str(s['btStart']),
+    'btEnd': str(s['btEnd']),
+    'btDeposit': s['btDeposit'],
+    'btKpis': json.loads(s['btKpis']),
+    'btTrades': json.loads(s['btTrades']),
+    'demoStart': str(s['demoStart']),
+    'demoKpis': json.loads(s['demoKpis']) if s['demoKpis'] else {},
+    'demoTrades': json.loads(s['demoTrades']) if s['demoTrades'] else []
+  } for s in strategies]
 
 def get_strategy_detail (magic):
   cnx = get_connection()
