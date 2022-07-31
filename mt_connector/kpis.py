@@ -52,12 +52,12 @@ def get_kpis (start, end, trades, deposit):
       gross_profit += p
     elif p < 0:
       gross_loss -= p
-  profit_factor = dec2(gross_profit / abs(gross_loss))
+  profit_factor = dec2(gross_profit / abs(gross_loss if gross_loss else 1))
   num_days = int((end - start).total_seconds() / 60 / 60 / 24)
   annual_pct_ret = dec2(total_pct_ret * 365 / num_days)
   max_dd = dec2(get_max_dd(balances))
   max_pct_dd = dec2(max_dd / deposit * 100)
-  annual_pct_ret_vs_dd_pct = dec2(annual_pct_ret / max_pct_dd)
+  annual_pct_ret_vs_dd_pct = dec2(annual_pct_ret / max_pct_dd if max_pct_dd else 1)
   num_wins = 0
   for p in profit:
     if p > 0:
