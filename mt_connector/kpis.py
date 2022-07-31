@@ -77,7 +77,7 @@ def get_kpis (start, end, trades, deposit):
     'profitFactor': profit_factor,
     'numTrades': len(trades)
   }
-  print('    ', kpis)
+  # print('    ', kpis)
   return kpis
 
 
