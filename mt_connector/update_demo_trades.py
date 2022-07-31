@@ -149,6 +149,16 @@ class read_and_save_trades():
         print(' ***** UPDATED TRADES ***** ')
         print('        Trades: ', updated_trades)
 
+        # order trades
+        # replace dots by dashes in dates
+        for magic in updated_trades.keys():
+            trades = updated_trades[magic]
+            ordered_trades = trades.sort(key=lambda tr: tr['closeTime'])
+            for trade in ordered_trades:
+                trade['openTime'] = trade['openTime'].replace('.', '-')
+                trade['closeTime'] = trade['closeTime'].replace('.', '-')
+            updated_trades[magic] = ordered_trades
+
         # SAVE TO DB
         db.update_demo_data(db_cnx, updated_trades, updated_kpis)
 
