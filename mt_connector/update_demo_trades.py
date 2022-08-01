@@ -104,8 +104,9 @@ class read_and_save_trades():
         if message['message'] == 'Successfully read historic trades.':
             print('       Trades: ', self.connector.historic_trades) """
     
-    def on_order_event(self, order_event, order):
-        print('on_order_event:', order_event, '; order:', order)
+    def on_order_event(self, order_event, order, modified_fields=None):
+        # print('on_order_event:', order_event, '; order:', order)
+        pass
 
     def on_historic_trades(self):
         print(' ***** RECEIVED HISTORIC DATA ***** ')
@@ -127,7 +128,9 @@ class read_and_save_trades():
             db_trades = db_strategy['demoTrades']
             if db_trades:
                 db_trades = json.loads(db_trades)
-                # print('TRADES FOR MAGIC ', magic, ': ', db_trades)
+                print('TRADES FOR MAGIC ', magic, ': ', db_trades)
+                if not db_trades:
+                    db_trades = []
                 db_order_ids = [trade['orderId'] for trade in db_trades]
                 mt_magic_trades = mt_trades[magic] if magic in mt_trades else []
                 if len(mt_magic_trades):
@@ -151,13 +154,15 @@ class read_and_save_trades():
 
         # order trades
         # replace dots by dashes in dates
-        for magic in updated_trades.keys():
-            trades = updated_trades[magic]
-            ordered_trades = trades.sort(key=lambda tr: tr['closeTime'])
-            for trade in ordered_trades:
-                trade['openTime'] = trade['openTime'].replace('.', '-')
-                trade['closeTime'] = trade['closeTime'].replace('.', '-')
-            updated_trades[magic] = ordered_trades
+        if updated_trades:
+            for magic in updated_trades.keys():
+                trades = updated_trades[magic]
+                trades.sort(key=lambda tr: tr['closeTime'])
+                if trades:
+                    for trade in trades:
+                        trade['openTime'] = trade['openTime'].replace('.', '-')
+                        trade['closeTime'] = trade['closeTime'].replace('.', '-')
+                updated_trades[magic] = trades
 
         # SAVE TO DB
         db.update_demo_data(db_cnx, updated_trades, updated_kpis)
