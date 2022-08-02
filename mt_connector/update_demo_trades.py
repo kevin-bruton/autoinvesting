@@ -1,12 +1,7 @@
 
 import json
-from runpy import _ModifiedArgv0
 from time import sleep
-from threading import Thread
-from os.path import join, exists
 from os import getenv
-from traceback import print_exc
-from random import random
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -128,7 +123,7 @@ class read_and_save_trades():
             db_trades = db_strategy['demoTrades']
             if db_trades:
                 db_trades = json.loads(db_trades)
-                print('TRADES FOR MAGIC ', magic, ': ', db_trades)
+                print('DB TRADES FOR MAGIC ', magic, ': ', db_trades)
                 if not db_trades:
                     db_trades = []
                 db_order_ids = [trade['orderId'] for trade in db_trades]
@@ -149,8 +144,8 @@ class read_and_save_trades():
             updated_kpis[magic] = get_demo_kpis(start, updated_trades[magic])
             # print(' ***** KPIs for magic ', magic)
             # print(updated_kpis[magic])
-        print(' ***** UPDATED TRADES ***** ')
-        print('        Trades: ', updated_trades)
+        # print(' ***** UPDATED TRADES ***** ')
+        # print('        Trades: ', updated_trades)
 
         # order trades
         # replace dots by dashes in dates
