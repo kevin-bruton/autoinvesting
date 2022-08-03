@@ -2,6 +2,7 @@ from os import getenv
 import mysql.connector
 from mysql.connector import pooling
 import json
+from datetime import datetime
 
 cnx_pool = None
 
@@ -99,6 +100,19 @@ def save_backtest (data):
   c = cnx.cursor()
   try:
     c.execute(sql, data_to_bind)
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
+  return bool(rowcount)
+
+def register_update (result):
+  now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
+  sql = 'INSERT INTO Updates (updateTime,result) VALUES (now, result);'
+  cnx = get_connection()
+  c = cnx.cursor()
+  try:
+    c.execute(sql, (now, result))
     cnx.commit()
     rowcount = c.rowcount
   finally:

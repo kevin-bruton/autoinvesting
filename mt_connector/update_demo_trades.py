@@ -123,17 +123,20 @@ class read_and_save_trades():
             db_trades = db_strategy['demoTrades']
             if db_trades:
                 db_trades = json.loads(db_trades)
-                print('DB TRADES FOR MAGIC ', magic, ': ', db_trades)
                 if not db_trades:
                     db_trades = []
+                print('Updating trades for strategy with magic ', magic)
+                print('  Number of DB trades: ', len(db_trades))
                 db_order_ids = [trade['orderId'] for trade in db_trades]
                 mt_magic_trades = mt_trades[magic] if magic in mt_trades else []
+                print('  Number of MT trades: ', len(mt_magic_trades))
                 if len(mt_magic_trades):
                     new_trades = [trade for trade in mt_magic_trades if trade['orderId'] not in db_order_ids]
                 else:
                     new_trades = []
-                # print('*************** NEW TRADES: ', new_trades)
+                print('  Number of new trades to add: ', len(new_trades))
                 db_trades.extend(new_trades)
+                print('  Total trades (old and new): ', len(db_trades))
                 updated_trades[magic] = db_trades
             elif magic in mt_trades:
                 updated_trades[magic] = mt_trades[magic]
@@ -161,6 +164,7 @@ class read_and_save_trades():
 
         # SAVE TO DB
         db.update_demo_data(db_cnx, updated_trades, updated_kpis)
+        db.register_update('Success')
 
         db_cnx.close()
         self.connector.ACTIVE = False
