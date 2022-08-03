@@ -105,3 +105,15 @@ def save_backtest (data):
   finally:
     cnx.close()
   return bool(rowcount)
+
+def get_last_update ():
+  sql = 'SELECT MAX(updateTime) FROM Updates'
+  cnx = get_connection()
+  c = cnx.cursor()
+  try:
+    c.execute(sql)
+    last_update = c.fetchone()
+  finally:
+    cnx.disconnect()
+  return last_update[0]
+

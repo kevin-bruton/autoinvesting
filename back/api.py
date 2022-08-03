@@ -96,6 +96,15 @@ def save_backtest_request(user):
     print(repr(e))
     return(jsonify({'error': repr(e)}), 200)
 
+@app.route('/api/updates/last', methods=['GET'])
+@token_required
+def get_last_update_request(user):
+  try: 
+    last_update = db.get_last_update()
+    return (jsonify({ 'success': True, 'data': last_update }))
+  except Exception as e:
+    return (jsonify({ 'error': repr(e) }), 200)
+
 
 if __name__ == '__main__':
     app.run()
