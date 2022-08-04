@@ -50,4 +50,7 @@ def import_strategy (filename, filepath):
     'demoStart': '20' + magic[0:2] + '-' + magic[2:4] + '-' + magic[4:6],
     'demoTrades': '[]'
   }
-  save_strategy(details)
+  try:
+    save_strategy(details)
+  except Exception as e:
+    print('ERROR SAVING STRATEGY', filename, ':', repr(e))
