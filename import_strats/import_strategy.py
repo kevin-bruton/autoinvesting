@@ -52,5 +52,10 @@ def import_strategy (filename, filepath):
   }
   try:
     save_strategy(details)
+    print('SAVING', filename, ': DONE!')
   except Exception as e:
-    print('ERROR SAVING STRATEGY', filename, ':', repr(e))
+    msg = repr(e)
+    if 'Duplicate entry' in msg:
+      print('SAVING', filename, ': Already exists')
+    else:
+      print('ERROR SAVING STRATEGY', filename, ':', msg)
