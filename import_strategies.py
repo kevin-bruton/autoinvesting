@@ -20,7 +20,6 @@ with os.scandir(trades_dir) as files:
     if os.path.isfile(filepath):
       extension = file.name.split('.')[1]
       if extension == 'csv':
-        print('  ' + file.name)
         import_strategy(file.name, filepath)
         # print(".", end='', flush=True)
 print('\nDone!')
