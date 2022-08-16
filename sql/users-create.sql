@@ -7,6 +7,12 @@ CREATE TABLE Users (
     lastName varchar(55),
     city varchar(55),
     country varchar(55),
-    accountType varchar(55) DEFAULT 'investor'
+    accountType varchar(55) DEFAULT 'investor',
+    demoKey varchar(55),
+    demoSubscriptions text DEFAULT '[]'
+    demoAccountNumber bigint,
+    liveKey varchar(55),
+    liveSubscriptions text DEFAULT '[]',
+    liveAccountNumber bigint
 );
 
