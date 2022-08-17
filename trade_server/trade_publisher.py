@@ -1,64 +1,64 @@
-# https://blog.csdn.net/weixin_39716043/article/details/110982437
-# https://blog.csdn.net/SmartShepi/article/details/115405966
-
-from socketserver import StreamRequestHandler
-from socketserver import TCPServer, ThreadingTCPServer
-from time import ctime
-import threading
+import socket
+from threading import Thread, current_thread, active_count
+from time import sleep
 from queue import Queue
 import json
+from trade_server.db import authenticate_user
 
-class TCPRequestHandler(StreamRequestHandler):
-  def setup(self) -> None:
-    # print('\nSetup TCP request handler.')
-    return super().setup()
-    
-  def handle(self) -> None:
-    client_ip, client_port = self.client_address
-    cur_thread = threading.current_thread().name
-    socket = self.request
-    connection_id = f'{client_ip}-{socket.fileno()}'
-    # print('Listening to client:', connection_id)
-    # The readline() function will return only when the client send a \n which is a new line character.
-    # If the client do not send the \n character, then readline() mehtod will hang and never return.
-    received_msg = self.rfile.readline().strip().decode('utf-8')
-    if received_msg == '':
-      print('End of connection with client', connection_id)
+HOST = 'localhost'
+PORT = 5000
+MAX_CLIENTS = 5
+
+socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+socket.bind((HOST, PORT))
+
+def format_msg(msg):
+  return (msg + '\r\n').encode('utf-8')
+def send(client, msg):
+  client.sendall(format_msg(msg))
+
+def handle_message(client, received_msg):
+  print(f"Received: {addr} {received_msg}")
+  msg = json.loads(received_msg)
+  if msg['action'] == 'subscribe':
+    subscriptions = authenticate_user(msg['token'], msg['account_type'], msg['account_number'])
+    send(client, 'authorized:' + str(bool(subscriptions)).lower() + f'|subscribed:{subscriptions[1:-1]}')
+  else:
+    send(client, 'Got your message!\r\n').encode('utf-8')
+
+def handle_client(client, addr):
+  cur_thread = current_thread().name
+  print(f"[NEW CONNECTION] {addr} connected. Num threads: {active_count()}. Current thread: {cur_thread}")
+  response = ''
+  while True:
+    try:
+      response += client.recv(1024).decode('utf-8')
+    except ConnectionResetError:
+      print('Connection reset')
+      break
+    if response == '':
+      print('Socket reponse is empty')
+      break
+    if response:
+      # print('response:', response)
+      end_msg = response.find('\n')
+      if end_msg != -1: # if message is complete
+        msg = response[:end_msg]
+        if msg == '':
+          print('Empty message')
+          break
+        else:
+          handle_message(client, msg)
+        response = response[end_msg+1:]
     else:
-      print('Received message from', connection_id + ': "' + received_msg + '"')
-      msg = json.loads(received_msg)
-      if msg['action'] == 'subscribe':
-        print('User has requested to subscribe')
-        # Authenticate user
-        # Get contracted subscriptions
-        # Return authentication result and subscriptions if authentication successful
-    # curr_time = ctime()
-    # self.wfile.write((curr_time + ' - ' + client_send_data_line_str).encode('utf-8'))
-    self.wfile.write('{ "authorized": true }\n'.encode('utf-8'))
+      print('No response')
 
-  def finish(self) -> None:
-    # print('Finish TCP request handler.\r\n')
-    return super().finish()
-
-def create_tcp_server():
-  server_host = 'localhost'
-  server_port_number = 5000
-  tcp_server = ThreadingTCPServer((server_host, server_port_number), TCPRequestHandler)
-  print('TCP server started on host \'' + server_host + ':' + str(server_port_number) + '\'\r\n')
-  try:
-    tcp_server.serve_forever()
-  except KeyboardInterrupt:
-    pass
-  return tcp_server
-
-def run_publisher(trades_queue, client_subscriptions):
-  server = create_tcp_server()
-  server.shutdown()
-  print('\nSocket server has shutdown')
-
-
-trades_queue = Queue()
-client_subscriptions = [
-  { 'username': 'kev7777', 'subscriptions': [220612001, 220612002], 'connection_id': None }
-]
-run_publisher(trades_queue, client_subscriptions)
+  client.close()
+  print('Closed connection with client on thread', cur_thread)
+    
+print(f'Listening on {HOST}:{PORT} Max clients: {MAX_CLIENTS}...')
+socket.listen(MAX_CLIENTS)
+while True:
+  client, addr = socket.accept()
+  # print('Client:', client)
+  Thread(target=handle_client, args=(client, addr)).start()

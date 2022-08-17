@@ -1,49 +1,40 @@
 from os import getenv
 import mysql.connector
+from mysql.connector import pooling
 import json
 from datetime import datetime
 
-def get_connection():
-  return mysql.connector.connect(
-    host= getenv('DB_SERVERNAME'),
-    user= getenv('DB_USERNAME'),
-    password= getenv('DB_PASSWORD'),
-    database= getenv('DB_NAME')
+cnx_pool = None
+
+def init_connection_pool():
+  db_config = {
+    'host': getenv('DB_SERVERNAME'),
+    'user': getenv('DB_USERNAME'),
+    'password': getenv('DB_PASSWORD'),
+    'database': getenv('DB_NAME')
+  }
+  return mysql.connector.pooling.MySQLConnectionPool(
+    pool_name = "db_pool",
+    pool_size = 32,
+    pool_reset_session = True,
+    **db_config
   )
 
-def authenticate_user ()
+def get_connection():
+  global cnx_pool
+  if not cnx_pool:
+    cnx_pool = init_connection_pool()
+  return cnx_pool.get_connection()
 
-def get_demo_trades(cnx):
-  sql = "SELECT magic, demoStart, demoTrades FROM Strategies"
-  c = cnx.cursor(dictionary=True)
-  c.execute(sql)
-  demo_trades = c.fetchall()
-  return demo_trades
-
-def update_strategy_demo_trades(cnx, magic, trades, kpis):
-  trades = json.dumps(trades)
-  kpis = json.dumps(kpis)
-  sql = "UPDATE Strategies SET demoTrades = %s, demoKpis = %s WHERE magic = %s"
-  c = cnx.cursor()
-  c.execute(sql, (trades, kpis, magic))
-  cnx.commit()
-  return bool(c.rowcount)
-
-def update_demo_data(cnx, trades, kpis):
-  magics = trades.keys()
-  for magic in magics:
-    update_strategy_demo_trades(cnx, magic, trades[magic], kpis[magic])
-
-def register_update (result):
-  now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
-  sql = 'INSERT INTO Updates (updateTime,result) VALUES (%s, %s);'
+def authenticate_user (token, account_type, account_number):
   cnx = get_connection()
-  c = cnx.cursor()
-  try:
-    c.execute(sql, (now, result))
-    cnx.commit()
-    rowcount = c.rowcount
-  finally:
-    cnx.close()
-  return bool(rowcount)
+  acc_type = 'demo' if account_type == 'DEMO' else 'live'
+  key_field = f'{acc_type}Key'
+  acc_num_field = f'{acc_type}AccountNumber'
+  subscriptions_field = f'{acc_type}Subscriptions'
+  sql = f"SELECT {key_field}, {acc_num_field}, {subscriptions_field} FROM Users WHERE {key_field} = %s AND {acc_num_field} = %s"
+  c = cnx.cursor(dictionary=True)
+  c.execute(sql, (token, account_number))
+  user = c.fetchone()
+  return user[subscriptions_field] if user else None
 
