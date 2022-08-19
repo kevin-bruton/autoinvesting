@@ -25,8 +25,8 @@ input string t2 = "which reduces the delay on a new bar.";
 input bool openChartsForBarData = true;
 input bool openChartsForHistoricData = true;
 input string t3 = "--- Trading Parameters ---";
-input int MaximumOrders = 1;
-input double MaximumLotSize = 0.01;
+input int MaximumOrders = 1000;
+input double MaximumLotSize = 1;
 input int SlippagePoints = 3;
 input int lotSizeDigits = 2;
 

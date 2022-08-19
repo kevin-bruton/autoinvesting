@@ -1,44 +1,19 @@
 #property strict
 
-// --------------------------------------------------------------------
-// Include socket library
-// --------------------------------------------------------------------
-
 #define SOCKET_LIBRARY_USE_EVENTS
 #include <sockets.mqh>
 
+input string AuthKey = "GwD22oS3@KRp";
 
-// --------------------------------------------------------------------
-// EA user inputs
-// --------------------------------------------------------------------
-
-input string   Hostname = "127.0.0.1";    // Server hostname or IP address
-input ushort   ServerPort = 5000;        // Server port
-input string   AuthKey = "GwD22oS3@KRp";              // Authentication Key
-
-int connectionFailedCount = 0;
-int maxConnectionRetries = 5;
-bool doneRetryingConnection = false;
-bool subscribed = false;
-
-// --------------------------------------------------------------------
-// Global variables and constants
-// --------------------------------------------------------------------
-
-ClientSocket * glbClientSocket = NULL;
-
-// --------------------------------------------------------------------
-// Initialisation (no action required)
-// --------------------------------------------------------------------
+string Hostname = "127.0.0.1";
+ushort ServerPort = 5000;
+bool isAuthorized = false;
+bool isSubscribed = false;
+ClientSocket * sock = NULL;
 
 void OnInit() {
    EventSetTimer(1);
-//--- create application dialog
-   //if(!dialog.Create(0,"Notification",0,300,0,450,110))
-   //   return;
-//--- run application
-   // if(!dialog.Run())
-   //   return;
+   
    ObjectCreate(0,"Title", OBJ_RECTANGLE_LABEL, 0,0,0);
    ObjectSet("Title",OBJPROP_ANCHOR,ANCHOR_UPPER);
    ObjectSet("Title",OBJPROP_XDISTANCE,400);
@@ -71,20 +46,20 @@ void OnInit() {
    ObjectSet("Connected",OBJPROP_XSIZE, 20);
    ObjectSet("Connected", OBJPROP_YSIZE, 20);
    
-   ObjectCreate(0,"AuthorisedLabel",OBJ_LABEL,0,0,0);
-   ObjectSet("AuthorisedLabel",OBJPROP_CORNER,CORNER_LEFT_UPPER);
-   ObjectSet("AuthorisedLabel",OBJPROP_XDISTANCE,410);
-   ObjectSet("AuthorisedLabel",OBJPROP_YDISTANCE,70);
-   ObjectSetText("AuthorisedLabel","Authorized:",14,"Arial",Black);
+   ObjectCreate(0,"AuthorizedLabel",OBJ_LABEL,0,0,0);
+   ObjectSet("AuthorizedLabel",OBJPROP_CORNER,CORNER_LEFT_UPPER);
+   ObjectSet("AuthorizedLabel",OBJPROP_XDISTANCE,410);
+   ObjectSet("AuthorizedLabel",OBJPROP_YDISTANCE,70);
+   ObjectSetText("AuthorizedLabel","Authorized:",14,"Arial",Black);
    
-   ObjectCreate(0,"Authorised", OBJ_RECTANGLE_LABEL, 0,0,0);
-   ObjectSet("Authorised",OBJPROP_ANCHOR,ANCHOR_UPPER);
-   ObjectSet("Authorised",OBJPROP_XDISTANCE,570);
-   ObjectSet("Authorised",OBJPROP_YDISTANCE,70);
-   ObjectSet("Authorised",OBJPROP_BORDER_TYPE,BORDER_FLAT);
-   ObjectSet("Authorised",OBJPROP_BGCOLOR,White);
-   ObjectSet("Authorised",OBJPROP_XSIZE, 20);
-   ObjectSet("Authorised", OBJPROP_YSIZE, 20);
+   ObjectCreate(0,"Authorized", OBJ_RECTANGLE_LABEL, 0,0,0);
+   ObjectSet("Authorized",OBJPROP_ANCHOR,ANCHOR_UPPER);
+   ObjectSet("Authorized",OBJPROP_XDISTANCE,570);
+   ObjectSet("Authorized",OBJPROP_YDISTANCE,70);
+   ObjectSet("Authorized",OBJPROP_BORDER_TYPE,BORDER_FLAT);
+   ObjectSet("Authorized",OBJPROP_BGCOLOR,White);
+   ObjectSet("Authorized",OBJPROP_XSIZE, 20);
+   ObjectSet("Authorized", OBJPROP_YSIZE, 20);
    
    ObjectCreate(0,"SubscribedLabel",OBJ_LABEL,0,0,0);
    ObjectSet("SubscribedLabel",OBJPROP_CORNER,CORNER_LEFT_UPPER);
@@ -100,116 +75,115 @@ void OnInit() {
    ObjectSet("Subscribed",OBJPROP_BGCOLOR,White);
    ObjectSet("Subscribed",OBJPROP_XSIZE, 20);
    ObjectSet("Subscribed", OBJPROP_YSIZE, 20);
-   
-//---
 }
 
 void setStatusConnected (bool isConnected) {
-   if (isConnected) {
-      ObjectSet("Connected",OBJPROP_BGCOLOR,Green);
-   } else {
-      ObjectSet("Connected",OBJPROP_BGCOLOR,Red);
-   }
+   ObjectSet("Connected",OBJPROP_BGCOLOR,isConnected ? Green : Red);
 }
 
-// --------------------------------------------------------------------
-// Termination - free the client socket, if created
-// --------------------------------------------------------------------
+void setAuthorized (bool isAuth) {
+   isAuthorized = isAuth;
+   ObjectSet("Authorized",OBJPROP_BGCOLOR,isAuth ? Green : Red);
+}
+
+void setSubscribed (bool isSub) {
+   isSubscribed = isSub;
+   ObjectSet("Subscribed",OBJPROP_BGCOLOR,isSub ? Green : Red);
+}
 
 void OnDeinit(const int reason)
 {
    Print("OnDeinit");
    EventKillTimer();
-   if (glbClientSocket) {
-      delete glbClientSocket;
-      glbClientSocket = NULL;
+   if (sock) {
+      delete sock;
+      sock = NULL;
    }
    setStatusConnected(false);
 }
 
-void OnChartEvent(const int id, const long& lparam, const double& dparam, const string& sparam)
-{
-   if (id == CHARTEVENT_KEYDOWN) {
-      // May be a real key press, or a dummy notification
-      // resulting from socket activity. If lparam matches
-      // any .GetSocketHandle() then it's from a socket.
-      // If not, it's a real key press. (If lparam>256 then
-      // it's also pretty reliably a socket message rather 
-      // than a real key press.)
-      
-      if (lparam == glbClientSocket.GetSocketHandle()) {
-         // Print("Caught activity on the socket");
-         ReadMessages();
-      } else {
-         // Doesn't match a socket. Assume real key pres
-      }
-   }
-}
-
 void OnTimer() {
-   // Connect to socket server
-   if (!glbClientSocket && connectionFailedCount < maxConnectionRetries) {
-      glbClientSocket = new ClientSocket(Hostname, ServerPort);
-      if (glbClientSocket.IsSocketConnected()) {
-         Print("Connected to server successfully");
-         setStatusConnected(true);
+   if (!sock) {
+      initSock();
+   }
+   if (sock) {
+      if (!sock.IsSocketConnected()) {
+         deleteSock();
       } else {
-         Print("Could NOT connect to server " + Hostname + ":" + (string)ServerPort);
+         setStatusConnected(true);
+         ReadMessages();
       }
    }
-   
-   if (!subscribed) Subscribe();
-   
-   // If the socket is closed, destroy it, and attempt a new connection
-   // on the next call to OnTick()
-   if (glbClientSocket && !glbClientSocket.IsSocketConnected()) {
-      // Destroy the server socket. A new connection
-      // will be attempted on the next tick
-      Print("Client disconnected. Will retry " + (string)(maxConnectionRetries - connectionFailedCount) + " more times");
-      connectionFailedCount++;
-      delete glbClientSocket;
-      glbClientSocket = NULL;
-      setStatusConnected(false);
-   } else if (glbClientSocket && glbClientSocket.IsSocketConnected()) {
-      connectionFailedCount = 0;
-      // 'Print("Client is connected");
-   } else if (!doneRetryingConnection) {
-      Print("Client disconnected. Will NOT retry anymore!");
-      doneRetryingConnection = true;
-      setStatusConnected(false);
+}
+
+void initSock() {
+   sock = new ClientSocket(Hostname, ServerPort);
+   if (sock && sock.IsSocketConnected()) {
+      Subscribe();
    }
 }
-// --------------------------------------------------------------------
-// Tick handling - set up a connection, if none already active,
-// and send the current price quote
-// --------------------------------------------------------------------
 
-void OnTick()
-{
+void deleteSock() {
+   delete sock;
+   sock = NULL;
+   setStatusConnected(false);
+   setAuthorized(false);
+   setSubscribed(false);
+}
+
+int getOrderType(string type) {
+   if (type == "buylimit") return OP_BUYLIMIT;
+   if (type == "selllimit") return OP_SELLLIMIT;
+   if (type == "buystop") return OP_BUYSTOP;
+   if (type == "sellstop") return OP_SELLSTOP ;
+   return 6;
 }
 
 void ReadMessages() {
    // Read any messages on the socket
    string strMessage;
    do {
-      strMessage = glbClientSocket.Receive("\n");
+      strMessage = sock.Receive("\n");
       // Print("ReceiveWithHeader: " + strMessage);
       if (strMessage != "") {
          Print("Received message: ", strMessage);
-         // Handle received message here
+         string msgSegments[];
+         StringSplit(strMessage,StringGetCharacter("|",0),msgSegments);
+         if (ArraySize(msgSegments) > 0) {
+            string keyVal[];
+            StringSplit(msgSegments[0],StringGetCharacter(":",0),keyVal);
+            if (keyVal[0] == "authorized") {                   // Handle authorization/subscription response
+               setAuthorized(keyVal[1] == "true");
+               StringSplit(msgSegments[1],StringGetCharacter(":",0),keyVal);
+               string magics[];
+               StringSplit(keyVal[1],StringGetCharacter(",",0),magics);
+               setSubscribed(ArraySize(magics) > 0 && isAuthorized);
+               Comment("Subscribed to: " + StringTrimRight(keyVal[1]));
+            } else if (keyVal[0] == "place_order") {           // Handle place_order
+               int order_type = getOrderType(msgSegments[1]);
+               string symbol = msgSegments[2];
+               double volume = (double)msgSegments[3];
+               double open_price = (double)msgSegments[4];
+               double sl = (double)msgSegments[5];
+               double tp = (double)msgSegments[6];
+               string comment = msgSegments[7];
+               bool result = OrderSend(symbol, order_type, volume, open_price, 1000, sl, tp, comment);
+               Print("Order sent ", result ? "successfully" : "with errors");
+            }
+         }
       }
-   } while (strMessage != ""); 
+   } while (strMessage != "");
 }
 
 void Subscribe() {
    // Send a message
-   if (glbClientSocket && glbClientSocket.IsSocketConnected()) {
+   if (sock && sock.IsSocketConnected()) {
       string accountType = StringSubstr( EnumToString((ENUM_ACCOUNT_TRADE_MODE)AccountInfoInteger(ACCOUNT_TRADE_MODE)), 19);
       string msg = StringFormat(
-         "{ \"action\": \"subscribe\",\"token\": \"%s\",\"account_name\": \"%s\", \"account_type\": \"%s\", \"account_number\": %d, \"currency\": \"%s\", \"leverage\": %d, \"free_margin\": %f, \"balance\": %f, \"equity\": %f}\n", 
-         AuthKey, AccountName(), accountType, AccountNumber(), AccountCurrency(), AccountLeverage(), AccountFreeMargin(), AccountBalance(), AccountEquity()
+         "{ \"action\": \"subscribe\",\"token\": \"%s\",\"account_name\": \"%s\", \"account_type\": \"%s\", \"account_number\": %d, \"company\": \"%s\", \"account_server\": \"%s\", \"currency\": \"%s\", \"leverage\": %d, \"free_margin\": %f, \"balance\": %f, \"equity\": %f}\n", 
+         AuthKey, AccountName(), accountType, AccountNumber(), AccountCompany(), AccountServer(), AccountCurrency(), AccountLeverage(), AccountFreeMargin(), AccountBalance(), AccountEquity()
       );
-      glbClientSocket.Send(msg);
+      sock.Send(msg);
    }
-   subscribed = true;
+   isSubscribed = true;
 }
