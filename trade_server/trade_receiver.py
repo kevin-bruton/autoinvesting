@@ -101,13 +101,14 @@ class TradeReceiver():
         self.received_trade_cb(order_event, order, modified_fields)
 
 def run_receiver (trade_queue):
-    def on_order_event(order_event, order, modified_fields):
-        print('TradeCopier on_order_event received. order_event:', order_event,'; order:', order, '; modified_fields:', modified_fields)
-        order_data = { 'order_event': order_event, 'order': order, 'modified_fields': modified_fields }
-        trade_queue.put(order_data)
+  def on_order_event(order_event, order, modified_fields):
+    # print('TradeCopier on_order_event received. order_event:', order_event,'; order:', order, '; modified_fields:', modified_fields)
+    if order_event == 'order_created' and order['type'] in ['buylimit','buystop','selllimit','sellstop']:
+      trade_queue.put(order)
 
-    tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)
+  print('Trade receiver waiting for trades...')
+  tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)
 
-    while tradeReceiver.connector.ACTIVE:
-        sleep(1)
-        # print('Trade receiver running...')
+  while tradeReceiver.connector.ACTIVE:
+    sleep(1)
+    # print('Trade receiver running...')

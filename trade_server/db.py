@@ -36,5 +36,5 @@ def authenticate_user (token, account_type, account_number):
   c = cnx.cursor(dictionary=True)
   c.execute(sql, (token, account_number))
   user = c.fetchone()
-  return user[subscriptions_field] if user else None
+  return json.loads(user[subscriptions_field]) if user else []
 

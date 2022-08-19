@@ -10,12 +10,9 @@ from trade_server.trade_publisher import run_publisher
 load_dotenv()
 
 trades_queue = Queue()
-client_subscriptions = [
-  { 'username': 'kev7777', 'subscriptions': [220612001, 220612002], 'connection_id': None }
-]
 
 receiver_thread = Thread(target=run_receiver, args=(trades_queue,))
-publisher_thread = Thread(target=run_publisher, args=(trades_queue, client_subscriptions))
+publisher_thread = Thread(target=run_publisher, args=(trades_queue,))
 
 receiver_thread.start()
 publisher_thread.start()
