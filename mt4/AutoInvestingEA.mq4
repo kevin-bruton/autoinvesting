@@ -100,6 +100,8 @@ void OnDeinit(const int reason)
       sock = NULL;
    }
    setStatusConnected(false);
+   setAuthorized(false);
+   setSubscribed(false);
 }
 
 void OnTimer() {
@@ -132,10 +134,12 @@ void deleteSock() {
 }
 
 int getOrderType(string type) {
-   if (type == "buylimit") return OP_BUYLIMIT;
-   if (type == "selllimit") return OP_SELLLIMIT;
-   if (type == "buystop") return OP_BUYSTOP;
-   if (type == "sellstop") return OP_SELLSTOP ;
+   if (type == "Buylimit") return OP_BUYLIMIT;
+   if (type == "Selllimit") return OP_SELLLIMIT;
+   if (type == "Buystop") return OP_BUYSTOP;
+   if (type == "Sellstop") return OP_SELLSTOP ;
+   if (type == "Buy") return OP_BUY;
+   if (type == "Sell") return OP_SELL;
    return 6;
 }
 

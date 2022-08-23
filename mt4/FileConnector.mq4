@@ -821,8 +821,8 @@ int NumOpenOrdersWithMagic(int _magic) {
 void CheckOpenOrders() {
    
    bool first = true;
-   string text = StringFormat("{\"account_info\": {\"name\": \"%s\", \"number\": %d, \"currency\": \"%s\", \"leverage\": %d, \"free_margin\": %f, \"balance\": %f, \"equity\": %f}, \"orders\": {", 
-                              AccountName(), AccountNumber(), AccountCurrency(), AccountLeverage(), AccountFreeMargin(), AccountBalance(), AccountEquity());
+   string text = StringFormat("{\"account_info\": {\"name\": \"%s\", \"server\": \"%s\", \"company\": \"%s\", \"number\": %d, \"currency\": \"%s\", \"leverage\": %d, \"free_margin\": %f, \"balance\": %f, \"equity\": %f}, \"orders\": {", 
+                              AccountName(), AccountServer(), AccountCompany(), AccountNumber(), AccountCurrency(), AccountLeverage(), AccountFreeMargin(), AccountBalance(), AccountEquity());
    
    for(int i=OrdersTotal()-1; i>=0; i--) {
    
@@ -831,17 +831,21 @@ void CheckOpenOrders() {
       if (!first)
          text += ", ";
       
-      text += StringFormat("\"%d\": {\"magic\": %d, \"symbol\": \"%s\", \"lots\": %.2f, \"type\": \"%s\", \"open_price\": %.5f, \"open_time\": \"%s\", \"SL\": %.5f, \"TP\": %.5f, \"pnl\": %.2f, \"commission\": %.2f, \"swap\": %.2f, \"comment\": \"%s\"}", 
+      // Print("OrderCloseTime: " + OrderCloseTime() + "; ClosePrice: " + OrderClosePrice());
+      text += StringFormat("\"%d\": {\"magic\": %d, \"symbol\": \"%s\", \"lots\": %.2f, \"type\": \"%s\", \"open_time\": \"%s\", \"open_price\": %s, \"close_time\": \"%s\", \"close_price\": %s, \"SL\": %.5f, \"TP\": %.5f, \"pnl\": %.2f, \"balance\": %s, \"commission\": %.2f, \"swap\": %.2f, \"comment\": \"%s\"}", 
                            OrderTicket(), 
                            OrderMagicNumber(), 
                            OrderSymbol(), 
                            OrderLots(), 
                            OrderTypeToString(OrderType()), 
-                           OrderOpenPrice(), 
-                           TimeToString(OrderOpenTime(), TIME_DATE|TIME_SECONDS), 
+                           TimeToString(OrderOpenTime(), TIME_DATE|TIME_SECONDS),
+                           DoubleToStr(OrderOpenPrice()),
+                           TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS), 
+                           DoubleToStr(OrderClosePrice()),
                            OrderStopLoss(), 
                            OrderTakeProfit(), 
-                           OrderProfit(), 
+                           OrderProfit(),
+                           DoubleToStr(AccountBalance()),
                            OrderCommission(), 
                            OrderSwap(), 
                            OrderComment());

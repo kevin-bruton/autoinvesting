@@ -57,10 +57,8 @@ def get_strategies ():
     'btEnd': str(s['btEnd']),
     'btDeposit': s['btDeposit'],
     'btKpis': json.loads(s['btKpis']),
-    'btTrades': json.loads(s['btTrades']),
     'demoStart': str(s['demoStart']),
     'demoKpis': json.loads(s['demoKpis']) if s['demoKpis'] else {},
-    'demoTrades': json.loads(s['demoTrades']) if s['demoTrades'] else []
   } for s in strategies]
 
 def get_strategy_detail (magic):

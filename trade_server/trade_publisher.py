@@ -70,8 +70,8 @@ def send_trades(trades_queue):
       # print('    **** Going to send this trade:', t)
       for active_client in active_clients:
         if t['magic'] in active_client['subscriptions']:
-          size = t['lots'] # TODO: Will have to calculate based on client's money management
-          msg = f'place_order|{t["type"]}|{t["symbol"]}|{size}|{t["open_price"]}|{t["SL"]}|{t["TP"]}|{t["comment"]}'
+          size = t['size'] # TODO: Will have to calculate based on client's money management
+          msg = f'place_order|{t["direction"]}|{t["symbol"]}|{size}|{t["openPrice"]}|{t["sl"]}|{t["tp"]}|{t["comment"]}'
           print(f'**** Sending trade to {active_client["client_id"]}: {msg}')
           active_client['client'].sendall(format_msg(msg))
 

@@ -14,6 +14,26 @@ This class includes all of the functions needed for communication with MT4/MT5.
 
 """
 
+def get_event_order(order_id, order):
+    return  {
+        'orderId': order_id,
+        'magic': order['magic'],
+        'symbol': order['symbol'],
+        'direction': order['type'].capitalize(),
+        'openTime': order['open_time'].replace('.', '-'),
+        'openPrice': order['open_price'],
+        'closeTime': order['close_time'].replace('.', '-'),
+        'closePrice': order['close_price'],
+        'size': order['lots'],
+        'profit': order['pnl'],
+        'balance': order['balance'],
+        'closeType': order['comment'],
+        'tp': order['TP'],
+        'sl': order['SL'],
+        'commission': order['commission'],
+        'swap': order['swap'],
+        'comment': order['comment']
+    }
 
 class mt_connector_client():
 
@@ -183,7 +203,7 @@ class mt_connector_client():
                     if self.verbose:
                         print('Order removed: ', order)
                     if self.event_handler is not None and new_event:
-                        self.event_handler.on_order_event('order_removed', order)
+                        self.event_handler.on_order_event('order_removed', get_event_order(order_id, order))
 
             for order_id, order in data['orders'].items():
                 if order_id not in self.open_orders:
@@ -191,7 +211,7 @@ class mt_connector_client():
                     if self.verbose:
                         print('Order created: ', order)
                     if self.event_handler is not None and new_event:
-                        self.event_handler.on_order_event('order_created', order)
+                        self.event_handler.on_order_event('order_created', get_event_order(order_id, order))
 
             for order_id, order in data['orders'].items():
                 if order_id in self.open_orders:
@@ -203,7 +223,7 @@ class mt_connector_client():
                             print('    Original order: ', self.open_orders[order_id])
                             print('    Modified order: ', order)
                     if self.event_handler is not None and new_event:
-                        self.event_handler.on_order_event('order_modified', order, modified_fields)
+                        self.event_handler.on_order_event('order_modified', get_event_order(order_id, order), modified_fields)
 
             self.account_info = data['account_info']
             self.open_orders = data['orders']

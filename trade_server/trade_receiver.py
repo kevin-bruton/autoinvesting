@@ -6,7 +6,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from mt_connector.connector import mt_connector_client
-from mt_connector.kpis import get_demo_kpis
+
+from trade_server.db import add_trade_to_demo_trades
 
 load_dotenv()
 
@@ -87,7 +88,7 @@ class TradeReceiver():
         self.connector.start()
         
         # account information is stored in self.connector.account_info.
-        print("Account info:", self.connector.account_info)
+        print("Receiving trades from this account:", self.connector.account_info)
 
     def on_message(self, message):
         print('on_message:', message)
@@ -103,8 +104,11 @@ class TradeReceiver():
 def run_receiver (trade_queue):
   def on_order_event(order_event, order, modified_fields):
     # print('TradeCopier on_order_event received. order_event:', order_event,'; order:', order, '; modified_fields:', modified_fields)
-    if order_event == 'order_created' and order['type'] in ['buylimit','buystop','selllimit','sellstop']:
+    if order_event == 'order_created' and order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop']:
       trade_queue.put(order)
+    if order_event == 'order_removed' and order['direction'] in ['Buy','Sell']: # Position closed -> save to DB
+      print('**** POSITION CLOSED: ', order)
+      add_trade_to_demo_trades(order)
 
   print('Trade receiver waiting for trades...')
   tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)

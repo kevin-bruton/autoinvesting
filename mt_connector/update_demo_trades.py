@@ -126,10 +126,10 @@ class read_and_save_trades():
                 if not db_trades:
                     db_trades = []
                 print('Updating trades for strategy with magic ', magic)
-                print('  Number of DB trades: ', len(db_trades))
+                # print('  Number of DB trades: ', len(db_trades))
                 db_order_ids = [trade['orderId'] for trade in db_trades]
                 mt_magic_trades = mt_trades[magic] if magic in mt_trades else []
-                print('  Number of MT trades: ', len(mt_magic_trades))
+                # print('  Number of MT trades: ', len(mt_magic_trades))
                 if len(mt_magic_trades):
                     new_trades = [trade for trade in mt_magic_trades if trade['orderId'] not in db_order_ids]
                 else:
