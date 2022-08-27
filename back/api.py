@@ -51,11 +51,18 @@ def get_strategies_request(user):
 @app.route('/api/strategies/<strategy_id>', methods=['GET'])
 @token_required
 def get_strategy_request(user, strategy_id):
-  try:
-    strategy = db.get_strategy_detail(strategy_id)
-    return (jsonify(strategy), 200)
-  except Exception as e:
-    return (jsonify({ 'error': repr(e) }), 200)
+  if strategy_id == 'all':
+    try:
+      strategies = db.get_all_strategy_data()
+      return (strategies, 200)
+    except Exception as e:
+      return (jsonify({ 'error': repr(e) }), 200)
+  else:
+    try:
+      strategy = db.get_strategy_detail(strategy_id)
+      return (jsonify(strategy), 200)
+    except Exception as e:
+      return (jsonify({ 'error': repr(e) }), 200)
 
 @app.route('/api/strategies', methods=['POST'])
 @admin_only

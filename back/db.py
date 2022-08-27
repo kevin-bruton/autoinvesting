@@ -15,7 +15,7 @@ def init_connection_pool():
   }
   return mysql.connector.pooling.MySQLConnectionPool(
     pool_name = "db_pool",
-    pool_size = 3,
+    pool_size = 30,
     pool_reset_session = True,
     **db_config
   )
@@ -56,10 +56,24 @@ def get_strategies ():
     'btStart': str(s['btStart']),
     'btEnd': str(s['btEnd']),
     'btDeposit': s['btDeposit'],
-    'btKpis': json.loads(s['btKpis']),
+    'btKpis': json.loads(s['btKpis']) if s['btKpis'] else {},
     'demoStart': str(s['demoStart']),
     'demoKpis': json.loads(s['demoKpis']) if s['demoKpis'] else {},
   } for s in strategies]
+
+def get_all_strategy_data ():
+  cnx = get_connection()
+  sql = "SELECT strategyName,magic,symbols,timeframes,btStart,btEnd,btDeposit,btTrades,btKpis,demoStart,demoTrades,demoKpis FROM Strategies"
+  c = cnx.cursor()
+  try:
+    c.execute(sql)
+    strategies = c.fetchall() # returns a list of tuples
+  finally:
+    cnx.close()
+  csv_str = 'strategyName;magic;symbols;timeframes;btStart;btEnd;btDeposit;btTrades;btKpis;demoStart;demoTrades;demoKpis\n'
+  for s in strategies:
+    csv_str += f"{s[0]};{s[1]};{s[2]};{s[3]};{s[4]};{s[5]};{s[6]};{s[7]};{s[8]};{s[9]};{s[10]};{s[11]}\n"
+  return csv_str
 
 def get_strategy_detail (magic):
   cnx = get_connection()
@@ -67,9 +81,23 @@ def get_strategy_detail (magic):
   c = cnx.cursor(dictionary=True)
   try:
     c.execute(sql, (magic,))
-    strategy = c.fetchone()
+    s = c.fetchone()
   finally:
     cnx.disconnect()
+  strategy = {
+    'strategyName': s['strategyName'],
+    'magic': s['magic'],
+    'symbols': s['symbols'],
+    'timeframes': s['timeframes'],
+    'btStart': str(s['btStart']),
+    'btEnd': str(s['btEnd']),
+    'btDeposit': s['btDeposit'],
+    'btTrades': json.loads(s['btTrades']) if s['btTrades'] else [],
+    'btKpis': json.loads(s['btKpis']) if s['btKpis'] else {},
+    'demoStart': str(s['demoStart']),
+    'demoTrades': json.loads(s['demoTrades']) if s['demoTrades'] else [],
+    'demoKpis': json.loads(s['demoKpis']) if s['demoKpis'] else {},
+  }
   return strategy
 
 def save_strategy (details):
