@@ -5,9 +5,9 @@ from os import getenv
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
-from connector import mt_connector_client
-import db
-from kpis import get_demo_kpis
+from mt_connector.connector import mt_connector_client
+import mt_connector.db as db
+from mt_connector.kpis import get_demo_kpis
 
 load_dotenv()
 
@@ -123,6 +123,7 @@ class read_and_save_trades():
             db_trades = db_strategy['demoTrades']
             if db_trades:
                 db_trades = json.loads(db_trades)
+                db_trades = [t for t in db_trades if t['closeTime'] != None] # shouldn't need to, but filtering out open positions
                 if not db_trades:
                     db_trades = []
                 print('Updating trades for strategy with magic ', magic)
@@ -139,7 +140,8 @@ class read_and_save_trades():
                 print('  Total trades (old and new): ', len(db_trades))
                 updated_trades[magic] = db_trades
             elif magic in mt_trades:
-                updated_trades[magic] = mt_trades[magic]
+                mt_magic_trades = [t for t in mt_trades[magic] if t['closeTime'] != None] # filter out open positions
+                updated_trades[magic] = mt_magic_trades
             else:
                 updated_trades[magic] = []
             # print(' ***** Updated trades for magic ', magic)

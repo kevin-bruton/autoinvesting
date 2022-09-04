@@ -143,11 +143,12 @@ class mt_connector_client():
 
         try:
             if exists(file_path):
-                with open(file_path) as f:
+                with open(file_path, mode="rb") as f:
                     text = f.read()
                 return text
         # can happen if mql writes to the file. don't print anything here.
         except (IOError, PermissionError):
+            print(datetime.now(), 'CAUGHT ERROR TRYING TO READ FILE:', file_path)
             pass
         except:
             print_exc()
@@ -193,7 +194,10 @@ class mt_connector_client():
                 continue
 
             self._last_open_orders_str = text
-            data = json.loads(text)
+            try:
+                data = json.loads(text)
+            except Exception as e:
+                print('CAUGHT EXCEPTION PARSING OPEN ORDERS JSON:', text)
 
             new_event = False
             for order_id, order in self.open_orders.items():
