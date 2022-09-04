@@ -200,6 +200,7 @@ class mt_connector_client():
                 print('CAUGHT EXCEPTION PARSING OPEN ORDERS JSON:', text)
 
             new_event = False
+            # Check for order removed (position close when type == 'buy' or 'sell')
             for order_id, order in self.open_orders.items():
                 # also triggers if a pending order got filled?
                 if order_id not in data['orders'].keys():
@@ -209,6 +210,7 @@ class mt_connector_client():
                     if self.event_handler is not None and new_event:
                         self.event_handler.on_order_event('order_removed', get_event_order(order_id, order))
 
+            # Check for order created
             for order_id, order in data['orders'].items():
                 if order_id not in self.open_orders:
                     new_event = True
@@ -217,6 +219,7 @@ class mt_connector_client():
                     if self.event_handler is not None and new_event:
                         self.event_handler.on_order_event('order_created', get_event_order(order_id, order))
 
+            # Check for order modified
             for order_id, order in data['orders'].items():
                 if order_id in self.open_orders:
                     modified_fields = get_modified_fields(order, self.open_orders[order_id])
