@@ -75,7 +75,7 @@ class TradeReceiver():
     def __init__(self,
                   MT4_directory_path,            
                   received_trade_cb,             # Received trade callback
-                  sleep_delay=0.005,             # 5 ms for time.sleep()
+                  sleep_delay=0.5,             # 0.005 == 5 ms for time.sleep()
                   max_retry_command_seconds=10,  # retry to send the commend for 10 seconds if not successful. 
                   verbose=False
                 ):
