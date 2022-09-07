@@ -33,7 +33,8 @@ def get_kpis (start, end, trades, deposit):
       'maxPctDD': 0,
       'annPctRetVsDdPct': 0,
       'winPct': 0,
-      'profitFactor': 0
+      'profitFactor': 0,
+      'numTrades': 0
     }
   dec2 = lambda num: round(num * 100) / 100
   profit = [t['profit'] for t in trades]

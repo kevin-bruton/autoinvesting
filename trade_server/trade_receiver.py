@@ -106,7 +106,7 @@ def run_receiver (trade_queue):
     # print('TradeCopier on_order_event received. order_event:', order_event,'; order:', order, '; modified_fields:', modified_fields)
     if order_event == 'order_created' and order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop']:
       trade_queue.put(order)
-    if order_event == 'order_removed' and order['direction'] in ['Buy','Sell']: # Position closed -> save to DB
+    if order_event == 'order_removed' and order['direction'] in ['Buy','Sell'] and order['closeTime']: # Position closed -> save to DB
       print('**** POSITION CLOSED: ', order)
       add_trade_to_demo_trades(order)
 

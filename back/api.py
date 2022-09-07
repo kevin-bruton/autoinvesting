@@ -53,7 +53,7 @@ def get_strategies_request(user):
 def get_strategy_request(user, strategy_id):
   if strategy_id == 'all':
     try:
-      strategies = db.get_all_strategy_data()
+      strategies = db.get_all_strategy_data_as_csv()
       return (strategies, 200)
     except Exception as e:
       return (jsonify({ 'error': repr(e) }), 200)

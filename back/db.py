@@ -70,10 +70,15 @@ def get_all_strategy_data ():
     strategies = c.fetchall() # returns a list of tuples
   finally:
     cnx.close()
+  return strategies
+
+def get_all_strategy_data_as_csv ():
+  strategies = get_all_strategy_data()
   csv_str = 'strategyName;magic;symbols;timeframes;btStart;btEnd;btDeposit;btTrades;btKpis;demoStart;demoTrades;demoKpis\n'
   for s in strategies:
     csv_str += f"{s[0]};{s[1]};{s[2]};{s[3]};{s[4]};{s[5]};{s[6]};{s[7]};{s[8]};{s[9]};{s[10]};{s[11]}\n"
   return csv_str
+
 
 def get_strategy_detail (magic):
   cnx = get_connection()
@@ -116,13 +121,66 @@ def save_strategy (details):
     cnx.close()
   return bool(rowcount)
 
-def save_backtest (data):
-  if data['magic']:
+def save_backtest (magic, startDate, endDate, deposit):
+  cnx = get_connection()
+  sql = "INSERT INTO StrategyRun (magic, runType, startDate, endDate, deposit) VALUES (%s,%s,%s,%s,%s);"
+  c = cnx.cursor()
+  try:
+    c.execute(sql, (magic, 'backtest', startDate, endDate, deposit))
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
+  if rowcount:
+    return c.lastrowid
+  return None
+
+def save_demorun (magic, startDate):
+  cnx = get_connection()
+  sql = "INSERT INTO StrategyRun (magic, runType, startDate) VALUES (%s,%s,%s);"
+  c = cnx.cursor()
+  try:
+    c.execute(sql, (magic, 'demo', startDate))
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
+  if rowcount:
+    return c.lastrowid
+  return None
+
+def save_trade (runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment):
+  cnx = get_connection()
+  sql = "INSERT INTO trades (runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);"
+  c = cnx.cursor()
+  try:
+    c.execute(sql, (runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment))
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
+  return bool(rowcount)
+
+def save_kpis (runId, annualPctRet, maxDD, maPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades):
+  cnx = get_connection()
+  sql = "INSERT INTO Kpis (runId, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades) VALUES (%s,%s,%s,%s,%s,%s,%s,%s);"
+  c = cnx.cursor()
+  try:
+    c.execute(sql, (runId, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades))
+    cnx.commit()
+    rowcount = c.rowcount
+  finally:
+    cnx.close()
+  return bool(rowcount)
+
+""" DEPRECATED """
+def save_backtest_legacy (bt):
+  if bt['magic']:
     sql = "UPDATE Strategies SET btStart = %s, btEnd = %s, btDeposit = %s, btKpis = %s, btTrades = %s WHERE magic = %s"
-    data_to_bind = (data['startDate'], data['endDate'], data['deposit'], json.dumps(data['kpis']), json.dumps(data['trades']), data['magic'])
-  elif data['strategyName']:
+    data_to_bind = (bt['startDate'], bt['endDate'], bt['deposit'], json.dumps(bt['kpis']), json.dumps(bt['trades']), bt['magic'])
+  elif bt['strategyName']:
     sql = "UPDATE Strategies SET btStart = %s, btEnd = %s, btDeposit = %s, btKpis = %s, btTrades = %s WHERE StrategyName = %s"
-    data_to_bind = (data['startDate'], data['endDate'], data['deposit'], json.dumps(data['kpis']), json.dumps(data['trades']), data['strategyName'])
+    data_to_bind = (bt['startDate'], bt['endDate'], bt['deposit'], json.dumps(bt['kpis']), json.dumps(bt['trades']), bt['strategyName'])
   else:
     raise Exception('A strategy name or magic must be provided')
   cnx = get_connection()

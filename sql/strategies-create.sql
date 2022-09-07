@@ -1,8 +1,8 @@
 CREATE TABLE Strategies (
     strategyName VARCHAR(255) NOT NULL,
-    magic BIGINT NOT NULL PRIMARY KEY,
-    symbols VARCHAR(255),
-    timeframes VARCHAR(55),
+    magic BIGINT NOT NULL,
+    symbols VARCHAR(255) NOT NULL,
+    timeframes VARCHAR(55) NOT NULL,
     btStart DATE,
     btEnd DATE,
     btDeposit FLOAT(9),
@@ -12,6 +12,8 @@ CREATE TABLE Strategies (
     demoTrades LONGTEXT,
     demoKpis TEXT,
     mq4StrategyFile VARCHAR(255),
-    sqxStrategyFile VARCHAR(255)
+    sqxStrategyFile VARCHAR(255),
+    description TEXT,
+    workflow VARCHAR(255),
+    PRIMARY KEY (magic)
 );
-drop table Strategies
