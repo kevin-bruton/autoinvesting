@@ -132,7 +132,6 @@ void deleteSock() {
 }
 
 int getOrderType(string type) {
-   Print("Order
    if (type == "buylimit" || type == "Buylimit") return OP_BUYLIMIT;
    if (type == "selllimit" || type == "Selllimit") return OP_SELLLIMIT;
    if (type == "buystop" || type == "Buystop") return OP_BUYSTOP;
