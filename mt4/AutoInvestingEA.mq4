@@ -3,7 +3,7 @@
 #define SOCKET_LIBRARY_USE_EVENTS
 #include <sockets.mqh>
 
-input string AuthKey = "GwD22oS3@KRp";
+input string AuthKey = "9H7x6An7vRmS";
 
 string Hostname = "127.0.0.1";
 ushort ServerPort = 5000;
@@ -75,6 +75,20 @@ void OnInit() {
    ObjectSet("Subscribed",OBJPROP_BGCOLOR,White);
    ObjectSet("Subscribed",OBJPROP_XSIZE, 20);
    ObjectSet("Subscribed", OBJPROP_YSIZE, 20);
+   
+   ChartSetInteger(0, CHART_COLOR_BACKGROUND, White);
+   ChartSetInteger(0, CHART_COLOR_FOREGROUND, Black);
+   ChartSetInteger(0, CHART_COLOR_GRID, White);
+   ChartSetInteger(0, CHART_COLOR_VOLUME, White);
+   ChartSetInteger(0, CHART_COLOR_CHART_UP, White);
+   ChartSetInteger(0, CHART_COLOR_CHART_DOWN, White);
+   ChartSetInteger(0, CHART_COLOR_CHART_LINE, White);
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BEAR, White);
+   ChartSetInteger(0, CHART_COLOR_CANDLE_BULL, White);
+   ChartSetInteger(0, CHART_COLOR_BID, White);
+   ChartSetInteger(0, CHART_COLOR_ASK, White);
+   ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, White);
+   ChartSetInteger(0, CHART_FOREGROUND,0,false);
 }
 
 void setStatusConnected (bool isConnected) {
@@ -112,6 +126,7 @@ void OnTimer() {
       } else {
          setStatusConnected(true);
          ReadMessages();
+         CheckOrdersPerformed();
       }
    }
 }
@@ -156,9 +171,13 @@ void ReadMessages() {
                setAuthorized(keyVal[1] == "true");
                StringSplit(msgSegments[1],StringGetCharacter(":",0),keyVal);
                string magics[];
-               StringSplit(keyVal[1],StringGetCharacter(",",0),magics);
+               StringSplit(StringTrimRight(keyVal[1]),StringGetCharacter(",",0),magics);
                setSubscribed(ArraySize(magics) > 0 && isAuthorized);
-               Comment("Subscribed to: " + StringTrimRight(keyVal[1]));
+               string comment = "\nSUBSCRIBED TO:\n";
+               for (int i = 0; i<ArraySize(magics); i++) {
+                  comment += "  " + magics[i] + "\n";
+               }
+               Comment(comment);
             } else if (keyVal[0] == "place_order") {           // Handle place_order
                int order_type = getOrderType(msgSegments[1]);
                string symbol = msgSegments[2];
@@ -186,4 +205,18 @@ void Subscribe() {
       sock.Send(msg);
    }
    isSubscribed = true;
+}
+
+void CheckOrdersPerformed() {
+  int i,hstTotal=OrdersHistoryTotal();
+  for(i=0;i<hstTotal;i++)
+    {
+     //---- check selection result
+     if(OrderSelect(i,SELECT_BY_POS,MODE_HISTORY)==false)
+       {
+        OrderPrint();
+        Print("Access to history failed with error (",GetLastError(),")");
+        break;
+       }
+    }
 }
