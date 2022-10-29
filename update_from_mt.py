@@ -14,6 +14,8 @@ load_dotenv()
 
 LOOKBACK_DAYS_TO_UPDATE = 365
 
+deleted_strategies = ['220612018']
+
 def old_to_new_magic(trades_dict):
     olds = [-1254131479,-1254133479,-1254134479,-1254224457,-1254224458,-1254224459,-1254224460,-1254224461,-1254224462,-1254224463,-1254224464,-1254224465,-1254224466,-1254224467,-1254224468,-1254224469,-1254224470,-1254224471,-1254224472,-1254224473,-1254224474,-1254224475,-1254224476,-1254224478,20220604,202206101,202206103,2205141,2205142,2205144,2205145]
     news = [220705001,220703001,220702001,220612023,220612022,220612021,220612020,220612019,220612018,220612017,220612016,220612015,220612014,220612013,220612012,220612011,220612010,220612009,220612008,220612007,220612006,220612005,220612004,220612002,220604001,220610001,220610003,220514001,220514002,220514004,220514005]
@@ -105,8 +107,11 @@ class read_and_save_trades():
         print(' ****** MT TRADES ****** ')
         print('Magics of the trades retrieved:', trades.keys())
         print('Trades of magic 0:')
-        for trade in trades[0]:
-            print('*** ', trade)
+        if 0 in trades:
+            for trade in trades[0]:
+                print('*** ', trade)
+        else:
+            print('    None')
 
 
         # db_cnx = db.get_connection()
@@ -158,6 +163,8 @@ class read_and_save_trades():
         # With mt trades insert all trades into db for each strategy
         # ignoring duplicate key errors (if they already exist, as this is expected)
         for magic in trades.keys():
+            if str(magic) in deleted_strategies:
+                continue
             num_trades_added = 0
             for trade in trades[magic]:
                 try:
