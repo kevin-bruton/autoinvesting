@@ -152,13 +152,13 @@ def get_strategy_summaries ():
     for strategy_kpis in kpis_list:
       if strategy_kpis['magic'] == strategy['magic']:
         run = {
-          'annualPctRet': float(strategy_kpis['annualPctRet']),
-          'maxDD': float(strategy_kpis['maxDD']),
-          'maxPctDD': float(strategy_kpis['maxPctDD']),
-          'annPctRetVsDdPct': float(strategy_kpis['annPctRetVsDdPct']),
-          'winPct': float(strategy_kpis['winPct']),
-          'profitFactor': float(strategy_kpis['profitFactor']),
-          'numTrades': float(strategy_kpis['numTrades'])
+          'annualPctRet': float(strategy_kpis['annualPctRet']) if strategy_kpis['annualPctRet'] != None else None,
+          'maxDD': float(strategy_kpis['maxDD']) if strategy_kpis['maxDD'] != None else None,
+          'maxPctDD': float(strategy_kpis['maxPctDD']) if strategy_kpis['maxPctDD'] != None else None,
+          'annPctRetVsDdPct': float(strategy_kpis['annPctRetVsDdPct']) if strategy_kpis['annPctRetVsDdPct'] != None else None,
+          'winPct': float(strategy_kpis['winPct']) if strategy_kpis['winPct'] != None else None,
+          'profitFactor': float(strategy_kpis['profitFactor']) if strategy_kpis['profitFactor'] != None else None,
+          'numTrades': float(strategy_kpis['numTrades']) if strategy_kpis['numTrades'] != None else None
         }
         strategy[strategy_kpis['runType']] = run
   return strategies
