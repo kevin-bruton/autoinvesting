@@ -152,13 +152,13 @@ def get_strategy_summaries ():
     for strategy_kpis in kpis_list:
       if strategy_kpis['magic'] == strategy['magic']:
         run = {
-          'annualPctRet': strategy_kpis['annualPctRet'],
-          'maxDD': strategy_kpis['maxDD'],
-          'maxPctDD': strategy_kpis['maxPctDD'],
-          'annPctRetVsDdPct': strategy_kpis['annPctRetVsDdPct'],
-          'winPct': strategy_kpis['winPct'],
-          'profitFactor': strategy_kpis['profitFactor'],
-          'numTrades': strategy_kpis['numTrades']
+          'annualPctRet': float(strategy_kpis['annualPctRet']),
+          'maxDD': float(strategy_kpis['maxDD']),
+          'maxPctDD': float(strategy_kpis['maxPctDD']),
+          'annPctRetVsDdPct': float(strategy_kpis['annPctRetVsDdPct']),
+          'winPct': float(strategy_kpis['winPct']),
+          'profitFactor': float(strategy_kpis['profitFactor']),
+          'numTrades': float(strategy_kpis['numTrades'])
         }
         strategy[strategy_kpis['runType']] = run
   return strategies
@@ -225,7 +225,7 @@ def save_strategyrun (strategyrun):
   return insert_one(sql, strategyrun)
 
 def save_trade (trade_values):
-  sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
+  sql = f"INSERT INTO trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
   return insert_one(sql, trade_values)
   
 def get_all_strategy_data ():
