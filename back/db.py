@@ -225,7 +225,7 @@ def save_strategyrun (strategyrun):
   return insert_one(sql, strategyrun)
 
 def save_trade (trade_values):
-  sql = f"INSERT INTO trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
+  sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
   return insert_one(sql, trade_values)
   
 def get_all_strategy_data ():
