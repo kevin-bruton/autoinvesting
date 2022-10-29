@@ -12,10 +12,10 @@ def generate_user_token (username, password, host):
   print('generateUserToken:: got user: ', user)
   if user:
     token = jwt.encode({
-          'username' : user[1],
-          'firstname': user[4],
-          'lastname': user[5],
-          'accountType': user[8],
+          'username' : user['username'],
+          'firstname': user['firstName'],
+          'lastname': user['lastName'],
+          'accountType': user['accountType'],
           'host': host,
           'exp' : datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRATION_MINS)
         },

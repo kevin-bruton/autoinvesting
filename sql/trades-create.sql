@@ -1,6 +1,6 @@
 CREATE TABLE Trades (
-  orderId INTEGER NOT NULL AUTO_INCREMENT,
-  runId INTEGER NOT NULL,
+  orderId VARCHAR(55) NOT NULL,
+  runId VARCHAR(55) NOT NULL,
   symbol VARCHAR(55),
   orderType VARCHAR(55),
   openTime DATETIME,
@@ -11,6 +11,10 @@ CREATE TABLE Trades (
   profit DECIMAL(10,2),
   closeType VARCHAR(55),
   comment VARCHAR(255),
+  sl FLOAT,
+  tp FLOAT,
+  swap DECIMAL(10,2),
+  commission DECIMAL(10,2),
   PRIMARY KEY (orderId),
-  FOREIGN KEY (runId) REFERENCES StrategyRun(runId)
+  FOREIGN KEY (runId) REFERENCES StrategyRuns(runId)
 );

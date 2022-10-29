@@ -77,11 +77,15 @@ def send_trades(trades_queue):
 
 def handle_connections_and_subscriptions():
   HOST = 'localhost'
-  PORT = 5000
+  PORT = 3000
   MAX_CLIENTS = 5
 
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  sock.bind((HOST, PORT))
+  try:
+    sock.bind((HOST, PORT))
+  except Exception as e:
+    print('Trade publisher could not bind to', HOST, PORT, e)
+    quit()
   print(f'Trade publisher listening on {HOST}:{PORT} Max clients: {MAX_CLIENTS}...')
   sock.listen(MAX_CLIENTS)
   while True:

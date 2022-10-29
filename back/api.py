@@ -1,13 +1,13 @@
-from flask import Flask, request, jsonify
-from werkzeug.middleware.proxy_fix import ProxyFix
-from dotenv import load_dotenv
 from os import getenv
-from flask_cors import CORS
-from auth import generate_user_token, validate_token, token_required, admin_only
-from upload_file import upload_file
+
 import db
-from utils import get_kpis
-from strategies_csv import save_strategies_csv
+from auth import (admin_only, generate_user_token, token_required,
+                  validate_token)
+from dotenv import load_dotenv
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+from strategies_csv import save_strategies_csv, save_all_strategy_data
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 load_dotenv()
 
@@ -48,6 +48,11 @@ def validate_request():
 def get_strategies_request(user):
   return (jsonify({'success': True, 'data': db.get_strategies()}), 200)
 
+@app.route('/api/strategies/summary', methods=['GET'])
+@token_required
+def get_strategies_summaries_request(user):
+  return (jsonify({'success': True, 'data': db.get_strategy_summaries()}), 200)
+
 @app.route('/api/strategies/<strategy_id>', methods=['GET'])
 @token_required
 def get_strategy_request(user, strategy_id):
@@ -63,6 +68,16 @@ def get_strategy_request(user, strategy_id):
       return (jsonify(strategy), 200)
     except Exception as e:
       return (jsonify({ 'error': repr(e) }), 200)
+
+@app.route('/api/strategy-runs', methods=['GET'])
+@token_required
+def get_strategy_runs_request(user):
+  return (jsonify({'success': True, 'data': db.get_strategy_runs()}), 200)
+
+@app.route('/api/trades', methods=['GET'])
+@token_required
+def get_trades(user):
+  return (jsonify({'success': True, 'data': db.get_trades()}), 200)
 
 @app.route('/api/strategies', methods=['POST'])
 @admin_only
@@ -80,6 +95,12 @@ def save_strategy_request(user):
 @admin_only
 def save_strategies_csv_request(user):
   results = save_strategies_csv(request.get_data(as_text=True))
+  return (jsonify(results), 200)
+
+@app.route('/api/strategies-json', methods=['POST'])
+@admin_only
+def save_all_strategy_data_request(user):
+  results = save_all_strategy_data(request.get_data(as_text=True))
   return (jsonify(results), 200)
 
 @app.route('/api/files', methods=['POST'])

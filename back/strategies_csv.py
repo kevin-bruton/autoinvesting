@@ -1,5 +1,54 @@
-from db import save_strategy
-from time import sleep
+import json
+
+from db import save_backtest, save_demorun, save_strategy, save_trade, save_strategyrun, Strategy, StrategyRun, Trade
+
+
+def save_all_strategy_data (content):
+  results = []
+  data = json.loads(content)
+  strategies = data['strategies']
+  runs = data['strategyRuns']
+  trades = data['trades']
+  
+  for s in strategies:
+    strategy = Strategy(s['magic'], s['strategyName'], s['symbols'], s['timeframes'], s['description'], s['workflow'])
+    try:
+      res = save_strategy(strategy)
+      results.append({ 'magic': strategy.magic, 'error': res })
+    except Exception as e:
+      results.append({ 'magic': strategy.magic, 'error': repr(e) })
+  for r in runs:
+    run = StrategyRun(r['runId'], r['magic'], r['annualPctRet'], r['maxDD'], r['maxPctDD'], r['annPctRetVsDdPct'], r['winPct'], r['profitFactor'], r['numTrades'], r['startDate'], r['runType'], r['endDate'], r['deposit'])
+    try:
+      res = save_strategyrun(run)
+      results.append({ 'runId': run.runId, 'error': res })
+    except Exception as e:
+      results.append({ 'runId': run.runId, 'error': repr(e) })
+  for t in trades:
+    trade = Trade(
+      t['orderId'],
+      t['runId'],
+      t['symbol'],
+      t['orderType'],
+      t['openTime'],
+      t['closeTime'],
+      t['openPrice'],
+      t['closePrice'],
+      t['size'],
+      t['profit'],
+      t['closeType'] if 'closeType' in t else None,
+      t['comment'] if 'comment' in t else None,
+      t['sl'] if 'sl' in t else None,
+      t['tp'] if 'tp' in t else None,
+      t['swap'] if 'swap' in t else None,
+      t['commission'] if 'commission' in t else None
+    )
+    try:
+      res = save_trade(trade)
+      results.append({ 'orderId': trade.orderId, 'error': res })
+    except Exception as e:
+      results.append({ 'orderId': trade.orderId, 'error': repr(e) })
+  return {'results': results}
 
 def save_strategies_csv (csv_content):
   print('GOING TO SAVE STRATEGIES CSV **********')

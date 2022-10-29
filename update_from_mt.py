@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
 from mt_connector.connector import mt_connector_client
-import mt_connector.db as db
-from mt_connector.kpis import get_demo_kpis
+import back.db as db
+from back.utils import update_strategy_run_demo_kpis
+
 
 load_dotenv()
 
@@ -34,39 +35,33 @@ def mt_to_db_format(trades_dict):
     for order_id in order_ids:
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
-        t = trades_dict[order_id]
-        balance.append(balance[-1] + t['pnl'])
-        trade = {
-            'orderId': order_id,
-            'magic': t['magic'],
-            'symbol': t['symbol'],
-            'direction': t['type'][0].upper() + t['type'][1:],
-            'openTime': t['open_time'],
-            'openPrice': t['open_price'],
-            'closeTime': t['close_time'],
-            'closePrice': t['close_price'],
-            'size': t['lots'],
-            'profit': t['pnl'],
-            'balance': balance[-1],
-            'closeType': t['comment'].replace('[', '').replace(']', ''),
-            'comment': t['comment'],
-            'tp': t['TP'],
-            'sl': t['SL'],
-            'commission': t['commission'],
-            'swap': t['swap']
-        }
+        mt_trade = trades_dict[order_id]
+        balance.append(balance[-1] + mt_trade['pnl'])
+        trade = db.Trade(
+            f"{order_id}_{mt_trade['magic']}_D",
+            f"{mt_trade['magic']}_D",
+            mt_trade['symbol'],
+            mt_trade['type'][0].upper() + mt_trade['type'][1:],
+            mt_trade['open_time'].replace('.', '-'),
+            mt_trade['close_time'].replace('.', '-'),
+            mt_trade['open_price'],
+            mt_trade['close_price'],
+            mt_trade['lots'],
+            mt_trade['pnl'],
+            mt_trade['comment'].replace('[', '').replace(']', ''),
+            mt_trade['comment'],
+            mt_trade['TP'],
+            mt_trade['SL'],
+            mt_trade['commission'],
+            mt_trade['swap']
+        )
+        if trade.orderType == 'Unknown':
+            continue
 
-        if trade['magic'] not in trades_by_magic:
-            trades_by_magic[trade['magic']] = [trade]
+        if mt_trade['magic'] not in trades_by_magic:
+            trades_by_magic[mt_trade['magic']] = [trade]
         else:
-            trades_by_magic[trade['magic']].append(trade)
-    return trades_by_magic
-
-def str_to_db_format(tradesStr):
-    trades_by_magic = {}
-    tradesJson = json.loads(tradesStr)
-    for strategy in tradesJson:
-        trades_by_magic[strategy['magic']] = strategy['demoTrades']
+            trades_by_magic[mt_trade['magic']].append(trade)
     return trades_by_magic
 
 
@@ -106,23 +101,29 @@ class read_and_save_trades():
     def on_historic_trades(self):
         print(' ***** RECEIVED HISTORIC DATA ***** ')
         mt_trades_dict = self.connector.historic_trades
-        mt_trades = mt_to_db_format(mt_trades_dict)
+        trades = mt_to_db_format(mt_trades_dict)
         print(' ****** MT TRADES ****** ')
-        print('Magics of the trades retrieved:', mt_trades.keys())
+        print('Magics of the trades retrieved:', trades.keys())
+        print('Trades of magic 0:')
+        for trade in trades[0]:
+            print('*** ', trade)
 
-        db_cnx = db.get_connection()
-        db_strategies = db.get_demo_trades(db_cnx)
+
+        # db_cnx = db.get_connection()
+        # db_strategies = db.get_demo_trades(db_cnx)
         # print(' ***** DB TRADES ***** ')
         # print('        Trades: ', db_strategies)
 
+
+        # db_strategies = db.get_strategies()
+        """
         updated_trades = {}
         updated_kpis = {}
         for db_strategy in db_strategies:
             magic = db_strategy['magic']
-            start = db_strategy['demoStart']
-            db_trades = db_strategy['demoTrades']
+            db_trades = db.get_strategys_demo_trades(magic)
+            start = datetime.strptime(db_trades[0]['openTime'][:10], '%Y-%m-%d') - timedelta(days=1)
             if db_trades:
-                db_trades = json.loads(db_trades)
                 db_trades = [t for t in db_trades if t['closeTime'] != None] # shouldn't need to, but filtering out open positions
                 if not db_trades:
                     db_trades = []
@@ -151,29 +152,27 @@ class read_and_save_trades():
             # print(updated_kpis[magic])
         # print(' ***** UPDATED TRADES ***** ')
         # print('        Trades: ', updated_trades)
-
-        # order trades
-        # replace dots by dashes in dates
-        if updated_trades:
-            for magic in updated_trades.keys():
-                trades = updated_trades[magic]
-                trades.sort(key=lambda tr: tr['closeTime'])
-                if trades:
-                    for trade in trades:
-                        trade['openTime'] = trade['openTime'].replace('.', '-')
-                        trade['closeTime'] = trade['closeTime'].replace('.', '-')
-                updated_trades[magic] = trades
+        """
 
         # SAVE TO DB
-        db.update_demo_data(db_cnx, updated_trades, updated_kpis)
+        # With mt trades insert all trades into db for each strategy
+        # ignoring duplicate key errors (if they already exist, as this is expected)
+        for magic in trades.keys():
+            num_trades_added = 0
+            for trade in trades[magic]:
+                try:
+                    db.save_trade(trade)
+                    num_trades_added += 1
+                except Exception as e:
+                    if 'Duplicate entry' not in repr(e):
+                        raise Exception(e)
+            if num_trades_added > 0:
+                print('For magic', magic, 'added', num_trades_added, 'trades')
+                update_strategy_run_demo_kpis(magic)
+        # db.update_demo_data(db_cnx, updated_trades, updated_kpis)
         db.register_update('Success')
 
-        db_cnx.close()
         self.connector.ACTIVE = False
-
-        """ print('       Symbol: ', symbol)
-        print('       Timeframe: ', timeframe)
-        print('       Data: ', data) """
 
 
 MT4_files_dir = getenv('MT_FILES_DIR')
