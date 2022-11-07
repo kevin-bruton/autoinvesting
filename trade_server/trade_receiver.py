@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 
 from mt_connector.connector import mt_connector_client
 
-from trade_server.db import add_trade_to_demo_trades
+# from trade_server.db import add_trade_to_demo_trades
+import back.db as db
 
 load_dotenv()
 
@@ -88,10 +89,10 @@ class TradeReceiver():
         self.connector.start()
         
         # account information is stored in self.connector.account_info.
-        print("Receiving trades from this account:", self.connector.account_info)
+        print("[RECEIVER] Receiving trades from this account:", self.connector.account_info)
 
     def on_message(self, message):
-        print('on_message:', message)
+        print('[RECEIVER] on_message:', message)
         pass
         """ print(' ***** RECEIVED MESSAGE ****** ')
         print('       ', message)
@@ -103,14 +104,23 @@ class TradeReceiver():
 
 def run_receiver (trade_queue):
   def on_order_event(order_event, order, modified_fields):
-    # print('TradeCopier on_order_event received. order_event:', order_event,'; order:', order, '; modified_fields:', modified_fields)
-    if order_event == 'order_created' and order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop']:
+    print('[RECEIVER]', f"{order_event.upper()}:", order, '; modified_fields:', modified_fields)
+    if order_event == 'order_created' and order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop','Buy','Sell']:
+      order['action'] = 'create_order'
+      trade_queue.put(order)
+    if order_event == 'order_modified':
+      order['action'] = 'modify_order'
       trade_queue.put(order)
     if order_event == 'order_removed' and order['direction'] in ['Buy','Sell'] and order['closeTime']: # Position closed -> save to DB
-      print('**** POSITION CLOSED: ', order)
-      add_trade_to_demo_trades(order)
+      order['action'] = 'remove_order'
+      trade_queue.put(order)
+      print('[RECEIVER] POSITION CLOSED: ', order)
+      # add_trade_to_demo_trades(order) - add_demo_trade
+      # orderId, runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission
+      db.save_trade((order['orderId'], str(order['magic']) + '_D', order['symbol'], order['direction'], order['openTime'], order['closeTime'], order['openPrice'], order['closePrice'], order['size'], order['profit'], order['closeType'], order['comment'], order['sl'], order['tp'], order['swap'], order['commission']))
 
-  print('Trade receiver waiting for trades...')
+
+  print('[RECEIVER] Waiting to receive trades...')
   tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)
 
   while tradeReceiver.connector.ACTIVE:
