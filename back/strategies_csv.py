@@ -1,6 +1,6 @@
 import json
 
-from db import save_backtest, save_demorun, save_strategy, save_trade, save_strategyrun, Strategy, StrategyRun, Trade
+from db import save_backtest, save_demorun, save_strategy, save_trade, save_account, Strategy, Account, Trade
 
 
 def save_all_strategy_data (content):

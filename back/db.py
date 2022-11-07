@@ -10,11 +10,11 @@ cnx_pool = None
 
 values_placeholder = lambda fields: ','.join(['%s'] * len(fields.split(',')))
 
-trade_fields = 'orderId, runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission'
+trade_fields = 'orderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission'
 Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None))
 
-strategyrun_fields = 'runId, magic, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, runType, endDate, deposit'
-StrategyRun = namedtuple('StrategyRun', strategyrun_fields, defaults=(None, None, None))
+account_fields = 'accountId, accountNumber, accountType, username, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, endDate, deposit'
+Account = namedtuple('Account', account_fields, defaults=(None, None, None))
 
 strategy_fields = 'magic, strategyName, symbols, timeframes, description, workflow'
 Strategy = namedtuple('Strategy', strategy_fields, defaults=(None, None))
@@ -102,12 +102,12 @@ def get_strategies ():
   sql = "SELECT strategyName, magic, symbols, timeframes, description, workflow FROM Strategies"
   return select_many(sql)
 
-def get_strategy_runs ():
-  sql = "SELECT runId, magic, runType, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM StrategyRuns"
+def get_accounts ():
+  sql = "SELECT accountId, accountNumber, accountType, username, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts"
   return select_many(sql)
 
 def get_trades ():
-  sql = 'SELECT orderId, runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment FROM Trades'
+  sql = 'SELECT orderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission FROM Trades'
   trades = select_many(sql)
   return [{**trade, **{
       'openTime': trade['openTime'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -116,9 +116,9 @@ def get_trades ():
       'profit': float(trade['profit'])
     }} for trade in trades]
 
-def get_trades_of_strategyrun (run_id):
-  sql = 'SELECT symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment FROM Trades WHERE runId = %s ORDER BY closeTime'
-  trades = select_many(sql, (run_id,))
+def get_trades_of_account (account_id):
+  sql = 'SELECT symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment FROM Trades WHERE accountId = %s ORDER BY closeTime'
+  trades = select_many(sql, (account_id,))
   return [{**trade, **{
       'openTime': trade['openTime'].strftime('%Y-%m-%d %H:%M:%S'),
       'closeTime': trade['closeTime'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -133,45 +133,49 @@ def get_next_free_order_id ():
     if test_order_id not in order_ids:
       return test_order_id
 
-def get_all_kpis ():
-  sql = 'SELECT magic, runType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \
-    + 'FROM StrategyRuns'
-  return select_many(sql)
+def get_all_strategy_kpis ():
+  sql = 'SELECT accountNumber, accountType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \
+    + 'FROM Accounts WHERE accountType = %s OR accountType = %s'
+  kpis = select_many(sql, ('strategy_backtest', 'strategy_demo'))
+  return [ {
+    'runType': 'backtest' if kpi['accountType'] == 'strategy_backtest' else 'demo',
+    'magic': int(kpi['accountNumber']),
+    'annualPctRet': float(kpi['annualPctRet']) if kpi['annualPctRet'] != None else None,
+    'maxDD': float(kpi['maxDD']) if kpi['maxDD'] != None else None,
+    'maxPctDD': float(kpi['maxPctDD']) if kpi['maxPctDD'] != None else None,
+    'annPctRetVsDdPct': float(kpi['annPctRetVsDdPct']) if kpi['annPctRetVsDdPct'] != None else None,
+    'winPct': float(kpi['winPct']) if kpi['winPct'] != None else None,
+    'profitFactor': float(kpi['profitFactor']) if kpi['profitFactor'] != None else None,
+    'numTrades': float(kpi['numTrades']) if kpi['numTrades'] != None else None
+  } for kpi in kpis if kpi['accountType'] == 'strategy_backtest' or kpi['accountType'] == 'strategy_demo']
 
 def get_strategys_demo_trades (magic):
   runId = str(magic) + '_D'
-  sql = 'SELECT orderId, runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
-    + 'FROM Trades WHERE runId = %s'
+  sql = 'SELECT orderId, accountId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
+    + 'FROM Trades WHERE accountId = %s'
   return select_many(sql, (runId,))
 
 def get_strategy_summaries ():
   strategies = get_strategies()
-  kpis_list = get_all_kpis()
+  kpis_list = get_all_strategy_kpis()
   #return { 'strategies': strategies, 'kpis_list': kpis_list }
   for strategy in strategies:
     for strategy_kpis in kpis_list:
       if strategy_kpis['magic'] == strategy['magic']:
-        run = {
-          'annualPctRet': float(strategy_kpis['annualPctRet']) if strategy_kpis['annualPctRet'] != None else None,
-          'maxDD': float(strategy_kpis['maxDD']) if strategy_kpis['maxDD'] != None else None,
-          'maxPctDD': float(strategy_kpis['maxPctDD']) if strategy_kpis['maxPctDD'] != None else None,
-          'annPctRetVsDdPct': float(strategy_kpis['annPctRetVsDdPct']) if strategy_kpis['annPctRetVsDdPct'] != None else None,
-          'winPct': float(strategy_kpis['winPct']) if strategy_kpis['winPct'] != None else None,
-          'profitFactor': float(strategy_kpis['profitFactor']) if strategy_kpis['profitFactor'] != None else None,
-          'numTrades': float(strategy_kpis['numTrades']) if strategy_kpis['numTrades'] != None else None
-        }
-        strategy[strategy_kpis['runType']] = run
+        runType = strategy_kpis['runType']
+        run = { kpi:kpi_val for kpi, kpi_val in strategy_kpis.items() if kpi != 'runType' }
+        strategy[runType] = run
   return strategies
 
 def get_strategy_detail (magic):
   sql = "SELECT strategyName, symbols, timeframes, workflow, description FROM Strategies WHERE magic = %s"
   strategy = select_one(sql, (magic,))
-  sql = 'SELECT runId, startDate, endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM StrategyRuns WHERE magic = %s AND runType = %s'
-  backtest = select_one(sql, (magic, 'backtest'))
-  sql = 'SELECT runId, startDate, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM StrategyRuns WHERE magic = %s AND runType = %s'
-  demo = select_one(sql, (magic, 'demo'))
-  btTrades = get_trades_of_strategyrun(backtest['runId'])
-  demoTrades = get_trades_of_strategyrun(demo['runId'])
+  sql = 'SELECT accountId, startDate, endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts WHERE accountNumber = %s AND accountType = %s'
+  backtest = select_one(sql, (magic, 'strategy_backtest'))
+  sql = 'SELECT accountId, startDate, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts WHERE accountNumber = %s AND accountType = %s'
+  demo = select_one(sql, (magic, 'strategy_demo'))
+  btTrades = get_trades_of_account(backtest['accountId'])
+  demoTrades = get_trades_of_account(demo['accountId'])
   btKpis = {
     'annualPctRet': backtest['annualPctRet'],
     'maxDD': backtest['maxDD'],
@@ -211,18 +215,18 @@ def save_strategy (strategy):
   return insert_one(sql, strategy)
 
 def save_backtest (backtest):
-  backtest = backtest._replace(runType='backtest')
-  sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
+  backtest = backtest._replace(accountType='strategy_backtest')
+  sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"
   return insert_one(sql, backtest)
 
 def save_demorun (demorun):
-  demorun = demorun._replace(runType='demo')
-  sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
+  demorun = demorun._replace(accountType='demo')
+  sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"
   return insert_one(sql, demorun)
 
-def save_strategyrun (strategyrun):
-  sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
-  return insert_one(sql, strategyrun)
+def save_account (account):
+  sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"
+  return insert_one(sql, account)
 
 def save_trade (trade_values):
   sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
@@ -233,9 +237,9 @@ def get_all_strategy_data ():
   sql = "SELECT strategyName,magic,symbols,timeframes,btStart,btEnd,btDeposit,btTrades,btKpis,demoStart,demoTrades,demoKpis FROM Strategies"
   return select_many(sql)
 
-def update_kpis (runId, start_date, deposit, kpis):
-  sql = 'UPDATE StrategyRuns SET startDate=%s, deposit=%s, annualPctRet=%s, maxDD=%s, maxPctDD=%s, annPctRetVsDdPct=%s, winPct=%s, profitFactor=%s, numTrades=%s WHERE runId=%s'
-  return update_one(sql, (start_date, deposit) + kpis + (runId,))
+def update_kpis (accountId, start_date, deposit, kpis):
+  sql = 'UPDATE Accounts SET startDate=%s, deposit=%s, annualPctRet=%s, maxDD=%s, maxPctDD=%s, annPctRetVsDdPct=%s, winPct=%s, profitFactor=%s, numTrades=%s WHERE accountId=%s'
+  return update_one(sql, (start_date, deposit) + kpis + (accountId,))
 
 def get_strategies_and_kpis ():
   pass

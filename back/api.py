@@ -69,10 +69,10 @@ def get_strategy_request(user, strategy_id):
     except Exception as e:
       return (jsonify({ 'error': repr(e) }), 200)
 
-@app.route('/api/strategy-runs', methods=['GET'])
+@app.route('/api/accounts', methods=['GET'])
 @token_required
-def get_strategy_runs_request(user):
-  return (jsonify({'success': True, 'data': db.get_strategy_runs()}), 200)
+def get_accounts_request(user):
+  return (jsonify({'success': True, 'data': db.get_accounts()}), 200)
 
 @app.route('/api/trades', methods=['GET'])
 @token_required

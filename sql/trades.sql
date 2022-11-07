@@ -1,6 +1,7 @@
 CREATE TABLE Trades (
   orderId VARCHAR(55) NOT NULL,
-  runId VARCHAR(55) NOT NULL,
+  accountId VARCHAR(55) NOT NULL,
+  magic BIGINT NOT NULL,
   symbol VARCHAR(55),
   orderType VARCHAR(55),
   openTime DATETIME,
@@ -16,5 +17,6 @@ CREATE TABLE Trades (
   swap DECIMAL(10,2),
   commission DECIMAL(10,2),
   PRIMARY KEY (orderId),
-  FOREIGN KEY (runId) REFERENCES StrategyRuns(runId)
+  FOREIGN KEY (accountId) REFERENCES Accounts(accountId),
+  FOREIGN KEY (magic) REFERENCES Strategies(magic)
 );
