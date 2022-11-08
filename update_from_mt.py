@@ -176,7 +176,7 @@ class read_and_save_trades():
             if num_trades_added > 0:
                 print('For magic', magic, 'added', num_trades_added, 'trades')
                 with open('../crontab.log', 'a') as f:
-                        f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + magic + ': ' + str(num_trades_added) + "\n")
+                        f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 update_strategy_run_demo_kpis(magic)
         # db.update_demo_data(db_cnx, updated_trades, updated_kpis)
         db.register_update('Success')
