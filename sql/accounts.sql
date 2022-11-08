@@ -3,6 +3,7 @@ CREATE TABLE Accounts (
   accountNumber VARCHAR(55) NOT NULL,
   accountType ENUM('demo', 'real', 'strategy_demo', 'strategy_backtest'),
   username VARCHAR(55) NOT NULL,
+  subscriptionKey VARCHAR(255),
   startDate DATE,
   endDate DATE,
   deposit FLOAT(9),

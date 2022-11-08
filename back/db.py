@@ -19,7 +19,7 @@ Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None
 position_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp'
 Position = namedtuple('Position', position_fields)
 
-account_fields = 'accountId, accountNumber, accountType, username, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, endDate, deposit'
+account_fields = 'accountId, accountNumber, accountType, username, subscriptionKey, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, endDate, deposit'
 Account = namedtuple('Account', account_fields, defaults=(None, None, None))
 
 strategy_fields = 'magic, strategyName, symbols, timeframes, description, workflow'
@@ -116,7 +116,7 @@ def get_strategies ():
   return select_many(sql)
 
 def get_accounts ():
-  sql = "SELECT accountId, accountNumber, accountType, username, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts"
+  sql = "SELECT accountId, accountNumber, accountType, username, subscriptionKey, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts"
   return select_many(sql)
 
 def get_subscriptions ():

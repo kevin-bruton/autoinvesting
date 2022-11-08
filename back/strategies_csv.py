@@ -29,7 +29,7 @@ def save_all_strategy_data (content):
     except Exception as e:
       results.append({ 'save_strategy': strategy.magic, 'success': False, 'error': repr(e) })
   for a in accounts:
-    account = Account(a['accountId'], a['accountNumber'], a['accountType'], a['username'], a['annualPctRet'], a['maxDD'], a['maxPctDD'], a['annPctRetVsDdPct'], a['winPct'], a['profitFactor'], a['numTrades'], a['startDate'], a['endDate'], a['deposit'])
+    account = Account(a['accountId'], a['accountNumber'], a['accountType'], a['username'], a['subscriptionKey'], a['annualPctRet'], a['maxDD'], a['maxPctDD'], a['annPctRetVsDdPct'], a['winPct'], a['profitFactor'], a['numTrades'], a['startDate'], a['endDate'], a['deposit'])
     try:
       res = db.save_account(account)
       results.append({ 'save_account': account.accountId, 'success': True })
