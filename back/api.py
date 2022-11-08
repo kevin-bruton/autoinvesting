@@ -43,10 +43,25 @@ def validate_request():
   except Exception as e:
     return (jsonify({'error': str(e)}), 401)
 
+@app.route('/api/users', methods=['GET'])
+@token_required
+def get_users_request(user):
+  return (jsonify({'success': True, 'data': db.get_users()}), 200)
+
 @app.route('/api/strategies', methods=['GET'])
 @token_required
 def get_strategies_request(user):
   return (jsonify({'success': True, 'data': db.get_strategies()}), 200)
+
+@app.route('/api/subscriptions', methods=['GET'])
+@token_required
+def get_subscriptions_request(user):
+  return (jsonify({'success': True, 'data': db.get_subscriptions()}), 200)
+
+@app.route('/api/positions', methods=['GET'])
+@token_required
+def get_positions_request(user):
+  return (jsonify({'success': True, 'data': db.get_positions()}), 200)
 
 @app.route('/api/strategies/summary', methods=['GET'])
 @token_required

@@ -1,33 +1,46 @@
 import json
 
-from db import save_backtest, save_demorun, save_strategy, save_trade, save_account, Strategy, Account, Trade
+from db import User, Strategy, Account, Trade, Position, Subscription
+import db
 
 
 def save_all_strategy_data (content):
   results = []
   data = json.loads(content)
+  users = data['users']
   strategies = data['strategies']
-  runs = data['strategyRuns']
+  accounts = data['accounts']
   trades = data['trades']
+  positions = data['positions']
+  subscriptions = data['subscriptions']
   
+  for u in users:
+    user = User(u['accountType'], u['username'], u['passwd'], u['email'], u['firstName'], u['lastName'], u['city'], u['country'])
+    try:
+      res = db.save_user(user)
+      results.append({ 'save_user': u['username'], 'success': True })
+    except Exception as e:
+      results.append({ 'save_user': u['username'], 'success': False, 'error': repr(e) })
   for s in strategies:
     strategy = Strategy(s['magic'], s['strategyName'], s['symbols'], s['timeframes'], s['description'], s['workflow'])
     try:
-      res = save_strategy(strategy)
-      results.append({ 'magic': strategy.magic, 'error': res })
+      res = db.save_strategy(strategy)
+      results.append({ 'save_strategy': strategy.magic, 'success': True })
     except Exception as e:
-      results.append({ 'magic': strategy.magic, 'error': repr(e) })
-  for r in runs:
-    run = StrategyRun(r['runId'], r['magic'], r['annualPctRet'], r['maxDD'], r['maxPctDD'], r['annPctRetVsDdPct'], r['winPct'], r['profitFactor'], r['numTrades'], r['startDate'], r['runType'], r['endDate'], r['deposit'])
+      results.append({ 'save_strategy': strategy.magic, 'success': False, 'error': repr(e) })
+  for a in accounts:
+    account = Account(a['accountId'], a['accountNumber'], a['accountType'], a['username'], a['annualPctRet'], a['maxDD'], a['maxPctDD'], a['annPctRetVsDdPct'], a['winPct'], a['profitFactor'], a['numTrades'], a['startDate'], a['endDate'], a['deposit'])
     try:
-      res = save_strategyrun(run)
-      results.append({ 'runId': run.runId, 'error': res })
+      res = db.save_account(account)
+      results.append({ 'save_account': account.accountId, 'success': True })
     except Exception as e:
-      results.append({ 'runId': run.runId, 'error': repr(e) })
+      results.append({ 'save_account': account.accountId, 'success': False, 'error': repr(e) })
   for t in trades:
     trade = Trade(
       t['orderId'],
-      t['runId'],
+      t['masterOrderId'],
+      t['accountId'],
+      t['magic'],
       t['symbol'],
       t['orderType'],
       t['openTime'],
@@ -36,6 +49,7 @@ def save_all_strategy_data (content):
       t['closePrice'],
       t['size'],
       t['profit'],
+      t['balance'],
       t['closeType'] if 'closeType' in t else None,
       t['comment'] if 'comment' in t else None,
       t['sl'] if 'sl' in t else None,
@@ -44,10 +58,37 @@ def save_all_strategy_data (content):
       t['commission'] if 'commission' in t else None
     )
     try:
-      res = save_trade(trade)
-      results.append({ 'orderId': trade.orderId, 'error': res })
+      res = db.save_trade(trade)
+      results.append({ 'save_trade': trade.orderId, 'success': True })
     except Exception as e:
-      results.append({ 'orderId': trade.orderId, 'error': repr(e) })
+      results.append({ 'save_trade': trade.orderId, 'success': False, 'error': repr(e) })
+  for p in positions:
+    position = Position(
+      p['orderId'],
+      p['masterOrderId'],
+      p['accountId'],
+      p['magic'],
+      p['symbol'],
+      p['orderType'],
+      p['openTime'],
+      p['openPrice'],
+      p['size'],
+      p['comment'] if 'comment' in t else None,
+      p['sl'] if 'sl' in t else None,
+      p['tp'] if 'tp' in t else None
+    )
+    try:
+      res = db.save_position(position)
+      results.append({ 'save_position': p['orderId'], 'success': True })
+    except Exception as e:
+      results.append({ 'save_position': p['orderId'], 'success': False, 'error': repr(e) })
+  for sb in subscriptions:
+    subscription = Subscription(sb['accountId'], sb['magic'])
+    try:
+      res = db.save_subscription(subscription)
+      results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': True })
+    except Exception as e:
+      results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': False, 'error': repr(e) })
   return {'results': results}
 
 def save_strategies_csv (csv_content):
@@ -90,7 +131,7 @@ def save_strategies_csv (csv_content):
       details['demoTrades'] = fields[8] if fields[8] else None
     
     try:
-      save_strategy(details)
+      db.save_strategy(details)
       results.append({ 'magic': details['magic'], 'error': None })
     except Exception as e:
       results.append({ 'magic': details['magic'], 'error': repr(e)})

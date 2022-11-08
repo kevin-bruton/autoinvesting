@@ -10,14 +10,23 @@ cnx_pool = None
 
 values_placeholder = lambda fields: ','.join(['%s'] * len(fields.split(',')))
 
-trade_fields = 'orderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission'
+user_fields = 'accountType, username, passwd, email, firstName, lastName, city, country'
+User = namedtuple('User', user_fields, defaults=(None, None))
+
+trade_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, closeType, comment, sl, tp, swap, commission'
 Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None))
+
+position_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp'
+Position = namedtuple('Position', position_fields)
 
 account_fields = 'accountId, accountNumber, accountType, username, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, endDate, deposit'
 Account = namedtuple('Account', account_fields, defaults=(None, None, None))
 
 strategy_fields = 'magic, strategyName, symbols, timeframes, description, workflow'
 Strategy = namedtuple('Strategy', strategy_fields, defaults=(None, None))
+
+subscription_fields = 'accountId, magic'
+Subscription = namedtuple('Subscription', subscription_fields)
 
 def init_connection_pool():
   db_config = {
@@ -93,6 +102,10 @@ def delete_many (sql, params=()):
     cnx.close()
   return c.rowcount
 
+def get_users ():
+  sql = 'SELECT username, passwd, email, firstName, lastName, city, country, accountType FROM Users'
+  return select_many(sql)
+
 def get_user (username, passwd):
   sql = "SELECT * FROM Users WHERE username = %s AND passwd = %s"
   return select_one(sql, (username, passwd))
@@ -106,8 +119,16 @@ def get_accounts ():
   sql = "SELECT accountId, accountNumber, accountType, username, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts"
   return select_many(sql)
 
+def get_subscriptions ():
+  sql = 'SELECT accountId, magic FROM Subscriptions'
+  return select_many(sql)
+
+def get_positions ():
+  sql = 'SELECT orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp FROM Positions'
+  return select_many(sql)
+
 def get_trades ():
-  sql = 'SELECT orderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission FROM Trades'
+  sql = 'SELECT orderId, masterOrderId, accountId, balance, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission FROM Trades'
   trades = select_many(sql)
   return [{**trade, **{
       'openTime': trade['openTime'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -210,9 +231,25 @@ def get_strategy_detail (magic):
   }
   return strategy
 
+def save_user (user):
+  sql = f"INSERT INTO Users ({user_fields}) VALUES ({values_placeholder(user_fields)})"
+  return insert_one(sql, user)
+
 def save_strategy (strategy):
   sql = f"INSERT INTO Strategies ({strategy_fields}) VALUES ({values_placeholder(strategy_fields)})"
   return insert_one(sql, strategy)
+
+def save_account (account):
+  sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"
+  return insert_one(sql, account)
+
+def save_position (position):
+  sql = f"INSERT INTO Positions ({position_fields}) VALUES ({values_placeholder(position_fields)})"
+  return insert_one(sql, position)
+
+def save_subscription (subscription):
+  sql = f"INSERT INTO Subscriptions ({subscription_fields}) VALUES ({values_placeholder(subscription_fields)})"
+  return insert_one(sql, subscription)
 
 def save_backtest (backtest):
   backtest = backtest._replace(accountType='strategy_backtest')

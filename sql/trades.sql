@@ -10,6 +10,7 @@ CREATE TABLE Trades (
   closePrice FLOAT,
   size DECIMAL(4,2),
   profit DECIMAL(10,2),
+  balance DECIMAL(10,2),
   closeType VARCHAR(55),
   comment VARCHAR(255),
   sl FLOAT,
