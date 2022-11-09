@@ -33,15 +33,15 @@ def mt_to_db_format(trades_dict):
     trades_dict = old_to_new_magic(trades_dict)
     trades_by_magic = {}
     order_ids = trades_dict.keys()
-    balance = [1000]
     for order_id in order_ids:
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
-        balance.append(balance[-1] + mt_trade['pnl'])
         trade = db.Trade(
             f"{order_id}_{mt_trade['magic']}_D",
+            None,
             f"{mt_trade['magic']}_D",
+            mt_trade['magic'],
             mt_trade['symbol'],
             mt_trade['type'][0].upper() + mt_trade['type'][1:],
             mt_trade['open_time'].replace('.', '-'),
@@ -50,12 +50,13 @@ def mt_to_db_format(trades_dict):
             mt_trade['close_price'],
             mt_trade['lots'],
             mt_trade['pnl'],
+            None,
             mt_trade['comment'].replace('[', '').replace(']', ''),
             mt_trade['comment'],
-            mt_trade['TP'],
             mt_trade['SL'],
-            mt_trade['commission'],
-            mt_trade['swap']
+            mt_trade['TP'],
+            mt_trade['swap'],
+            mt_trade['commission']
         )
         if trade.orderType == 'Unknown':
             continue
@@ -103,83 +104,40 @@ class read_and_save_trades():
     def on_historic_trades(self):
         print(' ***** RECEIVED HISTORIC DATA ***** ')
         mt_trades_dict = self.connector.historic_trades
-        trades = mt_to_db_format(mt_trades_dict)
+        trades_by_magic = mt_to_db_format(mt_trades_dict)
         print(' ****** MT TRADES ****** ')
-        print('Magics of the trades retrieved:', trades.keys())
+        print('Magics of the trades retrieved:', trades_by_magic.keys())
         print('Trades of magic 0:')
-        if 0 in trades:
-            for trade in trades[0]:
+        if 0 in trades_by_magic:
+            for trade in trades_by_magic[0]:
                 print('*** ', trade)
         else:
             print('    None')
 
-
-        # db_cnx = db.get_connection()
-        # db_strategies = db.get_demo_trades(db_cnx)
-        # print(' ***** DB TRADES ***** ')
-        # print('        Trades: ', db_strategies)
-
-
-        # db_strategies = db.get_strategies()
-        """
-        updated_trades = {}
-        updated_kpis = {}
-        for db_strategy in db_strategies:
-            magic = db_strategy['magic']
-            db_trades = db.get_strategys_demo_trades(magic)
-            start = datetime.strptime(db_trades[0]['openTime'][:10], '%Y-%m-%d') - timedelta(days=1)
-            if db_trades:
-                db_trades = [t for t in db_trades if t['closeTime'] != None] # shouldn't need to, but filtering out open positions
-                if not db_trades:
-                    db_trades = []
-                print('Updating trades for strategy with magic ', magic)
-                # print('  Number of DB trades: ', len(db_trades))
-                db_order_ids = [trade['orderId'] for trade in db_trades]
-                mt_magic_trades = mt_trades[magic] if magic in mt_trades else []
-                # print('  Number of MT trades: ', len(mt_magic_trades))
-                if len(mt_magic_trades):
-                    new_trades = [trade for trade in mt_magic_trades if trade['orderId'] not in db_order_ids]
-                else:
-                    new_trades = []
-                print('  Number of new trades to add: ', len(new_trades))
-                db_trades.extend(new_trades)
-                print('  Total trades (old and new): ', len(db_trades))
-                updated_trades[magic] = db_trades
-            elif magic in mt_trades:
-                mt_magic_trades = [t for t in mt_trades[magic] if t['closeTime'] != None] # filter out open positions
-                updated_trades[magic] = mt_magic_trades
-            else:
-                updated_trades[magic] = []
-            # print(' ***** Updated trades for magic ', magic)
-            # print(updated_trades[magic])
-            updated_kpis[magic] = get_demo_kpis(start, updated_trades[magic])
-            # print(' ***** KPIs for magic ', magic)
-            # print(updated_kpis[magic])
-        # print(' ***** UPDATED TRADES ***** ')
-        # print('        Trades: ', updated_trades)
-        """
-
         # SAVE TO DB
         # With mt trades insert all trades into db for each strategy
         # ignoring duplicate key errors (if they already exist, as this is expected)
-        for magic in trades.keys():
+        already_existing_trades = 0
+        for magic in trades_by_magic.keys():
             if str(magic) in deleted_strategies:
                 continue
             num_trades_added = 0
-            for trade in trades[magic]:
+            for trade in trades_by_magic[magic]:
                 try:
                     db.save_trade(trade)
                     num_trades_added += 1
                 except Exception as e:
                     if 'Duplicate entry' not in repr(e):
                         raise Exception(e)
+                    else:
+                        already_existing_trades += 1
             if num_trades_added > 0:
                 print('For magic', magic, 'added', num_trades_added, 'trades')
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 update_strategy_run_demo_kpis(magic)
-        # db.update_demo_data(db_cnx, updated_trades, updated_kpis)
         db.register_update('Success')
+        print('Number of trades not added because they were already in the DB:', already_existing_trades)
 
         self.connector.ACTIVE = False
 
