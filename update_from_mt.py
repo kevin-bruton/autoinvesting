@@ -39,7 +39,7 @@ def mt_to_db_format(trades_dict):
         mt_trade = trades_dict[order_id]
         trade = db.Trade(
             f"{order_id}_{mt_trade['magic']}_D",
-            None,
+            None, # masterOrderId
             f"{mt_trade['magic']}_D",
             mt_trade['magic'],
             mt_trade['symbol'],
@@ -50,7 +50,7 @@ def mt_to_db_format(trades_dict):
             mt_trade['close_price'],
             mt_trade['lots'],
             mt_trade['pnl'],
-            None,
+            None, # balance
             mt_trade['comment'].replace('[', '').replace(']', ''),
             mt_trade['comment'],
             mt_trade['SL'],
@@ -107,12 +107,6 @@ class read_and_save_trades():
         trades_by_magic = mt_to_db_format(mt_trades_dict)
         print(' ****** MT TRADES ****** ')
         print('Magics of the trades retrieved:', trades_by_magic.keys())
-        print('Trades of magic 0:')
-        if 0 in trades_by_magic:
-            for trade in trades_by_magic[0]:
-                print('*** ', trade)
-        else:
-            print('    None')
 
         # SAVE TO DB
         # With mt trades insert all trades into db for each strategy
