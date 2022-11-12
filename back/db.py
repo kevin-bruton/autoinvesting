@@ -16,8 +16,8 @@ User = namedtuple('User', user_fields, defaults=(None, None))
 trade_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, closeType, comment, sl, tp, swap, commission'
 Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None))
 
-position_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp'
-Position = namedtuple('Position', position_fields)
+order_fields = 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp, status'
+Order = namedtuple('Order', order_fields)
 
 account_fields = 'accountId, accountNumber, accountType, username, subscriptionKey, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades, startDate, endDate, deposit'
 Account = namedtuple('Account', account_fields, defaults=(None, None, None))
@@ -76,6 +76,8 @@ def insert_one (sql, values):
     cnx.commit()
     autoincrementedId = c.lastrowid
     rowcount = c.rowcount
+  except Exception as e:
+    print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e))
   finally:
     cnx.close()
   if autoincrementedId:
@@ -123,8 +125,8 @@ def get_subscriptions ():
   sql = 'SELECT accountId, magic FROM Subscriptions'
   return select_many(sql)
 
-def get_positions ():
-  sql = 'SELECT orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp FROM Positions'
+def get_orders ():
+  sql = 'SELECT orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp FROM Orders'
   return select_many(sql)
 
 def get_trades ():
@@ -243,9 +245,9 @@ def save_account (account):
   sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"
   return insert_one(sql, account)
 
-def save_position (position):
-  sql = f"INSERT INTO Positions ({position_fields}) VALUES ({values_placeholder(position_fields)})"
-  return insert_one(sql, position)
+def save_order (order):
+  sql = f"INSERT INTO Orders ({order_fields}) VALUES ({values_placeholder(order_fields)})"
+  return insert_one(sql, order)
 
 def save_subscription (subscription):
   sql = f"INSERT INTO Subscriptions ({subscription_fields}) VALUES ({values_placeholder(subscription_fields)})"
@@ -376,10 +378,29 @@ def register_update (result):
   sql = 'INSERT INTO Updates (updateTime,result) VALUES (%s, %s);'
   return insert_one(sql, (now, result))
 
+def authenticate_mt_client (token, account_number, account_type):
+  sql = 'SELECT accountId FROM Accounts WHERE subscriptionKey = %s AND accountNumber = %s AND accountType = %s'
+  user = select_one(sql, (token, account_number, account_type))
+  if not user:
+    return None
+  sql = 'SELECT magic FROM Subscriptions, Accounts ' \
+    + 'WHERE Accounts.subscriptionKey = %s ' \
+    + 'AND Accounts.accountNumber = %s ' \
+    + 'AND Accounts.accountType = %s ' \
+    + 'AND Subscriptions.accountId = Accounts.accountId'
+  subscriptions = select_many(sql, (token, account_number, account_type))
+  magics = [s['magic'] for s in subscriptions]
+  return namedtuple('AccountSubscriptions', "accountId,subscriptions")(user['accountId'], magics)
+
+def get_accounts_subscribed_to_magic (magic):
+  sql = 'SELECT accountId FROM Subscriptions WHERE magic = %s'
+  results = select_many(sql, (magic,))
+  return [r['accountId'] for r in results]
+
 if __name__ == '__main__':
   from dotenv import load_dotenv
   load_dotenv()
-  strategies = get_strategy_summaries()
-  print(strategies[0])
+  subscriptions = authenticate_mt_client('GwD22oS3@KRp', '612940', 'demo')
+  print(subscriptions)
   """ for strategy in strategies:
     print(strategy) """

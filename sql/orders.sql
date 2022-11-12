@@ -1,5 +1,6 @@
-CREATE TABLE Positions (
+CREATE TABLE Orders (
   orderId VARCHAR(55) NOT NULL,
+  status VARCHAR(55),
   masterOrderId VARCHAR(55),
   accountId VARCHAR(55) NOT NULL,
   magic BIGINT,

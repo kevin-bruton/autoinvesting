@@ -1,4 +1,4 @@
-CREATE TABLE AccountsSubscriptions (
+CREATE TABLE Subscriptions (
   magicAccountId VARCHAR(255) NOT NULL AUTOINCREMENT,  
   accountId VARCHAR(55) NOT NULL,
   magic INT NOT NULL,

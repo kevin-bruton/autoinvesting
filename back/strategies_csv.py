@@ -1,6 +1,6 @@
 import json
 
-from db import User, Strategy, Account, Trade, Position, Subscription
+from db import User, Strategy, Account, Trade, Order, Subscription
 import db
 
 
@@ -11,7 +11,7 @@ def save_all_strategy_data (content):
   strategies = data['strategies']
   accounts = data['accounts']
   trades = data['trades']
-  positions = data['positions']
+  orders = data['orders']
   subscriptions = data['subscriptions']
   
   for u in users:
@@ -62,26 +62,26 @@ def save_all_strategy_data (content):
       results.append({ 'save_trade': trade.orderId, 'success': True })
     except Exception as e:
       results.append({ 'save_trade': trade.orderId, 'success': False, 'error': repr(e) })
-  for p in positions:
-    position = Position(
-      p['orderId'],
-      p['masterOrderId'],
-      p['accountId'],
-      p['magic'],
-      p['symbol'],
-      p['orderType'],
-      p['openTime'],
-      p['openPrice'],
-      p['size'],
-      p['comment'] if 'comment' in t else None,
-      p['sl'] if 'sl' in t else None,
-      p['tp'] if 'tp' in t else None
+  for o in orders:
+    order = Order(
+      o['orderId'],
+      o['masterOrderId'],
+      o['accountId'],
+      o['magic'],
+      o['symbol'],
+      o['orderType'],
+      o['openTime'],
+      o['openPrice'],
+      o['size'],
+      o['comment'] if 'comment' in t else None,
+      o['sl'] if 'sl' in t else None,
+      o['tp'] if 'tp' in t else None
     )
     try:
-      res = db.save_position(position)
-      results.append({ 'save_position': p['orderId'], 'success': True })
+      res = db.save_order(order)
+      results.append({ 'save_order': o['orderId'], 'success': True })
     except Exception as e:
-      results.append({ 'save_position': p['orderId'], 'success': False, 'error': repr(e) })
+      results.append({ 'save_order': 0['orderId'], 'success': False, 'error': repr(e) })
   for sb in subscriptions:
     subscription = Subscription(sb['accountId'], sb['magic'])
     try:

@@ -58,10 +58,10 @@ def get_strategies_request(user):
 def get_subscriptions_request(user):
   return (jsonify({'success': True, 'data': db.get_subscriptions()}), 200)
 
-@app.route('/api/positions', methods=['GET'])
+@app.route('/api/orders', methods=['GET'])
 @token_required
-def get_positions_request(user):
-  return (jsonify({'success': True, 'data': db.get_positions()}), 200)
+def get_orders_request(user):
+  return (jsonify({'success': True, 'data': db.get_orders()}), 200)
 
 @app.route('/api/strategies/summary', methods=['GET'])
 @token_required
