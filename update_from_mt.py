@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from mt_connector.connector import mt_connector_client
 import back.db as db
+from back.db import Trade
 from back.utils import update_strategy_run_demo_kpis
 
 
@@ -27,7 +28,7 @@ def old_to_new_magic(trades_dict):
             trades_dict[order_id]['magic'] = news[idx]
         except:
             pass
-    return trades_dict     
+    return trades_dict
 
 def mt_to_db_format(trades_dict):
     trades_dict = old_to_new_magic(trades_dict)
@@ -37,8 +38,8 @@ def mt_to_db_format(trades_dict):
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
-        trade = db.Trade(
-            f"{order_id}_{mt_trade['magic']}_D",
+        trade = Trade(
+            order_id,
             None, # masterOrderId
             f"{mt_trade['magic']}_D",
             mt_trade['magic'],

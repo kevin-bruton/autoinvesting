@@ -76,6 +76,8 @@ def insert_one (sql, values):
     cnx.commit()
     autoincrementedId = c.lastrowid
     rowcount = c.rowcount
+  except Exception as e:
+    print('ERROR insert_one values:', values, 'MSG:', repr(e))
   finally:
     cnx.close()
   if autoincrementedId:
