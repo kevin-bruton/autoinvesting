@@ -71,13 +71,15 @@ def select_one (sql, params=()):
 def insert_one (sql, values):
   cnx = get_connection()
   c = cnx.cursor()
+  autoincrementedId = None
+  rowcount = False
   try:
     c.execute(sql, tuple(values))
     cnx.commit()
     autoincrementedId = c.lastrowid
     rowcount = c.rowcount
-  except Exception as e:
-    print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e))
+    """ except Exception as e:
+    print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e)) """
   finally:
     cnx.close()
   if autoincrementedId:
@@ -130,7 +132,7 @@ def get_orders ():
   return select_many(sql)
 
 def get_trades ():
-  sql = 'SELECT orderId, masterOrderId, accountId, balance, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission FROM Trades'
+  sql = f'SELECT {trade_fields} FROM Trades'
   trades = select_many(sql)
   return [{**trade, **{
       'openTime': trade['openTime'].strftime('%Y-%m-%d %H:%M:%S'),
@@ -275,6 +277,14 @@ def get_all_strategy_data ():
   """ Get all strategy data from old db structure """
   sql = "SELECT strategyName,magic,symbols,timeframes,btStart,btEnd,btDeposit,btTrades,btKpis,demoStart,demoTrades,demoKpis FROM Strategies"
   return select_many(sql)
+
+def update_trade_magic (orderId, magic):
+  sql = 'UPDATE Trades SET magic = %s WHERE orderId = %s'
+  return update_one(sql, (magic, orderId,))
+
+def update_account_username (accountId, username):
+  sql = 'UPDATE Accounts SET username = %s WHERE accountId = %s'
+  return update_one(sql, (username, accountId))
 
 def update_kpis (accountId, start_date, deposit, kpis):
   sql = 'UPDATE Accounts SET startDate=%s, deposit=%s, annualPctRet=%s, maxDD=%s, maxPctDD=%s, annPctRetVsDdPct=%s, winPct=%s, profitFactor=%s, numTrades=%s WHERE accountId=%s'

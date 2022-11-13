@@ -38,10 +38,11 @@ def mt_to_db_format(trades_dict):
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
+        account_id = f"{mt_trade['magic']}_D"
         trade = Trade(
-            order_id,
+            f"{order_id}_{account_id}",
             None, # masterOrderId
-            f"{mt_trade['magic']}_D",
+            account_id,
             mt_trade['magic'],
             mt_trade['symbol'],
             mt_trade['type'][0].upper() + mt_trade['type'][1:],
@@ -119,8 +120,9 @@ class read_and_save_trades():
             num_trades_added = 0
             for trade in trades_by_magic[magic]:
                 try:
-                    db.save_trade(trade)
-                    num_trades_added += 1
+                    if trade.orderType in ['Buy', 'Sell']:
+                        db.save_trade(trade)
+                        num_trades_added += 1
                 except Exception as e:
                     if 'Duplicate entry' not in repr(e):
                         raise Exception(e)
