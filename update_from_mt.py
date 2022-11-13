@@ -15,33 +15,38 @@ load_dotenv()
 
 LOOKBACK_DAYS_TO_UPDATE = 365
 
-deleted_strategies = ['220612018']
+deleted_strategies = ['220612018', '-1254135478', '-1254135477']
 
-def old_to_new_magic(trades_dict):
-    olds = [-1254131479,-1254133479,-1254134479,-1254224457,-1254224458,-1254224459,-1254224460,-1254224461,-1254224462,-1254224463,-1254224464,-1254224465,-1254224466,-1254224467,-1254224468,-1254224469,-1254224470,-1254224471,-1254224472,-1254224473,-1254224474,-1254224475,-1254224476,-1254224478,20220604,202206101,202206103,2205141,2205142,2205144,2205145]
-    news = [220705001,220703001,220702001,220612023,220612022,220612021,220612020,220612019,220612018,220612017,220612016,220612015,220612014,220612013,220612012,220612011,220612010,220612009,220612008,220612007,220612006,220612005,220612004,220612002,220604001,220610001,220610003,220514001,220514002,220514004,220514005]
-    for order_id in trades_dict.keys():
-        t = trades_dict[order_id]
-        mt_magic = t['magic']
-        try:
-            idx = olds.index(mt_magic)
-            trades_dict[order_id]['magic'] = news[idx]
-        except:
-            pass
-    return trades_dict
+def old_to_new_magic(magic):
+  olds = [-1254131479,-1254133479,-1254134479,-1254224457,-1254224458,-1254224459,-1254224460,-1254224461,-1254224462,-1254224463,-1254224464,-1254224465,-1254224466,-1254224467,-1254224468,-1254224469,-1254224470,-1254224471,-1254224472,-1254224473,-1254224474,-1254224475,-1254224476,-1254224478,20220604,202206101,202206103,2205141,2205142,2205144,2205145]
+  news = [220705001,220703001,220702001,220612023,220612022,220612021,220612020,220612019,220612018,220612017,220612016,220612015,220612014,220612013,220612012,220612011,220612010,220612009,220612008,220612007,220612006,220612005,220612004,220612002,220604001,220610001,220610003,220514001,220514002,220514004,220514005]
+  try: 
+      idx = olds.index(magic)
+      magic = news[idx]
+  except:
+      pass
+  return magic
+
+def old_to_new_magic_in_trades(trades_dict):
+  for order_id in trades_dict.keys():
+    t = trades_dict[order_id]
+    mt_magic = t['magic']
+    trades_dict[order_id]['magic'] = old_to_new_magic(mt_magic)
+  return trades_dict
 
 def mt_to_db_format(trades_dict):
-    trades_dict = old_to_new_magic(trades_dict)
+    trades_dict = old_to_new_magic_in_trades(trades_dict)
     trades_by_magic = {}
     order_ids = trades_dict.keys()
     for order_id in order_ids:
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
+        account_id = f"{mt_trade['magic']}_D"
         trade = Trade(
-            order_id,
+            f"{order_id}_{account_id}",
             None, # masterOrderId
-            f"{mt_trade['magic']}_D",
+            account_id,
             mt_trade['magic'],
             mt_trade['symbol'],
             mt_trade['type'][0].upper() + mt_trade['type'][1:],
@@ -119,8 +124,9 @@ class read_and_save_trades():
             num_trades_added = 0
             for trade in trades_by_magic[magic]:
                 try:
-                    db.save_trade(trade)
-                    num_trades_added += 1
+                    if trade.orderType in ['Buy', 'Sell']:
+                        db.save_trade(trade)
+                        num_trades_added += 1
                 except Exception as e:
                     if 'Duplicate entry' not in repr(e):
                         raise Exception(e)
