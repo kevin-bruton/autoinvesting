@@ -126,7 +126,7 @@ def get_subscriptions ():
   return select_many(sql)
 
 def get_orders ():
-  sql = 'SELECT orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, openPrice, size, comment, sl, tp FROM Orders'
+  sql = f'SELECT {order_fields} FROM Orders'
   return select_many(sql)
 
 def get_trades ():

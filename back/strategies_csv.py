@@ -7,13 +7,13 @@ import db
 def save_all_strategy_data (content):
   results = []
   data = json.loads(content)
-  users = data['users']
+  users = [] # data['users']
   strategies = data['strategies']
   accounts = data['accounts']
   trades = data['trades']
   orders = data['orders']
   subscriptions = data['subscriptions']
-  
+
   for u in users:
     user = User(u['accountType'], u['username'], u['passwd'], u['email'], u['firstName'], u['lastName'], u['city'], u['country'])
     try:
