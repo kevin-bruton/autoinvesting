@@ -78,8 +78,10 @@ def insert_one (sql, values):
     cnx.commit()
     autoincrementedId = c.lastrowid
     rowcount = c.rowcount
-    """ except Exception as e:
-    print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e)) """
+  except Exception as e:
+    if 'Duplicate entry' not in repr(e):
+      print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e))
+    raise Exception(e)
   finally:
     cnx.close()
   if autoincrementedId:
