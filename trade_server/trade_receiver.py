@@ -104,26 +104,11 @@ class TradeReceiver():
         self.received_trade_cb(order_event, order, modified_fields)
 
 def run_receiver (trade_queue):
-  def on_order_event(order_event, mt_order, modified_fields):
-    print('[RECEIVER]', f"{order_event.upper()}:", mt_order, '; modified_fields:', modified_fields)
-    if order_event == 'order_created' and mt_order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop','Buy','Sell']:
-      mt_order['action'] = 'create_order'
-      status = 'position_open' if mt_order['direction'] in ['Buy', 'Sell'] else 'order_placed'
-      order = Order(mt_order['orderId'], None, f"{mt_order['magic']}_D", mt_order['magic'], mt_order['symbol'], mt_order['direction'], mt_order['openTime'], mt_order['openPrice'], mt_order['size'], mt_order['comment'], mt_order['sl'], mt_order['tp'], status)
-      db.save_order(order)
-      trade_queue.put(mt_order)
-    if order_event == 'order_modified':
-      mt_order['action'] = 'modify_order'
-      trade_queue.put(mt_order)
-    if order_event == 'order_removed' and mt_order['direction'] in ['Buy','Sell'] and mt_order['closeTime']: # Position closed -> save to DB
-      mt_order['action'] = 'remove_order'
-      trade_queue.put(mt_order)
-      print('[RECEIVER] POSITION CLOSED: ', mt_order)
-      # add_trade_to_demo_trades(order) - add_demo_trade
-      # orderId, runId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, sl, tp, swap, commission
-      trade = Trade(mt_order['orderId'], None, str(mt_order['magic']) + '_D', mt_order['magic'], mt_order['symbol'], mt_order['direction'], mt_order['openTime'], mt_order['closeTime'], mt_order['openPrice'], mt_order['closePrice'], mt_order['size'], mt_order['profit'], None, mt_order['closeType'], mt_order['comment'], mt_order['sl'], mt_order['tp'], mt_order['swap'], mt_order['commission'])
-      db.save_trade(trade)
-
+  def on_order_event(event, mt_order, modified_fields):
+    print('[RECEIVER]', f"{event.upper()}:", mt_order, '; modified_fields:', modified_fields)
+    if event == 'order_created':    handle_order_created(trade_queue, mt_order)
+    if event == 'modified':         handle_order_modified(trade_queue, mt_order, modified_fields)
+    if event == 'order_removed':    handle_order_removed(trade_queue, mt_order)
 
   print('[RECEIVER] Waiting to receive trades...')
   tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)
@@ -131,3 +116,29 @@ def run_receiver (trade_queue):
   while tradeReceiver.connector.ACTIVE:
     sleep(1)
     # print('Trade receiver running...')
+def handle_order_created (trade_queue, mt_order):
+  if mt_order['direction'] in ['Buylimit','Buystop','Selllimit','Sellstop','Buy','Sell']:
+    mt_order['action'] = 'place_order'
+    status = 'open' if mt_order['direction'] in ['Buy', 'Sell'] else 'placed'
+    order = Order(mt_order['orderId'], None, f"{mt_order['magic']}_D", mt_order['magic'], mt_order['symbol'], mt_order['direction'], mt_order['openTime'], mt_order['openPrice'], mt_order['size'], mt_order['comment'], mt_order['sl'], mt_order['tp'], status)
+    db.save_order(order)
+    trade_queue.put(mt_order)
+
+def handle_order_modified (trade_queue, mt_order, modified_fields):
+  mt_order['action'] = 'modify'
+  trade_queue.put(mt_order)
+
+def handle_order_removed (trade_queue, mt_order):
+  if mt_order['direction'] in ['Buy','Sell'] and mt_order['closeTime']: # Position closed -> save to DB
+    mt_order['action'] = 'close_position'
+    print('[RECEIVER] POSITION CLOSED: ', mt_order)
+    db.delete_order(mt_order['orderId'])
+    trade = Trade(mt_order['orderId'],None,f"{mt_order['magic']}_D",mt_order['magic'],mt_order['symbol'],mt_order['direction'],mt_order['openTime'],mt_order['closeTime'],mt_order['openPrice'],mt_order['closePrice'],mt_order['size'],mt_order['profit'],mt_order['balance'],mt_order['closeType'],mt_order['comment'],mt_order['sl'],mt_order['tp'],mt_order['swap'],mt_order['commission'])
+    db.save_trade(trade)
+    trade_queue.put(mt_order)
+  elif mt_order['direction'] in ['Buylimit', 'Buystop', 'Selllimit', 'Sellstop']:
+    mt_order['action'] = 'cancel_order'
+    print('[RECEIVER] ORDER CANCELLED: ', mt_order)
+    db.update_order_status(mt_order['orderId'], 'cancelled')
+    trade_queue.put(mt_order)
+
