@@ -125,6 +125,11 @@ def get_accounts ():
   sql = "SELECT accountId, accountNumber, accountType, username, subscriptionKey, DATE_FORMAT(startDate, '%Y-%m-%d %H:%i:%S') as startDate, DATE_FORMAT(endDate, '%Y-%m-%d %H:%i:%S') as endDate, deposit, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades FROM Accounts"
   return select_many(sql)
 
+def get_account_id (account_number):
+  sql = 'SELECT accountId FROM Accounts WHERE accountNumber = %s'
+  row = select_one(sql, (account_number,))
+  return row['accountId']
+
 def get_subscriptions ():
   sql = 'SELECT accountId, magic FROM Subscriptions'
   return select_many(sql)
@@ -159,6 +164,16 @@ def get_next_free_order_id ():
   for test_order_id in range(len(order_ids) + 1):
     if test_order_id not in order_ids:
       return test_order_id
+
+def get_corresponding_orderid (masterOrderId, accountId):
+  sql = 'SELECT orderId FROM Orders WHERE masterOrderId = %s AND accountId = %s'
+  row = select_one(sql, (masterOrderId, accountId))
+  return row['orderId'] if row != None else None
+
+def get_order (order_id):
+  sql = f"SELECT {order_fields} FROM Orders WHERE orderId = %s"
+  row = select_one(sql, (order_id,))
+  return row
 
 def get_all_strategy_kpis ():
   sql = 'SELECT accountNumber, accountType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \
@@ -291,6 +306,14 @@ def update_account_username (accountId, username):
 def update_kpis (accountId, start_date, deposit, kpis):
   sql = 'UPDATE Accounts SET startDate=%s, deposit=%s, annualPctRet=%s, maxDD=%s, maxPctDD=%s, annPctRetVsDdPct=%s, winPct=%s, profitFactor=%s, numTrades=%s WHERE accountId=%s'
   return update_one(sql, (start_date, deposit) + kpis + (accountId,))
+
+def update_order_status (orderId, status):
+  sql = 'UPDATE Orders SET status = %s WHERE orderId = %s'
+  return update_one(sql, (status, orderId))
+
+def delete_order (account_id):
+  sql = 'DELETE From Orders WHERE accountId = %s'
+  return delete_many(sql, (account_id,))
 
 def get_strategies_and_kpis ():
   pass
