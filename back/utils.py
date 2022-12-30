@@ -12,7 +12,7 @@ def get_returns_series(balances):
   pass
 
 def get_upload_folders ():
-  files = listdir('files')
+  files = listdir('../files')
   files = [f for f in files if not path.isfile('files/' + f)] #Filtering only the directories.
   return files
 

@@ -1,13 +1,13 @@
 from os import listdir
 from random_name import get_random_name
-from db import Strategy, save_strategy, Trade, save_trade, Account, save_backtest, save_demorun
+from db import Strategy, save_strategy, Trade, save_trade, Account, save_backtest, save_account
 from utils import get_bt_kpis
 from datetime import datetime
 
 date_fmt = '%Y-%m-%d'
 
 def save_new_strategies (upload_folder):
-  folder = f"files/{upload_folder}"
+  folder = f"../files/{upload_folder}"
   files = listdir(folder)
   csv_files = [f for f in files if f[-3:] == 'csv']
   deposit = 1000
@@ -83,7 +83,7 @@ def save_new_strategies (upload_folder):
         endDate=None,
         deposit=1000
       )
-      save_demorun(demo_run)
+      save_account(demo_run)
       for trade in trades:
         save_trade(trade)
   return True

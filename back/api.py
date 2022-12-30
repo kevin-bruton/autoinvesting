@@ -152,7 +152,6 @@ def save_new_strategies_request(user):
     print(repr(e))
     return(jsonify({'error': repr(e)}), 200)
 
-  
 @app.route('/api/upload-folders', methods=['GET'])
 @admin_only
 def get_upload_folders_request(user):
