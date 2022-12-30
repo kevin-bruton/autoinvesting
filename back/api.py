@@ -9,6 +9,7 @@ from flask_cors import CORS
 from strategies_csv import save_strategies_csv, save_all_strategy_data
 from werkzeug.middleware.proxy_fix import ProxyFix
 from utils import get_upload_folders
+from controllers import save_new_strategies
 
 load_dotenv()
 
@@ -139,6 +140,18 @@ def save_backtest_request(user):
   except Exception as e:
     print(repr(e))
     return(jsonify({'error': repr(e)}), 200)
+
+@app.route('/api/save-new-strategies', methods=['POST'])
+@admin_only
+def save_new_strategies_request(user):
+  try:
+    data = request.get_json()
+    result = save_new_strategies(data['uploadFolder'])
+    return (jsonify({'message': 'Saved new strategies successfully'}), 200)
+  except Exception as e:
+    print(repr(e))
+    return(jsonify({'error': repr(e)}), 200)
+
   
 @app.route('/api/upload-folders', methods=['GET'])
 @admin_only

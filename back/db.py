@@ -128,7 +128,7 @@ def get_accounts ():
 def get_account_id (account_number):
   sql = 'SELECT accountId FROM Accounts WHERE accountNumber = %s'
   row = select_one(sql, (account_number,))
-  return row['accountId']
+  return row['accountId'] if row and 'accountId' in row else None
 
 def get_subscriptions ():
   sql = 'SELECT accountId, magic FROM Subscriptions'

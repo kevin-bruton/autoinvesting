@@ -72,7 +72,9 @@ def handle_message(client, client_id, received_msg):
   
   account_id = None if msg['action'] == 'subscribe' \
     else [c['accountId'] for c in active_clients if c['client_id'] == client_id][0]
-
+  
+  if 'action' not in msg:
+    return
   if msg['action'] == 'subscribe':        handle_auth_request(client, client_id, msg)
   elif msg['action'] == 'place_order':    handle_place_order_response(account_id, msg)
   elif msg['action'] == 'close_position': handle_close_position_response(account_id, msg)

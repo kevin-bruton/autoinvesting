@@ -61,6 +61,8 @@ def get_kpis (start, end, trades, deposit):
       'profitFactor': 0,
       'numTrades': 0
     }
+  if type(trades[0]) is not dict:
+    trades = [t._asdict() for t in trades]
   dec2 = lambda num: round(num * 100) / 100
   profit = [t['profit'] for t in trades]
   
