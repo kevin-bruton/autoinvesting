@@ -8,6 +8,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from strategies_csv import save_strategies_csv, save_all_strategy_data
 from werkzeug.middleware.proxy_fix import ProxyFix
+from utils import get_upload_folders
 
 load_dotenv()
 
@@ -138,6 +139,16 @@ def save_backtest_request(user):
   except Exception as e:
     print(repr(e))
     return(jsonify({'error': repr(e)}), 200)
+  
+@app.route('/api/upload-folders', methods=['GET'])
+@admin_only
+def get_upload_folders_request(user):
+  try:
+    folders = get_upload_folders()
+    return (jsonify({'succes': True, 'data': folders}))
+  except Exception as e:
+    print(repr(e))
+    return(jsonify({'error': repr(e)}), 200)
 
 @app.route('/api/updates/last', methods=['GET'])
 @token_required
@@ -147,7 +158,6 @@ def get_last_update_request(user):
     return (jsonify({ 'success': True, 'data': last_update }))
   except Exception as e:
     return (jsonify({ 'error': repr(e) }), 200)
-
 
 if __name__ == '__main__':
     app.run()
