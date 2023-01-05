@@ -4,7 +4,7 @@ from requests import post
 from os.path import join
 from datetime import datetime, timedelta
 from decimal import Decimal
-import db
+import back.db as db
 
 stock = qs.utils.download_returns('FB')
 
