@@ -4,7 +4,6 @@ from requests import post
 from os.path import join
 from datetime import datetime, timedelta
 from decimal import Decimal
-import back.db as db
 
 stock = qs.utils.download_returns('FB')
 
@@ -15,15 +14,6 @@ def get_upload_folders ():
   files = listdir('../files')
   files = [f for f in files if not path.isfile('files/' + f)] #Filtering only the directories.
   return files
-
-def update_strategy_run_demo_kpis (magic):
-  # get start, deposit, trades
-  deposit = 1000
-  trades = db.get_strategys_demo_trades(magic)
-  if len(trades):
-    start_date =  trades[0]['openTime'] - timedelta(days=1)
-    kpis = get_demo_kpis(start_date, trades, deposit)
-    db.update_kpis(f"{magic}_D", start_date, deposit, tuple(kpis.values()))
 
 def get_bt_kpis (btStart, btEnd, trades, deposit=10000):
   time_str_format = '%Y-%m-%d %H:%M:%S'
