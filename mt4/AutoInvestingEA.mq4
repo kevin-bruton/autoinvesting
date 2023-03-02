@@ -1,8 +1,14 @@
 #property strict
 
+// --------------------------------------------------------------------
+// Include socket library
+// --------------------------------------------------------------------
+
 #define SOCKET_LIBRARY_USE_EVENTS
 #include <sockets.mqh>
+// #include <stderror.mqh>
 #include <stdlib.mqh>
+
 
 // --------------------------------------------------------------------
 // EA user inputs
@@ -13,16 +19,31 @@ input ushort   ServerPort = 3000;        // Server port
 input string   AuthKey = "GwD22oS3@KRp";              // Authentication Key
 
 int connectionAttempt = 0;
-int maxConnectionRetries = 5;
+int maxConnectionRetries = 100;
 bool doneRetryingConnection = false;
 bool isAuthorized = false;
 bool isSubscribed = false;
+int openOrders[];
+
+// --------------------------------------------------------------------
+// Global variables and constants
+// --------------------------------------------------------------------
 
 ClientSocket * glbClientSocket = NULL;
 
-void OnInit() {
-   EventSetTimer(1);
+// --------------------------------------------------------------------
+// Initialisation (no action required)
+// --------------------------------------------------------------------
 
+void OnInit() {
+   ArrayResize(openOrders, 0);
+   EventSetTimer(1);
+//--- create application dialog
+   //if(!dialog.Create(0,"Notification",0,300,0,450,110))
+   //   return;
+//--- run application
+   // if(!dialog.Run())
+   //   return;
    ObjectCreate(0,"Title", OBJ_RECTANGLE_LABEL, 0,0,0);
    ObjectSet("Title",OBJPROP_ANCHOR,ANCHOR_UPPER);
    ObjectSet("Title",OBJPROP_XDISTANCE,400);
@@ -85,6 +106,7 @@ void OnInit() {
    ObjectSet("Subscribed",OBJPROP_XSIZE, 20);
    ObjectSet("Subscribed", OBJPROP_YSIZE, 20);
    
+/* 
    ChartSetInteger(0, CHART_COLOR_BACKGROUND, White);
    ChartSetInteger(0, CHART_COLOR_FOREGROUND, Black);
    ChartSetInteger(0, CHART_COLOR_GRID, White);
@@ -98,10 +120,15 @@ void OnInit() {
    ChartSetInteger(0, CHART_COLOR_ASK, White);
    ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, White);
    ChartSetInteger(0, CHART_FOREGROUND,0,false);
+   */
 }
 
 void setStatusConnected (bool isConnected) {
    ObjectSet("Connected",OBJPROP_BGCOLOR,isConnected ? Green : Red);
+   if (!isConnected) {
+      setAuthorized(false);
+      setSubscribed(false);
+   }
 }
 
 void setAuthorized (bool isAuth) {
@@ -113,6 +140,10 @@ void setSubscribed (bool isSub) {
    isSubscribed = isSub;
    ObjectSet("Subscribed",OBJPROP_BGCOLOR,isSub ? Green : Red);
 }
+
+// --------------------------------------------------------------------
+// Termination - free the client socket, if created
+// --------------------------------------------------------------------
 
 void OnDeinit(const int reason)
 {
@@ -152,7 +183,7 @@ void OnTimer() {
          Print("Connected to server successfully");
          setStatusConnected(true);
       } else {
-         Print("Could NOT connect to server " + Hostname + ":" + (string)ServerPort);
+         // Print("Could NOT connect to server " + Hostname + ":" + (string)ServerPort);
       }
    }
    
@@ -164,15 +195,15 @@ void OnTimer() {
       // will be attempted on the next tick
       Print("Client disconnected. Will retry " + (string)(maxConnectionRetries - connectionAttempt) + " more times. Socket: " + (string)!!glbClientSocket + " Connected: " + (string)glbClientSocket.IsSocketConnected());
       connectionAttempt++;
-      if (!glbClientSocket.IsSocketConnected() && connectionAttempt > maxConnectionRetries) {
-         delete glbClientSocket;
-         glbClientSocket = NULL;
-         setStatusConnected(false);
-      }
+      Sleep(5000);
+      delete glbClientSocket;
+      glbClientSocket = NULL;
+      setStatusConnected(false);
    } else if (glbClientSocket && glbClientSocket.IsSocketConnected()) {
       connectionAttempt = 0;
       // 'Print("Client is connected");
       if (!isSubscribed) Subscribe();
+      CheckOpenPositions();
       ReadMessages();
    } else if (!doneRetryingConnection) {
       Print("Client disconnected. Will NOT retry anymore!");
@@ -189,88 +220,156 @@ void OnTick()
 {
 }
 
+void CheckOpenPositions () {
+   for (int i = 0; i < ArraySize(openOrders); i++) {
+      int ticket = openOrders[i];
+      bool isOrderSelected = OrderSelect(ticket,SELECT_BY_TICKET);
+      bool isOrderOpen = isOrderSelected && OrderCloseTime() == 0;
+      if (!isOrderOpen) {
+         // SEND MESSAGE TO SERVER NOTIFYING THAT THE ORDER/POSITION HAS BEEN CLOSED
+      }
+   }
+}
+
+void HandleAuthorized (string & msgSeg[]) {
+   Print("Client has been authorized");
+   string magics_str = msgSeg[1];
+   setAuthorized(true);
+   string magics[];
+   StringSplit(magics_str, StringGetCharacter(",",0), magics);
+   setSubscribed(ArraySize(magics) > 0);
+   Comment("Subscribed to: " + magics_str);
+}
+
+void HandleAuthorizationFailed(string & msgSeg[]) {
+   Print("Could not authorize with token and account number. Disconnecting...");
+   doneRetryingConnection = true;
+   setStatusConnected(false);
+   delete glbClientSocket;
+   glbClientSocket = NULL;
+}
+
+void HandlePlaceOrder (string & msgSeg[]) {
+   string order_type = msgSeg[1];
+   string symbol= msgSeg[2];
+   string volume = msgSeg[3];
+   string orig_open_price = msgSeg[4];
+   string sl = msgSeg[5];
+   string tp = msgSeg[6];
+   string comment = msgSeg[7];
+   string magic = msgSeg[8];
+   string masterOrderId = msgSeg[9];
+   double current_open_price = (order_type == "Buy") ? Ask : Bid;
+   Print("Placing order OrderSend: symbol: ", symbol, " Order type: ", OrderTypeStringToInt(order_type), " Volume: ", volume, " Open Price: ", current_open_price, " Slippage: ", 3, " TP: ", (double)sl, " TP: ", (double)tp, " Comment: ", comment, " Magic: ", (int)magic);
+   int ticket = OrderSend(symbol, OrderTypeStringToInt(order_type), (double)volume, current_open_price, 3, (double)sl, (double)tp, comment, (int)magic, 0, Green);
+   string msg;
+   if (ticket == -1) {
+      int error_code = GetLastError();
+      string error_msg = "ERROR " + (string)error_code + ": " + ErrorDescription(error_code);
+      Print("OrderSend failed. No ticket retrieved. ", error_msg);
+      msg = StringFormat(
+            "{\"action\":\"place_order\",\"status\":\"failed\",\"reason\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
+            error_msg, masterOrderId, order_type, symbol, volume, (string)current_open_price, sl, tp, comment, magic
+         );
+   } else {
+      Print("OrderSend placed successfully");
+      bool isSelected = OrderSelect(ticket, SELECT_BY_TICKET);
+      if (isSelected) {
+         string actual_open_price = (string)OrderOpenPrice();
+         string actual_open_time = TimeToStr(OrderOpenTime(),TIME_DATE|TIME_SECONDS);
+         string status = (order_type == "Buy" || order_type == "Sell") ? "open": "placed";
+         msg = StringFormat(
+            "{\"action\":\"place_order\",\"status\":\"%s\",\"orderId\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"openTime\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
+            status, (string)ticket, masterOrderId, order_type, symbol, volume, actual_open_price, actual_open_time, sl, tp, comment, magic
+         );
+         int openOrderPosition = ArraySize(openOrders) + 1;
+         ArrayResize(openOrders, openOrderPosition);
+         openOrders[openOrderPosition - 1] = ticket;
+      } else {
+         string error_msg = "ERROR: Could not select order with orderId: " + (string)ticket;
+         Print("OrderSend failed. ", error_msg);
+         msg = StringFormat(
+               "{\"action\":\"place_order\",\"status\":\"failed\",\"reason\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
+               error_msg, masterOrderId, order_type, symbol, volume, current_open_price, sl, tp, comment, magic
+            );
+      }
+   }
+   SendMsg(msg);
+}
+
+void HandleClosePosition (string & msgSegs[]) {
+   string order_type = msgSegs[1];
+   string symbol= msgSegs[2];
+   string volume = msgSegs[3];
+   string orig_open_price = msgSegs[4];
+   string sl = msgSegs[5];
+   string tp = msgSegs[6];
+   string comment = msgSegs[7];
+   string magic = msgSegs[8];
+   string masterOrderId = msgSegs[9];
+   string orderId = msgSegs[10];
+   double close_at_price = order_type == "Buy" ? Bid : Ask;
+   bool closed = OrderClose((int)orderId, (double)volume, close_at_price, 3, Red);
+   string msg;
+   if (closed) {
+      Print("Position closed successfully");
+      bool isSelected = OrderSelect((int)orderId, SELECT_BY_TICKET);
+      if (isSelected) {
+         string close_price = (string)OrderClosePrice();
+         string close_time = TimeToStr(OrderCloseTime(),TIME_DATE|TIME_SECONDS);
+         string profit = (string)OrderProfit();
+         string commission = (string)OrderCommission();
+         string balance = (string)AccountBalance();
+         string order_comment = OrderComment();
+         string swap = (string)OrderSwap();
+         string close_type;
+         if (StringFind(OrderComment(), "[sl]", 0) != -1) close_type = "SL";
+         else if (StringFind(OrderComment(), "[tp]", 0) != -1) close_type = "TP";
+         else close_type = OrderComment();
+         msg = StringFormat(
+            "{\"action\":\"close_position\",\"status\":\"closed\",\"orderId\":\"%s\",\"closePrice\":\"%s\",\"closeTime\":\"%s\",\"profit\":\"%s\",\"commission\":\"%s\",\"balance\":\"%s\",\"closeType\":\"%s\",\"comment\":\"%s\",\"swap\":\"%s\"}",
+            orderId, close_price, close_time, profit, commission, balance, close_type, order_comment, swap
+         );
+      } else {
+         string error_msg = "ERROR: Could not select order with orderId: " + orderId;
+         Print("Failed to close position with id " + orderId);
+         msg = StringFormat(
+            "{\"action\":\"close_position\",\"status\":\"failed\",\"reason\":\"%s\",\"orderId\":\"%s\"}",
+            error_msg, orderId
+         );
+      }
+   } else {
+      int error_code = GetLastError();
+      string error_msg = "ERROR " + (string)error_code + ": " + ErrorDescription(error_code);
+      Print("OrderClose failed ", error_msg);
+      msg = StringFormat(
+            "{\"action\":\"position_close\",\"status\":\"failed\",\"reason\":\"%s\",\"orderId\":\"%s\"}",
+            error_msg, orderId
+         );
+   }
+   SendMsg(msg);
+}
+
 void ReadMessages() {
    // Read any messages on the socket
    string strMessage;
    do {
+      if (!glbClientSocket) {
+         break;
+      }
       strMessage = glbClientSocket.Receive("\n");
       // Print("ReceiveWithHeader: " + strMessage);
       if (strMessage != "") {
+         strMessage = StringSubstr(strMessage,0,StringLen(strMessage)-1); // Remove end of line character
          Print("Received message: ", strMessage);
          string msgSegments[];
          StringSplit(strMessage,StringGetCharacter("|",0),msgSegments);
          if (ArraySize(msgSegments) > 0) {
             string action = msgSegments[0];
-            if (action == "authorized") {
-               Print("Client has been authorized");
-               string magics_str = msgSegments[1];
-               setAuthorized(true);
-               string magics[];
-               StringSplit(magics_str, StringGetCharacter(",",0), magics);
-               setSubscribed(ArraySize(magics) > 0);
-               Comment("Subscribed to: " + magics_str);
-            } else if (action == "authorization_failed") {
-               Print("Could not authorize with token and account number. Disconnecting...");
-               setAuthorized(false);
-               setSubscribed(false);
-               doneRetryingConnection = true;
-               setStatusConnected(false);
-               delete glbClientSocket;
-               glbClientSocket = NULL;
-            } else if (action == "create_order") {
-               string order_type = msgSegments[1];
-               string symbol= msgSegments[2];
-               string volume = msgSegments[3];
-               string orig_open_price = msgSegments[4];
-               string sl = msgSegments[5];
-               string tp = msgSegments[6];
-               string comment = msgSegments[7];
-               string magic = msgSegments[8];
-               string masterOrderId = msgSegments[9];
-               double current_open_price;
-               if (order_type == "Buy") {
-                  current_open_price = MarketInfo(symbol, MODE_ASK);
-               } else if (order_type == "Sell") {
-                  current_open_price = MarketInfo(symbol, MODE_BID);
-               }
-               Print("Placing order OrderSend: symbol: ", symbol, " Order type: ", OrderTypeStringToInt(order_type), " Volume: ", volume, " Open Price: ", current_open_price, " Slippage: ", 3, " TP: ", (double)sl, " TP: ", (double)tp, " Comment: ", comment, " Magic: ", (int)magic);
-               int ticket = OrderSend(symbol, OrderTypeStringToInt(order_type), (double)volume, current_open_price, 3, (double)sl, (double)tp, comment, (int)magic);
-               string msg;
-               if (ticket == -1) {
-                  string error_msg = "ERROR " + (string)GetLastError() + ": " + ErrorDescription(GetLastError());
-                  Print("OrderSend failed. No ticket retrieved. ", error_msg);
-                  msg = StringFormat(
-                        "{\"action\":\"create_order\",\"status\":\"failed\",\"reason\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
-                        error_msg, masterOrderId, order_type, symbol, volume, (string)current_open_price, sl, tp, comment, magic
-                     );
-               } else {
-                  Print("OrderSend placed successfully");
-                  bool isSelected = OrderSelect(ticket, SELECT_BY_TICKET);
-                  if (isSelected) {
-                     string actual_open_price = (string)OrderOpenPrice();
-                     string actual_open_time = TimeToStr(OrderOpenTime(),TIME_DATE|TIME_SECONDS);
-                     string status;
-                     if (order_type == "Buy" || order_type == "Sell") {
-                        status = "position_opened";
-                     } else {
-                        status = "order_placed";
-                     }
-                     msg = StringFormat(
-                        "{\"action\":\"create_order\",\"status\":\"%s\",\"orderId\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"openTime\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
-                        status, (string)ticket, masterOrderId, order_type, symbol, volume, actual_open_price, actual_open_time, sl, tp, comment, magic
-                     );
-                  } else {
-                     string error_msg = "ERROR: Could not select order with orderId: " + (string)ticket;
-                     Print("OrderSend failed. ", error_msg);
-                     msg = StringFormat(
-                           "{\"action\":\"create_order\",\"status\":\"failed\",\"reason\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
-                           error_msg, masterOrderId, order_type, symbol, volume, current_open_price, sl, tp, comment, magic
-                        );
-                  }
-               }
-               SendMsg(msg);
-               
-            }
+            if (action == "authorized")                  HandleAuthorized(msgSegments);
+            else if (action == "authorization_failed")   HandleAuthorizationFailed(msgSegments);
+            else if (action == "place_order")            HandlePlaceOrder(msgSegments);
+            else if (action == "close_position")         HandleClosePosition(msgSegments);
          }
       }
    } while (strMessage != "");
@@ -278,7 +377,7 @@ void ReadMessages() {
 
 void SendMsg(const string& msg) {
    if (glbClientSocket && glbClientSocket.IsSocketConnected()) {
-      glbClientSocket.Send(msg);
+      glbClientSocket.Send(msg + "\n");
       Print("Sent message: ", msg);
    } else {
       Print("Could not send message: lost connection! ", msg);
@@ -303,18 +402,4 @@ int OrderTypeStringToInt(string strOrderType) {
    if (strOrderType == "Buystop") return OP_BUYSTOP;
    // if (strOrderType == "Sellstop")
    return OP_SELLSTOP;
-}
-
-void CheckOrdersPerformed() {
-  int i,hstTotal=OrdersHistoryTotal();
-  for(i=0;i<hstTotal;i++)
-    {
-     //---- check selection result
-     if(OrderSelect(i,SELECT_BY_POS,MODE_HISTORY)==false)
-       {
-        OrderPrint();
-        Print("Access to history failed with error (",GetLastError(),")");
-        break;
-       }
-    }
 }
