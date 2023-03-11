@@ -2,6 +2,23 @@
 
 Strategy performance tracking and investing
 
+## Setup Platform
+Environment variables must be set in the `.env` file for the corresponding with the corresponding FLASK_APP='back/api.py', MT_FILES_DIR, etc.
+
+Create an autoinvesting MySQL database, adding it's name and credentials to the `.env` file.
+
+Add a user to the Users table of type admin in order to upload the database data.
+
+Upload a previously saved JSON data file.
+
+## Setup Trade Copier
+Include the investor users in the Users table.
+
+Include the investor's subscriptions in the subscriptions table.
+
+Make sure that the EA `FileConnector` is installed in the Master MT4 account, and that the EA `AutoInvestingEA` is installed in the Copier MT4 account. The copier's EA must have the appropriate key that coincides with the key in the Users table.
+
+
 ## Run dev server
 `flask run`
 (from root directory)
