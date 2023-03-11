@@ -1,6 +1,7 @@
 CREATE TABLE Trades (
   orderId VARCHAR(55) NOT NULL,
   accountId VARCHAR(55) NOT NULL,
+  masterOrderId VARCHAR(55),
   magic BIGINT NOT NULL,
   symbol VARCHAR(55),
   orderType VARCHAR(55),

@@ -34,7 +34,7 @@ def save_all_strategy_data (content):
       res = db.save_account(account)
       results.append({ 'save_account': account.accountId, 'success': True })
     except Exception as e:
-      results.append({ 'save_account': account.accountId, 'success': False, 'error': repr(e) })
+      results.append({ 'save_account': account.accountId, 'success': False, 'error': repr(e), 'account': account })
   for t in trades:
     trade = Trade(
       t['orderId'],
@@ -81,7 +81,7 @@ def save_all_strategy_data (content):
       res = db.save_order(order)
       results.append({ 'save_order': o['orderId'], 'success': True })
     except Exception as e:
-      results.append({ 'save_order': 0['orderId'], 'success': False, 'error': repr(e) })
+      results.append({ 'save_order': o['orderId'], 'success': False, 'error': repr(e) })
   for sb in subscriptions:
     subscription = Subscription(sb['accountId'], sb['magic'])
     try:
