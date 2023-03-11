@@ -5,7 +5,7 @@ from os.path import join
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-stock = qs.utils.download_returns('FB')
+# stock = qs.utils.download_returns('FB')
 
 def get_returns_series(balances):
   pass
