@@ -148,7 +148,7 @@ class mt_connector_client():
                 return text
         # can happen if mql writes to the file. don't print anything here.
         except (IOError, PermissionError):
-            print(datetime.now(), 'CAUGHT ERROR TRYING TO READ FILE:', file_path)
+            # print(datetime.now(), 'CAUGHT ERROR TRYING TO READ FILE:', file_path)
             pass
         except:
             print_exc()
