@@ -28,6 +28,9 @@ Strategy = namedtuple('Strategy', strategy_fields, defaults=(None, None))
 subscription_fields = 'accountId, magic'
 Subscription = namedtuple('Subscription', subscription_fields)
 
+account_subscription_fields = 'accountId, subscriptions'
+AccountSubscriptions = namedtuple('AccountSubscriptions', account_subscription_fields)
+
 def init_connection_pool():
   db_config = {
     'host': getenv('DB_SERVERNAME'),
@@ -430,7 +433,13 @@ def authenticate_mt_client (token, account_number, account_type):
     + 'AND Subscriptions.accountId = Accounts.accountId'
   subscriptions = select_many(sql, (token, account_number, account_type))
   magics = [s['magic'] for s in subscriptions]
-  return namedtuple('AccountSubscriptions', "accountId,subscriptions")(user['accountId'], magics)
+  return AccountSubscriptions(user['accountId'], magics)
+
+def get_accounts_subscriptions (account_id):
+  sql = 'SELECT magic FROM Subscriptions WHERE accountId = %s'
+  subscriptions = select_many(sql, (account_id,))
+  magics = [s['magic'] for s in subscriptions]
+  return magics
 
 def get_accounts_subscribed_to_magic (magic):
   sql = 'SELECT accountId FROM Subscriptions WHERE magic = %s'

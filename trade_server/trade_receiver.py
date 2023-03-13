@@ -1,4 +1,3 @@
-
 import json
 from time import sleep
 from os import getenv
@@ -14,6 +13,11 @@ from back.db import Trade, Order
 load_dotenv()
 
 LOOKBACK_DAYS_TO_UPDATE = 365
+
+def log(msg):
+  time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+  with open(f"logs/master.log", 'a') as f:
+    f.write(f"{time_str} {msg}\n")
 
 def old_to_new_magic(trades_dict):
     olds = [-1254131479,-1254133479,-1254134479,-1254224457,-1254224458,-1254224459,-1254224460,-1254224461,-1254224462,-1254224463,-1254224464,-1254224465,-1254224466,-1254224467,-1254224468,-1254224469,-1254224470,-1254224471,-1254224472,-1254224473,-1254224474,-1254224475,-1254224476,-1254224478,20220604,202206101,202206103,2205141,2205142,2205144,2205145]
@@ -122,10 +126,12 @@ def handle_order_created (trade_queue, mt_order):
     status = 'open' if mt_order['direction'] in ['Buy', 'Sell'] else 'placed'
     order = Order(mt_order['orderId'], None, f"{mt_order['magic']}_D", mt_order['magic'], mt_order['symbol'], mt_order['direction'], mt_order['openTime'], mt_order['openPrice'], mt_order['size'], mt_order['comment'], mt_order['sl'], mt_order['tp'], status)
     db.save_order(order)
+    log(f"ORDER CREATED: {order}")
     trade_queue.put(mt_order)
 
 def handle_order_modified (trade_queue, mt_order, modified_fields):
   mt_order['action'] = 'modify'
+  log(f"ORDER MODIFIED: {mt_order}")
   trade_queue.put(mt_order)
 
 def handle_order_removed (trade_queue, mt_order):
@@ -135,10 +141,12 @@ def handle_order_removed (trade_queue, mt_order):
     db.delete_order(mt_order['orderId'])
     trade = Trade(mt_order['orderId'],None,f"{mt_order['magic']}_D",mt_order['magic'],mt_order['symbol'],mt_order['direction'],mt_order['openTime'],mt_order['closeTime'],mt_order['openPrice'],mt_order['closePrice'],mt_order['size'],mt_order['profit'],mt_order['balance'],mt_order['closeType'],mt_order['comment'],mt_order['sl'],mt_order['tp'],mt_order['swap'],mt_order['commission'])
     db.save_trade(trade)
+    log(f"POSITION CLOSED: {trade}")
     trade_queue.put(mt_order)
   elif mt_order['direction'] in ['Buylimit', 'Buystop', 'Selllimit', 'Sellstop']:
     mt_order['action'] = 'cancel_order'
     print('[RECEIVER] ORDER CANCELLED: ', mt_order)
     db.update_order_status(mt_order['orderId'], 'cancelled')
+    log(f"ORDER CANCELLED: {mt_order}")
     trade_queue.put(mt_order)
 

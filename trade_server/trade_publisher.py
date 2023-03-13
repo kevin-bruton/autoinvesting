@@ -37,6 +37,14 @@ def handle_auth_request (client, client_id, msg):
     send(client, response)
     log(account_id, f"Successful authentication. Subscriptions: {str_subscriptions}")
 
+def handle_get_subscriptions (client, account_id, msg):
+  print(f"[PUBLISHER] RECEIVED GET SUBSCRIPTIONS REQUEST FROM {account_id}: {msg}")
+  subscriptions = db.get_accounts_subscriptions(account_id)
+  str_subscriptions = ','.join([str(s) for s in subscriptions])
+  response = f"got_subscriptions|{str_subscriptions}"
+  print('[PUBLISHER]    Sending to client with account id', account_id, ':', response)
+  send(client, response)
+
 def handle_heartbeat (account_id):
   print(f"[PUBLISHER] RECEIVED HEARTBEAT FROM {account_id}")
   db.register_heartbeat(account_id)
@@ -80,12 +88,18 @@ def handle_message(client, client_id, received_msg):
   if 'action' not in msg:
     return
   if msg['action'] == 'subscribe':        handle_auth_request(client, client_id, msg)
+  elif msg['action'] == 'get_subscriptions': handle_get_subscriptions(client, account_id, msg)
   elif msg['action'] == 'heatbeat':       handle_heartbeat(account_id)
   elif msg['action'] == 'place_order':    handle_place_order_response(account_id, msg)
   elif msg['action'] == 'close_position': handle_close_position_response(account_id, msg)
   elif msg['action'] == 'cancel_order':   handle_cancel_order_response(account_id, msg)
 
 def handle_msgs_from_master(trades_queue):
+  """ Receives trades performed by the Master
+      It looks for all accounts that have subscribed to that strategy
+      If the subscribed client is connected, the message is sent to that client for it to be performed there
+      If the subscribed client is not connected, then an entry is added to the log to register this event
+  """
   format_msg = lambda msg: (msg + '\r\n').encode('utf-8')
   while True:
     sleep(1)

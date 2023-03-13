@@ -24,6 +24,8 @@ bool doneRetryingConnection = false;
 bool isAuthorized = false;
 bool isSubscribed = false;
 int openOrders[];
+string subscriptions[];
+int lastHeartBeatMin = 60;
 
 // --------------------------------------------------------------------
 // Global variables and constants
@@ -51,7 +53,7 @@ void OnInit() {
    // ObjectSet("Title",OBJPROP_BACK,true);
    ObjectSet("Title",OBJPROP_BORDER_TYPE,BORDER_RAISED);
    // ObjectSet("Title",OBJPROP_BGCOLOR,Blue);
-   ObjectSet("Title",OBJPROP_XSIZE, 215);
+   ObjectSet("Title",OBJPROP_XSIZE, 300);
    ObjectSet("Title", OBJPROP_YSIZE, 140);
    // ObjectSetText("Title","Auto Investing",20,"New Times Roman",Black);
    
@@ -106,7 +108,31 @@ void OnInit() {
    ObjectSet("Subscribed",OBJPROP_XSIZE, 20);
    ObjectSet("Subscribed", OBJPROP_YSIZE, 20);
    
-/* 
+   /////////// Subscriptions ////////////////////////
+   ObjectCreate(0,"SubscriptionsBox", OBJ_RECTANGLE_LABEL, 0,0,0);
+   ObjectSet("SubscriptionsBox",OBJPROP_ANCHOR,ANCHOR_UPPER);
+   ObjectSet("SubscriptionsBox",OBJPROP_XDISTANCE,400);
+   ObjectSet("SubscriptionsBox",OBJPROP_YDISTANCE,130);
+   ObjectSet("SubscriptionsBox",OBJPROP_BORDER_TYPE,BORDER_RAISED);
+   ObjectSet("SubscriptionsBox",OBJPROP_XSIZE, 300);
+   ObjectSet("SubscriptionsBox", OBJPROP_YSIZE, 40);
+   
+   ObjectCreate(0,"SubscriptionsTitle",OBJ_LABEL,0,0,0);
+   ObjectSet("SubscriptionsTitle",OBJPROP_CORNER,CORNER_LEFT_UPPER);
+   ObjectSet("SubscriptionsTitle",OBJPROP_XDISTANCE, 410);
+   ObjectSet("SubscriptionsTitle",OBJPROP_YDISTANCE,135);
+   ObjectSetText("SubscriptionsTitle","SUBSCRIPTIONS",14,"Arial",Black);
+   
+   ObjectCreate(0,"GetSubscriptionsBtn", OBJ_BUTTON,0,0,0);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_ANCHOR,ANCHOR_UPPER);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_XDISTANCE, 635);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_YDISTANCE, 137);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_XSIZE, 60);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_YSIZE, 25);
+   ObjectSetText("GetSubscriptionsBtn", "Update", 10,"Arial", Black);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_COLOR,clrBlack);
+   // ObjectSetInteger(0,"GetSubscriptionsBtn",OBJPROP_BACK,false);
+      
    ChartSetInteger(0, CHART_COLOR_BACKGROUND, White);
    ChartSetInteger(0, CHART_COLOR_FOREGROUND, Black);
    ChartSetInteger(0, CHART_COLOR_GRID, White);
@@ -120,7 +146,6 @@ void OnInit() {
    ChartSetInteger(0, CHART_COLOR_ASK, White);
    ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, White);
    ChartSetInteger(0, CHART_FOREGROUND,0,false);
-   */
 }
 
 void setStatusConnected (bool isConnected) {
@@ -158,6 +183,18 @@ void OnDeinit(const int reason)
 
 void OnChartEvent(const int id, const long& lparam, const double& dparam, const string& sparam)
 {
+   if (id == CHARTEVENT_OBJECT_CLICK) {
+      if (sparam == "GetSubscriptionsBtn") {
+         Print("Get Subscriptions");
+         string msg = "{\"action\":\"get_subscriptions\"}";
+         SendMsg(msg);
+         if(ObjectGetInteger(0,"GetSubscriptionsBtn",OBJPROP_STATE)==true) {
+            Print("Button state was true");
+            Sleep(300);
+            ObjectSetInteger(0,"GetSubscriptionsBtn",OBJPROP_STATE,false);
+         }
+      }
+   }
    if (id == CHARTEVENT_KEYDOWN) {
       // May be a real key press, or a dummy notification
       // resulting from socket activity. If lparam matches
@@ -210,6 +247,7 @@ void OnTimer() {
       doneRetryingConnection = true;
       setStatusConnected(false);
    }
+   HearBeat();
 }
 // --------------------------------------------------------------------
 // Tick handling - set up a connection, if none already active,
@@ -233,12 +271,8 @@ void CheckOpenPositions () {
 
 void HandleAuthorized (string & msgSeg[]) {
    Print("Client has been authorized");
-   string magics_str = msgSeg[1];
+   HandleGotSubscriptions(msgSeg);
    setAuthorized(true);
-   string magics[];
-   StringSplit(magics_str, StringGetCharacter(",",0), magics);
-   setSubscribed(ArraySize(magics) > 0);
-   Comment("Subscribed to: " + magics_str);
 }
 
 void HandleAuthorizationFailed(string & msgSeg[]) {
@@ -247,6 +281,23 @@ void HandleAuthorizationFailed(string & msgSeg[]) {
    setStatusConnected(false);
    delete glbClientSocket;
    glbClientSocket = NULL;
+}
+
+void HandleGotSubscriptions (string & msgSeg[]) {
+   Print("Got subscriptions");
+   string magics_str = msgSeg[1];
+   string magics[];
+   StringSplit(magics_str, StringGetCharacter(",",0), magics);
+   setSubscribed(ArraySize(magics) > 0);
+   int yDistance = 165;
+   for (int iMagic = 0; iMagic < ArraySize(magics); iMagic++) {
+      ObjectSet("SubscriptionsBox", OBJPROP_YSIZE, 40 + (iMagic * 30));
+      ObjectCreate(0,"Subscription"+(string)iMagic,OBJ_LABEL,0,0,0);
+      ObjectSet("Subscription"+(string)iMagic,OBJPROP_CORNER,CORNER_LEFT_UPPER);
+      ObjectSet("Subscription"+(string)iMagic,OBJPROP_XDISTANCE, 410);
+      ObjectSet("Subscription"+(string)iMagic,OBJPROP_YDISTANCE,yDistance + (iMagic * 25));
+      ObjectSetText("Subscription"+(string)iMagic,magics[iMagic],10,"Arial",Black);
+   }
 }
 
 void HandlePlaceOrder (string & msgSeg[]) {
@@ -368,6 +419,7 @@ void ReadMessages() {
             string action = msgSegments[0];
             if (action == "authorized")                  HandleAuthorized(msgSegments);
             else if (action == "authorization_failed")   HandleAuthorizationFailed(msgSegments);
+            else if (action == "got_subscriptions")      HandleGotSubscriptions(msgSegments);
             else if (action == "place_order")            HandlePlaceOrder(msgSegments);
             else if (action == "close_position")         HandleClosePosition(msgSegments);
          }
@@ -402,4 +454,14 @@ int OrderTypeStringToInt(string strOrderType) {
    if (strOrderType == "Buystop") return OP_BUYSTOP;
    // if (strOrderType == "Sellstop")
    return OP_SELLSTOP;
+}
+
+void HearBeat() {
+   int frequencyInMinutes = 30;
+   int currentMinute = TimeMinute(TimeCurrent());
+   if ((currentMinute % frequencyInMinutes) == 0) {
+      string msg = "{ \"action\": \"heart_beat\" }";
+      SendMsg(msg);
+      Print("Heatbeat");
+   }
 }
