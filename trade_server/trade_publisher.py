@@ -36,6 +36,10 @@ def handle_auth_request (client, client_id, msg):
     print('[PUBLISHER]   Sending to ', client_id, 'with account id', account_id, ':', response)
     send(client, response)
     log(account_id, f"Successful authentication. Subscriptions: {str_subscriptions}")
+
+def handle_heartbeat (account_id):
+  print(f"[PUBLISHER] RECEIVED HEARTBEAT FROM {account_id}")
+  db.register_heartbeat(account_id)
   
 def handle_place_order_response (account_id, msg):
   print(f"[PUBLISHER] RECEIVED PLACE ORDER REPORT FROM {account_id}: {msg}")
@@ -76,6 +80,7 @@ def handle_message(client, client_id, received_msg):
   if 'action' not in msg:
     return
   if msg['action'] == 'subscribe':        handle_auth_request(client, client_id, msg)
+  elif msg['action'] == 'heatbeat':       handle_heartbeat(account_id)
   elif msg['action'] == 'place_order':    handle_place_order_response(account_id, msg)
   elif msg['action'] == 'close_position': handle_close_position_response(account_id, msg)
   elif msg['action'] == 'cancel_order':   handle_cancel_order_response(account_id, msg)

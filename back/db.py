@@ -413,6 +413,11 @@ def register_update (result):
   sql = 'INSERT INTO Updates (updateTime,result) VALUES (%s, %s);'
   return insert_one(sql, (now, result))
 
+def register_heartbeat (account_id):
+  now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
+  sql = 'UPDATE Accounts SET lastHeartbeat = %s WHERE accountId = %s'
+  update_one(sql, (now, account_id,))
+
 def authenticate_mt_client (token, account_number, account_type):
   sql = 'SELECT accountId FROM Accounts WHERE subscriptionKey = %s AND accountNumber = %s AND accountType = %s'
   user = select_one(sql, (token, account_number, account_type))

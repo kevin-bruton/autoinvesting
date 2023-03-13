@@ -14,6 +14,7 @@ CREATE TABLE Accounts (
   winPct DECIMAL(10,2),
   profitFactor DECIMAL(10,2),
   numTrades INTEGER,
+  lastHeartbeat DATETIME,
   PRIMARY KEY (accountId),
   FOREIGN KEY (username) REFERENCES Users(username)
 );
