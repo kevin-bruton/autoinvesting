@@ -24,7 +24,7 @@ bool doneRetryingConnection = false;
 bool isAuthorized = false;
 bool isSubscribed = false;
 int openOrders[];
-string subscriptions[];
+int numSubscriptionLabels = 0;
 int lastHeartBeatMin = 60;
 
 // --------------------------------------------------------------------
@@ -179,6 +179,21 @@ void OnDeinit(const int reason)
       glbClientSocket = NULL;
    }
    setStatusConnected(false);
+   ObjectDelete(0,"Title");
+   ObjectDelete(0,"Name");
+   ObjectDelete(0,"ConnectedLabel");
+   ObjectDelete(0,"Connected");
+   ObjectDelete(0,"AuthorizedLabel");
+   ObjectDelete(0,"Authorized");
+   ObjectDelete(0,"SubscribedLabel");
+   ObjectDelete(0,"Subscribed");
+   ObjectDelete(0,"SubscriptionsBox");
+   ObjectDelete(0,"SubscriptionsTitle");
+   ObjectDelete(0,"GetSubscriptionsBtn");
+   for (int iLabel = 0; iLabel < numSubscriptionLabels; iLabel++) {
+      ObjectDelete(0, "Subscription"+(string)iLabel);
+   }
+   ChartRedraw(0);
 }
 
 void OnChartEvent(const int id, const long& lparam, const double& dparam, const string& sparam)
@@ -189,7 +204,6 @@ void OnChartEvent(const int id, const long& lparam, const double& dparam, const 
          string msg = "{\"action\":\"get_subscriptions\"}";
          SendMsg(msg);
          if(ObjectGetInteger(0,"GetSubscriptionsBtn",OBJPROP_STATE)==true) {
-            Print("Button state was true");
             Sleep(300);
             ObjectSetInteger(0,"GetSubscriptionsBtn",OBJPROP_STATE,false);
          }
@@ -271,8 +285,9 @@ void CheckOpenPositions () {
 
 void HandleAuthorized (string & msgSeg[]) {
    Print("Client has been authorized");
-   HandleGotSubscriptions(msgSeg);
    setAuthorized(true);
+   Sleep(1000);
+   HandleGotSubscriptions(msgSeg);
 }
 
 void HandleAuthorizationFailed(string & msgSeg[]) {
@@ -284,19 +299,24 @@ void HandleAuthorizationFailed(string & msgSeg[]) {
 }
 
 void HandleGotSubscriptions (string & msgSeg[]) {
-   Print("Got subscriptions");
    string magics_str = msgSeg[1];
+   Print("Retrieved subscriptions: ", magics_str);
    string magics[];
    StringSplit(magics_str, StringGetCharacter(",",0), magics);
    setSubscribed(ArraySize(magics) > 0);
    int yDistance = 165;
-   for (int iMagic = 0; iMagic < ArraySize(magics); iMagic++) {
-      ObjectSet("SubscriptionsBox", OBJPROP_YSIZE, 40 + (iMagic * 30));
+   for (int iLabel = 0; iLabel < numSubscriptionLabels; iLabel++) {
+      ObjectDelete(0, "Subscription"+(string)iLabel);
+   }
+   numSubscriptionLabels = ArraySize(magics);
+   for (int iMagic = 0; iMagic < numSubscriptionLabels; iMagic++) {
+      ObjectSet("SubscriptionsBox", OBJPROP_YSIZE, 60 + (iMagic * 30));
       ObjectCreate(0,"Subscription"+(string)iMagic,OBJ_LABEL,0,0,0);
       ObjectSet("Subscription"+(string)iMagic,OBJPROP_CORNER,CORNER_LEFT_UPPER);
       ObjectSet("Subscription"+(string)iMagic,OBJPROP_XDISTANCE, 410);
       ObjectSet("Subscription"+(string)iMagic,OBJPROP_YDISTANCE,yDistance + (iMagic * 25));
       ObjectSetText("Subscription"+(string)iMagic,magics[iMagic],10,"Arial",Black);
+      // ChartRedraw(0);
    }
 }
 
@@ -462,6 +482,5 @@ void HearBeat() {
    if ((currentMinute % frequencyInMinutes) == 0) {
       string msg = "{ \"action\": \"heart_beat\" }";
       SendMsg(msg);
-      Print("Heatbeat");
    }
 }
