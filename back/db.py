@@ -314,9 +314,9 @@ def update_order_status (orderId, status):
   sql = 'UPDATE Orders SET status = %s WHERE orderId = %s'
   return update_one(sql, (status, orderId))
 
-def delete_order (account_id):
-  sql = 'DELETE From Orders WHERE accountId = %s'
-  return delete_many(sql, (account_id,))
+def delete_order (order_id):
+  sql = 'DELETE From Orders WHERE orderId = %s'
+  return delete_many(sql, (order_id,))
 
 def get_strategies_and_kpis ():
   pass

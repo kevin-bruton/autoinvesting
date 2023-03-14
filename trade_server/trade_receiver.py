@@ -42,6 +42,7 @@ def mt_to_db_format(trades_dict):
         # trades_list.append(trades_dict[order_id])
         t = trades_dict[order_id]
         balance.append(balance[-1] + t['pnl'])
+        get_close_type = lambda c: c[c.find('[')+1:c.find(']')] if c.find('[') != -1 else ''
         trade = {
             'orderId': order_id,
             'magic': t['magic'],
@@ -54,7 +55,7 @@ def mt_to_db_format(trades_dict):
             'size': t['lots'],
             'profit': t['pnl'],
             'balance': balance[-1],
-            'closeType': t['comment'].replace('[', '').replace(']', ''),
+            'closeType': get_close_type(t['comment']),
             'comment': t['comment'],
             'tp': t['TP'],
             'sl': t['SL'],
@@ -109,7 +110,7 @@ class TradeReceiver():
 
 def run_receiver (trade_queue):
   def on_order_event(event, mt_order, modified_fields):
-    print('[RECEIVER]', f"{event.upper()}:", mt_order, '; modified_fields:', modified_fields)
+    print('[RECEIVER]', f"ORDER EVENT={event.upper()}:", mt_order, '; modified_fields:', modified_fields)
     if event == 'order_created':    handle_order_created(trade_queue, mt_order)
     if event == 'modified':         handle_order_modified(trade_queue, mt_order, modified_fields)
     if event == 'order_removed':    handle_order_removed(trade_queue, mt_order)
@@ -126,7 +127,10 @@ def handle_order_created (trade_queue, mt_order):
     status = 'open' if mt_order['direction'] in ['Buy', 'Sell'] else 'placed'
     order = Order(mt_order['orderId'], None, f"{mt_order['magic']}_D", mt_order['magic'], mt_order['symbol'], mt_order['direction'], mt_order['openTime'], mt_order['openPrice'], mt_order['size'], mt_order['comment'], mt_order['sl'], mt_order['tp'], status)
     db.save_order(order)
-    log(f"ORDER CREATED: {order}")
+    if status == 'open':
+      log(f"POSITION OPENED: {order}")
+    else:
+      log(f"ORDER CREATED: {order}")
     trade_queue.put(mt_order)
 
 def handle_order_modified (trade_queue, mt_order, modified_fields):
@@ -142,7 +146,8 @@ def handle_order_removed (trade_queue, mt_order):
     trade = Trade(mt_order['orderId'],None,f"{mt_order['magic']}_D",mt_order['magic'],mt_order['symbol'],mt_order['direction'],mt_order['openTime'],mt_order['closeTime'],mt_order['openPrice'],mt_order['closePrice'],mt_order['size'],mt_order['profit'],mt_order['balance'],mt_order['closeType'],mt_order['comment'],mt_order['sl'],mt_order['tp'],mt_order['swap'],mt_order['commission'])
     db.save_trade(trade)
     log(f"POSITION CLOSED: {trade}")
-    trade_queue.put(mt_order)
+    if not mt_order['sl'] and not mt_order['tp']: # Only make client's close their corresponding order if they don't have a SL and TP
+       trade_queue.put(mt_order)
   elif mt_order['direction'] in ['Buylimit', 'Buystop', 'Selllimit', 'Sellstop']:
     mt_order['action'] = 'cancel_order'
     print('[RECEIVER] ORDER CANCELLED: ', mt_order)

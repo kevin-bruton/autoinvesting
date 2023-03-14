@@ -54,7 +54,10 @@ def handle_place_order_response (account_id, msg):
   if msg['status'] == 'placed' or msg['status'] == 'open':
     order = Order(msg['orderId'],msg['masterOrderId'],account_id,msg['magic'],msg['symbol'],msg['orderType'],msg['openTime'],msg['openPrice'],msg['size'],msg['comment'],msg['sl'],msg['tp'],msg['status'])
     db.save_order(order)
-    log(account_id, f"CREATE ORDER. RESULT: {msg['status']} {order}")
+    if msg['status'] == 'placed':
+      log(account_id, f"PLACE ORDER. RESULT: {msg['status']} {order}")
+    else:
+      log(account_id, f"OPEN POSITION. RESULT: {msg['status']} {order}")
   else:
     log(account_id, f"CREATE ORDER. RESULT: FAILED! REASON: {msg['reason']}; DETAILS: {msg}")
 
@@ -68,6 +71,19 @@ def handle_close_position_response (account_id, msg):
     log(account_id, f"CLOSED POSITION {trade}")
   else:
     log(account_id, f"FAILED TO CLOSE POSITION {msg}")
+
+def handle_position_closed (account_id, msg):
+  print(f"[PUBLISHER] CLIENT CLOSED POSITION (TP,SL,MANUAL) {account_id}: {msg}")
+  order = db.get_order(msg['orderId'])
+  if not order:
+    return
+  db.delete_order(msg['orderId'])
+  get_close_type = lambda c: c[c.find('[')+1:c.find(']')] if c.find('[') != -1 else ''
+  # 'orderId, masterOrderId, accountId, magic, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, closeType, comment, sl, tp, swap, commission'
+  trade = Trade(msg['orderId'],order['masterOrderId'],account_id,order['magic'],order['symbol'],order['orderType'],order['openTime'],msg['closeTime'],order['openPrice'],msg['closePrice'],order['size'],msg['profit'],msg['balance'],get_close_type(msg['comment']),msg['comment'],msg['sl'],msg['tp'],msg['swap'],msg['commission'])
+  db.save_trade(trade)
+  log(account_id, f"CLOSED POSITION {trade}")
+
 
 def handle_cancel_order_response (account_id, msg):
   print(f"[PUBLISHER] RECEIVED CANCEL ORDER REPORT FROM {account_id} **** NOT IMPLEMENTED YET ****: {msg}")
@@ -91,7 +107,8 @@ def handle_message(client, client_id, received_msg):
   elif msg['action'] == 'get_subscriptions': handle_get_subscriptions(client, account_id, msg)
   elif msg['action'] == 'heatbeat':       handle_heartbeat(account_id)
   elif msg['action'] == 'place_order':    handle_place_order_response(account_id, msg)
-  elif msg['action'] == 'close_position': handle_close_position_response(account_id, msg)
+  elif msg['action'] == 'close_position': handle_close_position_response(account_id, msg) # In response to request to close a position
+  elif msg['action'] == 'position_closed':handle_position_closed(account_id, msg)         # Informing of position closed on client side due to SL or TP or manual
   elif msg['action'] == 'cancel_order':   handle_cancel_order_response(account_id, msg)
 
 def handle_msgs_from_master(trades_queue):

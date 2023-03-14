@@ -23,9 +23,9 @@ int maxConnectionRetries = 100;
 bool doneRetryingConnection = false;
 bool isAuthorized = false;
 bool isSubscribed = false;
-int openOrders[];
 int numSubscriptionLabels = 0;
-int lastHeartBeatMin = 60;
+string lastHeartbeat = "";
+int positionIds[];
 
 // --------------------------------------------------------------------
 // Global variables and constants
@@ -38,7 +38,7 @@ ClientSocket * glbClientSocket = NULL;
 // --------------------------------------------------------------------
 
 void OnInit() {
-   ArrayResize(openOrders, 0);
+   ArrayResize(positionIds, 0);
    EventSetTimer(1);
 //--- create application dialog
    //if(!dialog.Create(0,"Notification",0,300,0,450,110))
@@ -54,7 +54,7 @@ void OnInit() {
    ObjectSet("Title",OBJPROP_BORDER_TYPE,BORDER_RAISED);
    // ObjectSet("Title",OBJPROP_BGCOLOR,Blue);
    ObjectSet("Title",OBJPROP_XSIZE, 300);
-   ObjectSet("Title", OBJPROP_YSIZE, 140);
+   ObjectSet("Title", OBJPROP_YSIZE, 165);
    // ObjectSetText("Title","Auto Investing",20,"New Times Roman",Black);
    
    ObjectCreate(0,"Name",OBJ_LABEL,0,0,0);
@@ -108,11 +108,26 @@ void OnInit() {
    ObjectSet("Subscribed",OBJPROP_XSIZE, 20);
    ObjectSet("Subscribed", OBJPROP_YSIZE, 20);
    
+   ObjectCreate(0,"TradableLabel",OBJ_LABEL,0,0,0);
+   ObjectSet("TradableLabel",OBJPROP_CORNER,CORNER_LEFT_UPPER);
+   ObjectSet("TradableLabel",OBJPROP_XDISTANCE,410);
+   ObjectSet("TradableLabel",OBJPROP_YDISTANCE,130);
+   ObjectSetText("TradableLabel","Tradable:",14,"Arial",Black);
+   
+   ObjectCreate(0,"Tradable", OBJ_RECTANGLE_LABEL, 0,0,0);
+   ObjectSet("Tradable",OBJPROP_ANCHOR,ANCHOR_UPPER);
+   ObjectSet("Tradable",OBJPROP_XDISTANCE,570);
+   ObjectSet("Tradable",OBJPROP_YDISTANCE,130);
+   ObjectSet("Tradable",OBJPROP_BORDER_TYPE,BORDER_FLAT);
+   ObjectSet("Tradable",OBJPROP_BGCOLOR,White);
+   ObjectSet("Tradable",OBJPROP_XSIZE, 20);
+   ObjectSet("Tradable", OBJPROP_YSIZE, 20);
+   
    /////////// Subscriptions ////////////////////////
    ObjectCreate(0,"SubscriptionsBox", OBJ_RECTANGLE_LABEL, 0,0,0);
    ObjectSet("SubscriptionsBox",OBJPROP_ANCHOR,ANCHOR_UPPER);
    ObjectSet("SubscriptionsBox",OBJPROP_XDISTANCE,400);
-   ObjectSet("SubscriptionsBox",OBJPROP_YDISTANCE,130);
+   ObjectSet("SubscriptionsBox",OBJPROP_YDISTANCE,165);
    ObjectSet("SubscriptionsBox",OBJPROP_BORDER_TYPE,BORDER_RAISED);
    ObjectSet("SubscriptionsBox",OBJPROP_XSIZE, 300);
    ObjectSet("SubscriptionsBox", OBJPROP_YSIZE, 40);
@@ -120,21 +135,22 @@ void OnInit() {
    ObjectCreate(0,"SubscriptionsTitle",OBJ_LABEL,0,0,0);
    ObjectSet("SubscriptionsTitle",OBJPROP_CORNER,CORNER_LEFT_UPPER);
    ObjectSet("SubscriptionsTitle",OBJPROP_XDISTANCE, 410);
-   ObjectSet("SubscriptionsTitle",OBJPROP_YDISTANCE,135);
+   ObjectSet("SubscriptionsTitle",OBJPROP_YDISTANCE,170);
    ObjectSetText("SubscriptionsTitle","SUBSCRIPTIONS",14,"Arial",Black);
    
    ObjectCreate(0,"GetSubscriptionsBtn", OBJ_BUTTON,0,0,0);
    ObjectSet("GetSubscriptionsBtn", OBJPROP_ANCHOR,ANCHOR_UPPER);
    ObjectSet("GetSubscriptionsBtn", OBJPROP_XDISTANCE, 635);
-   ObjectSet("GetSubscriptionsBtn", OBJPROP_YDISTANCE, 137);
+   ObjectSet("GetSubscriptionsBtn", OBJPROP_YDISTANCE, 170);
    ObjectSet("GetSubscriptionsBtn", OBJPROP_XSIZE, 60);
    ObjectSet("GetSubscriptionsBtn", OBJPROP_YSIZE, 25);
    ObjectSetText("GetSubscriptionsBtn", "Update", 10,"Arial", Black);
    ObjectSet("GetSubscriptionsBtn", OBJPROP_COLOR,clrBlack);
    // ObjectSetInteger(0,"GetSubscriptionsBtn",OBJPROP_BACK,false);
       
+   // Clean chart of other stuff
    ChartSetInteger(0, CHART_COLOR_BACKGROUND, White);
-   ChartSetInteger(0, CHART_COLOR_FOREGROUND, Black);
+   ChartSetInteger(0, CHART_COLOR_FOREGROUND, White);
    ChartSetInteger(0, CHART_COLOR_GRID, White);
    ChartSetInteger(0, CHART_COLOR_VOLUME, White);
    ChartSetInteger(0, CHART_COLOR_CHART_UP, White);
@@ -146,6 +162,20 @@ void OnInit() {
    ChartSetInteger(0, CHART_COLOR_ASK, White);
    ChartSetInteger(0, CHART_COLOR_STOP_LEVEL, White);
    ChartSetInteger(0, CHART_FOREGROUND,0,false);
+   
+   RegisterOpenPositions();
+}
+
+void RegisterOpenPositions() {
+   int numOpenPositions = 0;
+   ArrayResize(positionIds, numOpenPositions);
+   for (int iOrder = 0; iOrder < OrdersTotal(); iOrder++) {
+      if (OrderSelect(iOrder, SELECT_BY_POS)) {
+         numOpenPositions++;
+         ArrayResize(positionIds, numOpenPositions);
+         positionIds[numOpenPositions-1] = OrderTicket();
+      }
+   }
 }
 
 void setStatusConnected (bool isConnected) {
@@ -164,6 +194,19 @@ void setAuthorized (bool isAuth) {
 void setSubscribed (bool isSub) {
    isSubscribed = isSub;
    ObjectSet("Subscribed",OBJPROP_BGCOLOR,isSub ? Green : Red);
+}
+
+void setTradable () {
+   color currentColor = (color)ObjectGet("Tradable", OBJPROP_BGCOLOR);
+   bool tradableChanged = (currentColor != Green && IsTradeAllowed())
+      || (currentColor != Red && !IsTradeAllowed());
+   color newColor;
+   if (tradableChanged) {
+      if (IsTradeAllowed()) newColor = Green;
+      else newColor = Red;
+      ObjectSet("Tradable", OBJPROP_BGCOLOR, newColor);
+   }
+   
 }
 
 // --------------------------------------------------------------------
@@ -187,6 +230,8 @@ void OnDeinit(const int reason)
    ObjectDelete(0,"Authorized");
    ObjectDelete(0,"SubscribedLabel");
    ObjectDelete(0,"Subscribed");
+   ObjectDelete(0,"TradableLabel");
+   ObjectDelete(0,"Tradable");
    ObjectDelete(0,"SubscriptionsBox");
    ObjectDelete(0,"SubscriptionsTitle");
    ObjectDelete(0,"GetSubscriptionsBtn");
@@ -227,6 +272,7 @@ void OnChartEvent(const int id, const long& lparam, const double& dparam, const 
 }
 
 void OnTimer() {
+   setTradable();
    // Connect to socket server
    if (!glbClientSocket && connectionAttempt < maxConnectionRetries) {
       glbClientSocket = new ClientSocket(Hostname, ServerPort);
@@ -273,12 +319,34 @@ void OnTick()
 }
 
 void CheckOpenPositions () {
-   for (int i = 0; i < ArraySize(openOrders); i++) {
-      int ticket = openOrders[i];
-      bool isOrderSelected = OrderSelect(ticket,SELECT_BY_TICKET);
-      bool isOrderOpen = isOrderSelected && OrderCloseTime() == 0;
-      if (!isOrderOpen) {
+   for (int i = 0; i < ArraySize(positionIds); i++) {
+      
+      int positionId = positionIds[i];
+      bool isPositionSelected = OrderSelect(positionId,SELECT_BY_TICKET);
+      bool isPositionOpen = isPositionSelected && OrderCloseTime() == 0;
+      if (!isPositionOpen) {
          // SEND MESSAGE TO SERVER NOTIFYING THAT THE ORDER/POSITION HAS BEEN CLOSED
+         int magic = OrderMagicNumber();
+         string symbol = OrderSymbol();
+         string size = (string)OrderLots();
+         string orderType = OrderTypeToString(OrderType());
+         string openTime = TimeToString(OrderOpenTime(), TIME_DATE|TIME_SECONDS);
+         string closeTime = TimeToString(TimeCurrent(), TIME_DATE|TIME_SECONDS);
+         string openPrice = DoubleToStr(OrderOpenPrice());
+         string closePrice = DoubleToStr(OrderClosePrice());
+         double sl = OrderStopLoss();
+         double tp = OrderTakeProfit();
+         double profit = OrderProfit();
+         string balance = DoubleToStr(AccountBalance());
+         double commission = OrderCommission();
+         double swap = OrderSwap();
+         string comment = OrderComment();
+         string msg = StringFormat(
+            "{\"action\":\"position_closed\",\"orderId\":\"%s\",\"magic\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"orderType\":\"%s\",\"openTime\":\"%s\",\"closeTime\":\"%s\",\"openPrice\":\"%s\",\"closePrice\":\"%s\",\"sl\":\"%.5f\",\"tp\":\"%.5f\",\"profit\":\"%.2f\",\"balance\":\"%s\",\"commission\":\"%.2f\",\"swap\":\"%.2f\",\"comment\":\"%s\"}",
+            (string)positionId, (string)magic, symbol, size, orderType, openTime, closeTime, openPrice, closePrice, sl, tp, profit, balance, commission, swap, comment
+         );
+         SendMsg(msg);
+         RemoveFromArrayByIndex(positionIds, i);
       }
    }
 }
@@ -300,11 +368,10 @@ void HandleAuthorizationFailed(string & msgSeg[]) {
 
 void HandleGotSubscriptions (string & msgSeg[]) {
    string magics_str = msgSeg[1];
-   Print("Retrieved subscriptions: ", magics_str);
    string magics[];
    StringSplit(magics_str, StringGetCharacter(",",0), magics);
    setSubscribed(ArraySize(magics) > 0);
-   int yDistance = 165;
+   int yDistance = 195;
    for (int iLabel = 0; iLabel < numSubscriptionLabels; iLabel++) {
       ObjectDelete(0, "Subscription"+(string)iLabel);
    }
@@ -353,9 +420,9 @@ void HandlePlaceOrder (string & msgSeg[]) {
             "{\"action\":\"place_order\",\"status\":\"%s\",\"orderId\":\"%s\",\"masterOrderId\":\"%s\",\"orderType\":\"%s\",\"symbol\":\"%s\",\"size\":\"%s\",\"openPrice\":\"%s\",\"openTime\":\"%s\",\"sl\":\"%s\",\"tp\":\"%s\",\"comment\":\"%s\",\"magic\":\"%s\"}",
             status, (string)ticket, masterOrderId, order_type, symbol, volume, actual_open_price, actual_open_time, sl, tp, comment, magic
          );
-         int openOrderPosition = ArraySize(openOrders) + 1;
-         ArrayResize(openOrders, openOrderPosition);
-         openOrders[openOrderPosition - 1] = ticket;
+         int newPositionIdx = ArraySize(positionIds);
+         ArrayResize(positionIds, newPositionIdx + 1);
+         positionIds[newPositionIdx] = ticket;
       } else {
          string error_msg = "ERROR: Could not select order with orderId: " + (string)ticket;
          Print("OrderSend failed. ", error_msg);
@@ -479,8 +546,29 @@ int OrderTypeStringToInt(string strOrderType) {
 void HearBeat() {
    int frequencyInMinutes = 30;
    int currentMinute = TimeMinute(TimeCurrent());
-   if ((currentMinute % frequencyInMinutes) == 0) {
-      string msg = "{ \"action\": \"heart_beat\" }";
+   int currentHour = TimeMinute(TimeCurrent());
+   string currentHeartbeat = (string)currentHour + ":" + (string)currentMinute;
+   if ((currentMinute % frequencyInMinutes) == 0 && currentHeartbeat != lastHeartbeat) {
+      string msg = "{ \"action\": \"heartbeat\" }";
       SendMsg(msg);
+      lastHeartbeat = currentHeartbeat;
    }
+}
+
+// use string so that we can have the same in MT5. 
+string OrderTypeToString(int orderType) {
+   if (orderType == OP_BUY) return "buy";
+   if (orderType == OP_SELL) return "sell";
+   if (orderType == OP_BUYLIMIT) return "buylimit";
+   if (orderType == OP_SELLLIMIT) return "selllimit";
+   if (orderType == OP_BUYSTOP) return "buystop";
+   if (orderType == OP_SELLSTOP) return "sellstop";
+   return "unknown";
+}
+
+template <typename T> void RemoveFromArrayByIndex(T& A[], int iPos){
+   int iLast;
+   for(iLast = ArraySize(A) - 1; iPos < iLast; ++iPos) 
+      A[iPos] = A[iPos + 1];
+   ArrayResize(A, iLast);
 }
