@@ -421,6 +421,11 @@ def register_heartbeat (account_id):
   sql = 'UPDATE Accounts SET lastHeartbeat = %s WHERE accountId = %s'
   update_one(sql, (now, account_id,))
 
+def set_connection_status (account_id, isConnected):
+  now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
+  sql = 'UPDATE Accounts SET lastConnectionUpdate = %s, isConnected = %s WHERE accountId = %s;'
+  update_one(sql, (now, int(isConnected), account_id))
+
 def authenticate_mt_client (token, account_number, account_type):
   sql = 'SELECT accountId FROM Accounts WHERE subscriptionKey = %s AND accountNumber = %s AND accountType = %s'
   user = select_one(sql, (token, account_number, account_type))

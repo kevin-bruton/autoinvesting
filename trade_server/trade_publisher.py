@@ -7,15 +7,15 @@ import json
 import back.db as db
 from back.db import Order, Trade
 
-active_clients = [] # a client: { client, client_id, subscriptions }
+active_clients = [] # a client: { client, client_id, account_id, subscriptions }
 
 def send(client, msg):
   format_msg = lambda msg: (msg + '\r\n').encode('utf-8')
   client.sendall(format_msg(msg))
 
-def log(accountId, msg):
+def log(account_id, msg):
   time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-  with open(f"logs/client-{accountId}.log", 'a') as f:
+  with open(f"logs/client-{account_id}.log", 'a') as f:
     f.write(f"{time_str} {msg}\n")
 
 def handle_auth_request (client, client_id, msg):
@@ -24,13 +24,16 @@ def handle_auth_request (client, client_id, msg):
   print('[PUBLISHER]   Result from user authentication:', accountSubscriptions)
   if accountSubscriptions == None:
     account_id = db.get_account_id(msg['account_number'])
+    active_clients.append({ 'client': client, 'client_id': client_id, 'account_id': account_id, 'subscriptions': subscriptions })
+    db.set_connection_status(account_id, isConnected=True)
     send(client, f"authorization_failed")
     client.close()
     print('[PUBLISHER]   Authorization failed. Closed connection with client. Client_id:', client_id, 'Account Id:', account_id)
     log(account_id, 'Attempted authorization failed. Closed connection')
   else:
     account_id, subscriptions = accountSubscriptions
-    active_clients.append({ 'client': client, 'client_id': client_id, 'accountId': account_id, 'subscriptions': subscriptions })
+    db.set_connection_status(account_id, isConnected=True)
+    active_clients.append({ 'client': client, 'client_id': client_id, 'account_id': account_id, 'subscriptions': subscriptions })
     str_subscriptions = ','.join([str(s) for s in subscriptions])
     response = f"authorized|{str_subscriptions}"
     print('[PUBLISHER]   Sending to ', client_id, 'with account id', account_id, ':', response)
@@ -99,7 +102,7 @@ def handle_message(client, client_id, received_msg):
     return
   
   account_id = None if msg['action'] == 'subscribe' \
-    else [c['accountId'] for c in active_clients if c['client_id'] == client_id][0]
+    else [c['account_id'] for c in active_clients if c['client_id'] == client_id][0]
   
   if 'action' not in msg:
     return
@@ -128,17 +131,18 @@ def handle_msgs_from_master(trades_queue):
       size = t['size'] # TODO: Will have to calculate based on client's money management
       account_ids = db.get_accounts_subscribed_to_magic(t['magic'])
       for account_id in account_ids:
-        is_account_connected = account_id in [c['accountId'] for c in active_clients]
+        is_account_connected = account_id in [c['account_id'] for c in active_clients]
         # get client's corresponding orderId so it knows which one to cancel == get orderId with masterOrderId and accountId from Orders
         client_order_id = db.get_corresponding_orderid(t['orderId'], account_id)
         msg = format_msg(f"{t['action']}|{t['direction']}|{t['symbol']}|{size}|{t['openPrice']}|{t['sl']}|{t['tp']}|{t['comment']}|{t['magic']}|{t['orderId']}|{client_order_id}")
         if is_account_connected:
-          connection = [c for c in active_clients if account_id == c['accountId']][0]
+          connection = [c for c in active_clients if account_id == c['account_id']][0]
           print(f"[PUBLISHER] SENDING MSG TO CLIENT WITH ACCOUNTID {account_id} MSG: {msg}")
           connection['client'].sendall(msg)
         else:
           print(f"[PUBLISHER] ERROR: CLIENT {account_id} NOT CONNECTED. TRIED TO SEND MESSAGE: {msg}")
           log(account_id, f"ERROR: CLIENT NOT CONNECTED. TRIED TO SEND MESSAGE: {msg}")
+          db.set_connection_status(account_id, isConnected=False)
 
 def handle_client(client, client_id):
   def get_response ():
@@ -186,8 +190,11 @@ def handle_client(client, client_id):
 
   client.close()
   # remove client from active_clients
+  disconnected_client = [c for c in active_clients if c['client_id'] == client_id][0]
+  print(active_clients)
   active_clients = [c for c in active_clients if c['client_id'] != client_id]
-  print('[PUBLISHER] Closed connection with client on thread', cur_thread, 'Client_id:', client_id)
+  print('[PUBLISHER] Closed connection with client on thread', cur_thread, 'Client  ID:', client_id, 'Account ID:', disconnected_client['account_id'])
+  db.set_connection_status(disconnected_client['account_id'], isConnected=False)
 
 def handle_connections_and_subscriptions():
   sock = bind_to_socket()

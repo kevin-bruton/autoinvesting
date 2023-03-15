@@ -15,6 +15,8 @@ CREATE TABLE Accounts (
   profitFactor DECIMAL(10,2),
   numTrades INTEGER,
   lastHeartbeat DATETIME,
+  lastConnectionUpdate DATETIME,
+  isConnected TINYINT(1) DEFAULT 0,
   PRIMARY KEY (accountId),
   FOREIGN KEY (username) REFERENCES Users(username)
 );
