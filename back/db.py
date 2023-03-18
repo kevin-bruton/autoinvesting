@@ -7,7 +7,7 @@ from operator import itemgetter
 from collections import namedtuple
 
 cnx_pool = None
-
+datetime_fmt = '%Y-%m-%d %H:%M:%S'
 values_placeholder = lambda fields: ','.join(['%s'] * len(fields.split(',')))
 
 user_fields = 'accountType, username, passwd, email, firstName, lastName, city, country'
@@ -155,8 +155,8 @@ def get_trades_of_account (account_id):
   sql = 'SELECT symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment FROM Trades WHERE accountId = %s ORDER BY closeTime'
   trades = select_many(sql, (account_id,))
   return [{**trade, **{
-      'openTime': trade['openTime'].strftime('%Y-%m-%d %H:%M:%S'),
-      'closeTime': trade['closeTime'].strftime('%Y-%m-%d %H:%M:%S'),
+      'openTime': trade['openTime'].strftime(datetime_fmt),
+      'closeTime': trade['closeTime'].strftime(datetime_fmt),
       'size': float(trade['size']),
       'profit': float(trade['profit'])
     }} for trade in trades]
@@ -177,6 +177,35 @@ def get_order (order_id):
   sql = f"SELECT {order_fields} FROM Orders WHERE orderId = %s"
   row = select_one(sql, (order_id,))
   return row
+
+def get_users_account_ids (username):
+  sql = 'SELECT accountId FROM Accounts WHERE username = %s'
+  return [a['accountId'] for a in select_many(sql, (username,))]
+
+def get_account_orders (account_id):
+  sql = 'SELECT * FROM Orders WHERE accountId = %s'
+  orders = select_many(sql, (account_id,))
+  return [{**o, **{
+    'openTime': o['openTime'].strftime(datetime_fmt),
+    'size': float(o['size'])
+  }} for o in orders]
+
+def get_account_trades (account_id):
+  sql = 'SELECT * FROM Trades WHERE accountId = %s'
+  trades = select_many(sql, (account_id,))
+  return [{**t, **{
+    'openTime': t['openTime'].strftime(datetime_fmt),
+    'closeTime': t['closeTime'].strftime(datetime_fmt),
+    'openPrice': float(t['openPrice']),
+    'closePrice': float(t['closePrice']),
+    'size': float(t['size']),
+    'profit': float(t['profit']),
+    'balance': float(t['balance']) if t['balance'] else 0,
+    'sl': float(t['sl']) if t['sl'] else None,
+    'tp': float(t['tp']) if t['tp'] else None,
+    'swap': float(t['swap']) if t['swap'] else 0,
+    'commission': float(t['commission']) if t['commission'] else 0
+    }} for t in trades]
 
 def get_all_strategy_kpis ():
   sql = 'SELECT accountNumber, accountType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \

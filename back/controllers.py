@@ -87,3 +87,11 @@ def save_new_strategies (upload_folder):
       for trade in trades:
         save_trade(trade)
   return True
+
+def get_account_logs (account_id):
+  try:
+    with open(f"logs/client-{account_id}.log", 'r') as f:
+      log = f.read()
+  except FileNotFoundError:
+    return 'No logs found for this account'
+  return log

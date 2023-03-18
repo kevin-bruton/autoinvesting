@@ -9,7 +9,7 @@ from flask_cors import CORS
 from strategies_csv import save_strategies_csv, save_all_strategy_data
 from werkzeug.middleware.proxy_fix import ProxyFix
 from utils import get_upload_folders
-from controllers import save_new_strategies
+from controllers import save_new_strategies, get_account_logs
 
 load_dotenv()
 
@@ -95,6 +95,30 @@ def get_accounts_request(user):
 @token_required
 def get_trades(user):
   return (jsonify({'success': True, 'data': db.get_trades()}), 200)
+
+@app.route('/api/user/accounts', methods=['GET'])
+@token_required
+def get_users_accounts_request(user):
+  account_ids = db.get_users_account_ids(user['username'])
+  return (jsonify({'success': True, 'data': account_ids }), 200)
+
+@app.route('/api/account/<account_id>/orders', methods=['GET'])
+@token_required
+def get_account_orders_request(user, account_id):
+  orders = db.get_account_orders(account_id)
+  return (jsonify({'success': True, 'data': orders}))
+
+@app.route('/api/account/<account_id>/trades', methods=['GET'])
+@token_required
+def get_accounts_trades(user, account_id):
+  trades = db.get_account_trades(account_id)
+  return (jsonify({'success': True, 'data': trades}), 200)
+
+@app.route('/api/account/<account_id>/logs', methods= ['GET'])
+@token_required
+def get_account_logs_request(user, account_id):
+  log = get_account_logs(account_id)
+  return log
 
 @app.route('/api/strategies', methods=['POST'])
 @admin_only
