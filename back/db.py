@@ -207,6 +207,11 @@ def get_account_trades (account_id):
     'commission': float(t['commission']) if t['commission'] else 0
     }} for t in trades]
 
+def get_account_connection_status (account_id):
+  sql = 'SELECT isConnected FROM Accounts WHERE accountId = %s'
+  is_connected = select_one(sql, (account_id,))
+  return bool(is_connected)
+
 def get_all_strategy_kpis ():
   sql = 'SELECT accountNumber, accountType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \
     + 'FROM Accounts WHERE accountType = %s OR accountType = %s'

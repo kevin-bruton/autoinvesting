@@ -120,6 +120,12 @@ def get_account_logs_request(user, account_id):
   log = get_account_logs(account_id)
   return log
 
+@app.route('/api/account/<account_id>/connection-status', methods=['GET'])
+@token_required
+def get_account_connection_status(user, account_id):
+  status = db.get_account_connection_status(account_id)
+  return (jsonify({'success': True, 'data': status}), 200)
+
 @app.route('/api/strategies', methods=['POST'])
 @admin_only
 def save_strategy_request(user):
