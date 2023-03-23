@@ -380,7 +380,8 @@ class mt_connector_client():
                 data = json.loads(text)
 
                 self.historic_trades = data
-                self.event_handler.on_historic_trades()
+                if self.event_handler is not None:
+                    self.event_handler.on_historic_trades()
 
                 self.try_remove_file(self.path_historic_trades)
 
