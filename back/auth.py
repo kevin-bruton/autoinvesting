@@ -40,7 +40,8 @@ def validate_token (reqHeaders):
     raise Exception('Invalid token')
 
   # print('Decoded token: ', user)
-  if user['host'] != reqHeaders['Host']:
+  # print('User host and request host:', user['host'], reqHeaders['Host'])
+  if user['host'] != reqHeaders['Host'] or reqHeaders['Host'] == 'localhost':
     raise Exception('Invalid token: wrong host')
   
   # check if expired
