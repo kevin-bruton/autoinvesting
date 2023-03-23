@@ -91,6 +91,26 @@ def insert_one (sql, values):
     return autoincrementedId
   return bool(rowcount)
 
+def insert_many (sql, values): # values is a tuple of tuples
+  cnx = get_connection()
+  c = cnx.cursor()
+  autoincrementedId = None
+  rowcount = False
+  try:
+    c.executemany(sql, values)
+    cnx.commit()
+    autoincrementedId = c.lastrowid
+    rowcount = c.rowcount
+  except Exception as e:
+    if 'Duplicate entry' not in repr(e):
+      print('ERROR CAUGHT INSERT ONE. VALUES:', values, '; MESSAGE:', repr(e))
+    raise Exception(e)
+  finally:
+    cnx.close()
+  if autoincrementedId:
+    return autoincrementedId
+  return bool(rowcount)
+
 def update_one (sql, values):
   cnx = get_connection()
   c = cnx.cursor()
@@ -211,6 +231,13 @@ def get_account_connection_status (account_id):
   sql = 'SELECT isConnected FROM Accounts WHERE accountId = %s'
   is_connected = select_one(sql, (account_id,))
   return bool(is_connected)
+
+def update_subscriptions (account_id, magics):
+  sql = 'DELETE FROM Subscriptions WHERE accountId = %s'
+  delete_many(sql, (account_id,))
+  sql = 'INSERT INTO Subscriptions (magicAccountId, magic, accountId) VALUES (%s,%s,%s)'
+  values = [(f"{magic}_{account_id}", magic, account_id) for magic in magics]
+  insert_many(sql, values)
 
 def get_all_strategy_kpis ():
   sql = 'SELECT accountNumber, accountType, annualPctRet, maxDD, maxPctDD, annPctRetVsDdPct, winPct, profitFactor, numTrades ' \

@@ -126,6 +126,16 @@ def get_account_connection_status(user, account_id):
   status = db.get_account_connection_status(account_id)
   return (jsonify({'success': True, 'data': status}), 200)
 
+@app.route('/api/account/<account_id>/subscribe', methods=['POST'])
+@token_required
+def subscribe_to_strategies(user, account_id):
+  magics = request.get_json()
+  try:
+    db.update_subscriptions(account_id, magics)
+    return (jsonify({'success': True}))
+  except Exception as e:
+    return (jsonify({'error': repr(e)}), 200)
+
 @app.route('/api/strategies', methods=['POST'])
 @admin_only
 def save_strategy_request(user):
