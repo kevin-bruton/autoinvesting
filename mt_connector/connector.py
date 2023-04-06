@@ -53,27 +53,18 @@ class mt_connector_client():
         self.verbose = verbose
 
         if not exists(metatrader_dir_path):
-            print('ERROR: metatrader_dir_path does not exist!')
+            print('[MT_CONNECTOR] ERROR: metatrader_dir_path does not exist!')
             exit()
 
-        self.path_orders = join(metatrader_dir_path,
-                                'Connector', 'Orders.txt')
-        self.path_messages = join(metatrader_dir_path,
-                                  'Connector', 'Messages.txt')
-        self.path_market_data = join(metatrader_dir_path,
-                                     'Connector', 'Market_Data.txt')
-        self.path_bar_data = join(metatrader_dir_path,
-                                  'Connector', 'Bar_Data.txt')
-        self.path_historic_data = join(metatrader_dir_path,
-                                       'Connector', 'Historic_Data.txt')
-        self.path_historic_trades = join(metatrader_dir_path,
-                                         'Connector', 'Historic_Trades.txt')
-        self.path_orders_stored = join(metatrader_dir_path,
-                                       'Connector', 'Orders_Stored.txt')
-        self.path_messages_stored = join(metatrader_dir_path,
-                                         'Connector', 'Messages_Stored.txt')
-        self.path_commands_prefix = join(metatrader_dir_path,
-                                         'Connector', 'Commands_')
+        self.path_orders =          join(metatrader_dir_path, 'Connector', 'Orders.txt')
+        self.path_messages =        join(metatrader_dir_path, 'Connector', 'Messages.txt')
+        self.path_market_data =     join(metatrader_dir_path, 'Connector', 'Market_Data.txt')
+        self.path_bar_data =        join(metatrader_dir_path, 'Connector', 'Bar_Data.txt')
+        self.path_historic_data =   join(metatrader_dir_path, 'Connector', 'Historic_Data.txt')
+        self.path_historic_trades = join(metatrader_dir_path, 'Connector', 'Historic_Trades.txt')
+        self.path_orders_stored =   join(metatrader_dir_path, 'Connector', 'Orders_Stored.txt')
+        self.path_messages_stored = join(metatrader_dir_path, 'Connector', 'Messages_Stored.txt')
+        self.path_commands_prefix = join(metatrader_dir_path, 'Connector', 'Commands_')
 
         self.num_command_files = 50
 
@@ -196,8 +187,9 @@ class mt_connector_client():
             self._last_open_orders_str = text
             try:
                 data = json.loads(text)
+                print('[MT_CONNECTOR] READ ORDERS JSON SUCCESSFULLY!')
             except Exception as e:
-                print('CAUGHT EXCEPTION PARSING OPEN ORDERS JSON:', text)
+                print('[MT_CONNECTOR] CAUGHT EXCEPTION PARSING ORDERS JSON')
 
             new_event = False
             # Check for order removed (position close when type == 'buy' or 'sell')
@@ -206,7 +198,7 @@ class mt_connector_client():
                 if order_id not in data['orders'].keys():
                     new_event = True
                     if self.verbose:
-                        print('Order removed: ', order)
+                        print('[MT_CONNECTOR] Order removed: ', order)
                     if self.event_handler is not None and new_event:
                         self.event_handler.on_order_event('order_removed', get_event_order(order_id, order))
 
@@ -215,7 +207,7 @@ class mt_connector_client():
                 if order_id not in self.open_orders:
                     new_event = True
                     if self.verbose:
-                        print('Order created: ', order)
+                        print('[MT_CONNECTOR] Order created: ', order)
                     if self.event_handler is not None and new_event:
                         self.event_handler.on_order_event('order_created', get_event_order(order_id, order))
 
@@ -226,9 +218,9 @@ class mt_connector_client():
                     if len(modified_fields):
                         new_event = True
                         if self.verbose:
-                            print('Order modified. Modified fields: ', modified_fields)
-                            print('    Original order: ', self.open_orders[order_id])
-                            print('    Modified order: ', order)
+                            print('[MT_CONNECTOR] Order modified. Modified fields: ', modified_fields)
+                            print('[MT_CONNECTOR]     Original order: ', self.open_orders[order_id])
+                            print('[MT_CONNECTOR]     Modified order: ', order)
                     if self.event_handler is not None and new_event:
                         self.event_handler.on_order_event('order_modified', get_event_order(order_id, order), modified_fields)
 

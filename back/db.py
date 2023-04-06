@@ -159,7 +159,10 @@ def get_subscriptions ():
 
 def get_orders ():
   sql = f'SELECT {order_fields} FROM Orders'
-  return select_many(sql)
+  orders = select_many(sql)
+  return [{**order, **{
+    'openTime': order['openTime'].strftime('%Y-%m-%d %H:%M:%S')
+  }} for order in orders]
 
 def get_trades ():
   sql = f'SELECT {trade_fields} FROM Trades'
