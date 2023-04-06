@@ -154,7 +154,7 @@ def get_account_id (account_number):
   return row['accountId'] if row and 'accountId' in row else None
 
 def get_subscriptions ():
-  sql = 'SELECT accountId, magic FROM Subscriptions'
+  sql = 'SELECT magicAccountId, accountId, magic FROM Subscriptions'
   return select_many(sql)
 
 def get_orders ():
