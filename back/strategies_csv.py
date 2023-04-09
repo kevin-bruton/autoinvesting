@@ -21,6 +21,10 @@ def save_all_strategy_data (content):
       results.append({ 'save_user': u['username'], 'success': True })
     except Exception as e:
       results.append({ 'save_user': u['username'], 'success': False, 'error': repr(e) })
+      print(repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving users. There were:', len(users))
   for s in strategies:
     strategy = Strategy(s['magic'], s['strategyName'], s['symbols'], s['timeframes'], s['description'], s['workflow'])
     try:
@@ -28,6 +32,10 @@ def save_all_strategy_data (content):
       results.append({ 'save_strategy': strategy.magic, 'success': True })
     except Exception as e:
       results.append({ 'save_strategy': strategy.magic, 'success': False, 'error': repr(e) })
+      print('Caught exception saving strategy:', strategy, repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving strategies. There were:', len(strategies))
   for a in accounts:
     account = Account(a['accountId'], a['accountNumber'], a['accountType'], a['username'], a['subscriptionKey'], a['annualPctRet'], a['maxDD'], a['maxPctDD'], a['annPctRetVsDdPct'], a['winPct'], a['profitFactor'], a['numTrades'], a['startDate'], a['endDate'], a['deposit'])
     try:
@@ -35,6 +43,10 @@ def save_all_strategy_data (content):
       results.append({ 'save_account': account.accountId, 'success': True })
     except Exception as e:
       results.append({ 'save_account': account.accountId, 'success': False, 'error': repr(e), 'account': account })
+      print('Caught exception saving account:', account, repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving accounts. There were:', len(accounts))
   for t in trades:
     trade = Trade(
       t['orderId'],
@@ -62,6 +74,10 @@ def save_all_strategy_data (content):
       results.append({ 'save_trade': trade.orderId, 'success': True })
     except Exception as e:
       results.append({ 'save_trade': trade.orderId, 'success': False, 'error': repr(e) })
+      print('Caught exception saving trade:', trade, repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving trades. There were:', len(trades))
   for o in orders:
     order = Order(
       o['orderId'],
@@ -75,20 +91,29 @@ def save_all_strategy_data (content):
       o['size'],
       o['comment'] if 'comment' in t else None,
       o['sl'] if 'sl' in t else None,
-      o['tp'] if 'tp' in t else None
+      o['tp'] if 'tp' in t else None,
+      o['status']
     )
     try:
       res = db.save_order(order)
       results.append({ 'save_order': o['orderId'], 'success': True })
     except Exception as e:
       results.append({ 'save_order': o['orderId'], 'success': False, 'error': repr(e) })
+      print('Caught exception saving order:', order, repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving orders. There were:', len(orders))
   for sb in subscriptions:
-    subscription = Subscription(sb['accountId'], sb['magic'])
+    subscription = Subscription(sb['magicAccountId'], sb['accountId'], sb['magic'])
     try:
       res = db.save_subscription(subscription)
       results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': True })
     except Exception as e:
       results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': False, 'error': repr(e) })
+      print('Caught exception saving subscription:', subscription, repr(e))
+      if 'Duplicate entry' not in repr(e):
+        return {'results': results}
+  print('Finished saving subscriptions. There were:', len(orders))
   return {'results': results}
 
 def save_strategies_csv (csv_content):
