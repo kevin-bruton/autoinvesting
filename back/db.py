@@ -25,7 +25,7 @@ Account = namedtuple('Account', account_fields, defaults=(None, None, None))
 strategy_fields = 'magic, strategyName, symbols, timeframes, description, workflow'
 Strategy = namedtuple('Strategy', strategy_fields, defaults=(None, None))
 
-subscription_fields = 'accountId, magic'
+subscription_fields = 'magicAccountId,accountId, magic'
 Subscription = namedtuple('Subscription', subscription_fields)
 
 account_subscription_fields = 'accountId, subscriptions'
