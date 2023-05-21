@@ -1,13 +1,13 @@
 from os import listdir
 from random_name import get_random_name
 from db import Strategy, save_strategy, Trade, save_trade, Account, save_backtest, save_account
-from utils import get_bt_kpis
+from utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 
 date_fmt = '%Y-%m-%d'
 
 def save_new_strategies (upload_folder):
-  folder = f"../files/{upload_folder}"
+  folder = f"{get_project_root_dir()}/files/{upload_folder}"
   files = listdir(folder)
   csv_files = [f for f in files if f[-3:] == 'csv']
   deposit = 1000
@@ -24,6 +24,9 @@ def save_new_strategies (upload_folder):
         for l in f.read().splitlines()
       ]
       trades = [
+        # If there is an error of duplicate trades while uploading:
+        # Make sure that the csv of trades exported from SQX was done
+        # including only trades from the Main backtest (options while exporting)
         Trade(
           orderId=f"{l[0]}_{magic}_B",
           masterOrderId=None,
