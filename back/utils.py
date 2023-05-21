@@ -1,5 +1,5 @@
 import quantstats as qs
-from os import getenv, listdir, path
+from os import getenv, listdir, path, getcwd
 from requests import post
 from os.path import join
 from datetime import datetime, timedelta
@@ -10,8 +10,11 @@ from decimal import Decimal
 def get_returns_series(balances):
   pass
 
+def get_project_root_dir ():
+  return path.abspath(path.dirname(path.abspath(__file__)) + '/..')
+
 def get_upload_folders ():
-  files = listdir('../files')
+  files = listdir(get_project_root_dir() + '/files')
   files = [f for f in files if not path.isfile('files/' + f)] #Filtering only the directories.
   return files
 
