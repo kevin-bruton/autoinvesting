@@ -1,14 +1,11 @@
 //+------------------------------------------------------------------+
-//|                                                      LoadEAs.mq4 |
-//|                                  Copyright 2023, MetaQuotes Ltd. |
-//|                                             https://www.mql5.com |
-//+------------------------------------------------------------------+
-#property copyright "Copyright 2023, MetaQuotes Ltd."
-#property link      "https://www.mql5.com"
-#property version   "1.00"
-#property strict
-//+------------------------------------------------------------------+
-//| Script program start function                                    |
+// This script expects the "EaTemplates" directory to exist in the Files directory
+// directory in the MQL4 directory
+// This directory should contain template files.
+// The template files will be used to open a chart and to load an EA on that chart
+// - one for each corresponding template file -
+// The template files should have been generated previously
+// by the "create_mt_templates.py" script
 //+------------------------------------------------------------------+
 void OnStart()
   {

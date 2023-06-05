@@ -1,3 +1,13 @@
+#
+# This script reads the source directory's contents and uses the .mq4 files found there
+# to construct MT4 template files and places them in the destination directory
+# The next step would be to run the MT4 script "LoadEas"
+# That MT4 script will load the temaplates with the EAs defined there, each on their own chart
+# with the appropriate symbol and timeframe, based on the filename of the original mq4 file
+# The filename of the mq4 file should be of the format {symbol}_{timeframe}_{magic}
+# eg. EURUSD_H1_230601001
+#
+
 from os import listdir
 from os.path import isfile, join
 from random import randrange
