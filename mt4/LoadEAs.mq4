@@ -1,4 +1,50 @@
+//+------------------------------------------------------------------+
+//|                                                      LoadEAs.mq4 |
+//|                                  Copyright 2023, MetaQuotes Ltd. |
+//|                                             https://www.mql5.com |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2023, MetaQuotes Ltd."
+#property link      "https://www.mql5.com"
+#property version   "1.00"
+#property strict
+//+------------------------------------------------------------------+
+//| Script program start function                                    |
+//+------------------------------------------------------------------+
+void OnStart()
+  {
+   string templateDir = "EaTemplates/";
+   string fileFilter = "EaTemplates\\*";
+   string filename;
+   int i = 1;  
+   long search_handle = FileFindFirst(fileFilter, filename);
+   Print("Filename: " + filename);
+   if(search_handle!=INVALID_HANDLE)
+     {
+      //--- in a loop, check if the passed strings are the names of files or directories
+      do
+        {
+         ResetLastError();
+         //--- if it's a file, the function returns true, and if it's a directory, it returns error ERR_FILE_IS_DIRECTORY
+         FileIsExist(templateDir+filename);
+         PrintFormat("%d : %s name = %s",i,GetLastError()==ERR_FILE_IS_DIRECTORY ? "Directory" : "File",filename);
+         i++;
+         if (GetLastError() != ERR_FILE_IS_DIRECTORY)
+         {
+            OpenChartWithTemplate(filename);
+            Sleep(5000);
+         }
+        }
+      while(FileFindNext(search_handle,filename));
+      //--- close the search handle
+      FileFindClose(search_handle);
+     }
+   else
+      Print("Files not found!");
+  }
+//+------------------------------------------------------------------+
 
+void OpenChartWithTemplate (string filename) 
+{
    string separator = "_";
    ushort separator_ch = StringGetCharacter(separator, 0);
    string filenameParts[];
@@ -19,5 +65,6 @@
       Print("Applied template successfully! Filename: " + filename);
    } else
    {
-      Print("Failed to apply template! Filename: " + filename + "; error code: " + GetLastError());
+      Print("Failed to apply template! Filename: " + filename + "; error code: " + (string)GetLastError());
    }
+}
