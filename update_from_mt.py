@@ -138,7 +138,8 @@ class read_and_save_trades():
                         num_trades_added += 1
                 except Exception as e:
                     if 'Duplicate entry' not in repr(e):
-                        raise Exception(e)
+                        print("Error saving trade:", repr(e), "; TRADE: ", trade)
+                        # raise Exception(e)
                     else:
                         already_existing_trades += 1
             if num_trades_added > 0:
