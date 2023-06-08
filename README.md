@@ -66,3 +66,8 @@ To import strategies, use the sqcli to extract the trades csv files from the sqx
 eg. `./sqcli.exe -tools action=orderstocsv file=“G:\path\to\folder_of_sqx_files” output=“G:\path\to\destination_folder_for_csv_files”`  
 Then upload via FTP to the `files/sqx`and the `files/trades` directories.
 On the server, run the import of strategies & trades script that uses the trades files: `python import_strategies.py`
+
+## Load strategies into MetaTrader
+The provided script `create_mt_templates.py` creates MT template files from .mq4 strategy files. The strategy files must use the following naming convention: {symbol}_The script needs the source and destination directories to be set appropriately. Typically the destination directory will be a subdirectory within the MT4 Files directory in the data folder of the MT4 instance where you want to run the strategies. Initially, we are naming that folder `EaTemplates`.
+
+Once those template files have been generated, inside the MT4 program, the `LoadEAs.mq4` script can be used to load all those strategies in MT4. To do so, previously, the only chart open will be the one where the FileConnector is running. The script `CloseAllCharts.mq4` can be used if there are a lot of charts already open. The `LoadEAs.mq4` script read all template files. For each template file, it will open a chart with the corresponding timeframe and load the corresponding EA on to it.
