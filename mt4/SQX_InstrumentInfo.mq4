@@ -154,9 +154,9 @@ string GetCommission (SymbolStruct &symbol)
    double rawCommission = (double)GetBrokerSymbolInfo(symbol,"commission");
    string baseCurrency = StringSubstr(symbol.name, 0, 3);
    if (baseCurrency == "USD")
-      return DoubleToStr(rawCommission, 2);
+      return DoubleToStr(rawCommission * 2, 2); // Double commission for complete trades
    else
-      return DoubleToStr(ExchangeCurrency(baseCurrency, "USD", rawCommission), 2);
+      return DoubleToStr(ExchangeCurrency(baseCurrency, "USD", rawCommission) * 2, 2); // Double commission for complete trades
 }
 
 string GetSwapLong (SymbolStruct &symbol)
