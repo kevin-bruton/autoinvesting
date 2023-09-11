@@ -18,7 +18,7 @@ from os.path import isfile, join
 from random import randrange
 
 
-source_dir = './files/to_install_on_mt4'
+source_dir = './files/eas_to_install_on_demo_account/'
 destination_dir = '/home/admin/.wine/drive_c/mt4demo/MQL4/Files/EaTemplates/'
 
 template = '<chart>\n'
