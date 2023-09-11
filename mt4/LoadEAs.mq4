@@ -34,6 +34,7 @@ void OnStart()
       while(FileFindNext(search_handle,filename));
       //--- close the search handle
       FileFindClose(search_handle);
+      Print("Finished loading EAs!!!");
      }
    else
       Print("Files not found!");

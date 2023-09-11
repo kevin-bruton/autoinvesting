@@ -1,4 +1,9 @@
 #
+# Prerequisite:
+#   - Create a folder called "EaTemplates" in the MQL4/Files folder of the MT4 installation
+#   - Have a folder prepared with the .mq4 files
+#   - Each mq4 file should be named with the format {symbol}_{timeframe}_{magic}
+# 
 # This script reads the source directory's contents and uses the .mq4 files found there
 # to construct MT4 template files and places them in the destination directory
 # The next step would be to run the MT4 script "LoadEas"

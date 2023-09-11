@@ -20,8 +20,14 @@ Make sure that the EA `FileConnector` is installed in the Master MT4 account, an
 
 
 ## Run dev server
-`flask run`
-(from root directory)
+Select the Python virtual environment, eg. `pyenv activate venv-autoinvesting`  
+Start the MySQL DB service, ie. `sudo service mysql start`  
+Run the Flask dev server: `flask run` (from the root directory)
+
+In the `autoinvesting-ui` project, the frontend dev server must be started also via: `npm start`
+For the frontend to work on port 80, permission must be granted, cf. https://www.digitalocean.com/community/tutorials/how-to-use-pm2-to-setup-a-node-js-production-environment-on-an-ubuntu-vps#give-safe-user-permission-to-use-port-80
+
+We can also set up an entry in the local machine's host file so that we can use for example http://autoinvesting.local to access the dev server's web page.
 
 ## Run pro server
 `waitress-serve api:app`
