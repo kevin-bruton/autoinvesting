@@ -197,7 +197,7 @@ def save_new_strategies_request(user):
 def get_upload_folders_request(user):
   try:
     folders = get_upload_folders()
-    return (jsonify({'succes': True, 'data': folders}))
+    return (jsonify({'success': True, 'data': folders}))
   except Exception as e:
     print(repr(e))
     return(jsonify({'error': repr(e)}), 200)

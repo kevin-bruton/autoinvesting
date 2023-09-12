@@ -4,6 +4,15 @@
 #property description ""
 #property strict
 
+/**
+* This is an EA that gets all the info needed for instruments in SQX
+* Some data is retrieved directly from the web page of Darwinex (via WebRequest)
+* and some is retrieved from MetaTrader
+* 
+* Requisites:
+*   - In Tools -> Options, go to the tab "Expert Advisors"
+      and add "https://www.darwinex.com/graphs/spreads" as an approved URL
+**/
 string broker = "Darwinex";
 
 struct SymbolStruct {
@@ -14,7 +23,9 @@ struct SymbolStruct {
 SymbolStruct symbols[] = {
    { "EURUSD", "forex" },
    { "EURAUD", "forex" },
-   { "GBPJPY", "forex" }
+   { "GBPJPY", "forex" },
+   { "AUDUSD", "forex" },
+   { "USDCHF", "forex" }
 };
    
 int drawX = 0;
@@ -27,6 +38,7 @@ void OnInit()
    brokerInfo = GetInfoFromBroker();
    PrintHeading();
    for (int i = 0; i < ArraySize(symbols); i++) {
+    SymbolSelect(symbols[i].name,true);
     PrintSymbolInfo(symbols[i]);
    }
 }
@@ -46,7 +58,7 @@ string GetInfoFromBroker ()
    {
       Print("Error in WebRequest. Error code  =",GetLastError());
       //--- Perhaps the URL is not listed, display a message about the necessity to add the address
-      MessageBox("Add the address '"+ url + "' in the list of allowed URLs on tab 'Expert Advisors' in 'Tools' -> 'Options'","Error",MB_ICONINFORMATION);
+      MessageBox("Add the address '"+ url + "' in the list of allowed URLs in 'Tools' -> 'Options' in tab 'Expert Advisors'","Error",MB_ICONINFORMATION);
       return "";
    }
    string data = CharArrayToString(response);
