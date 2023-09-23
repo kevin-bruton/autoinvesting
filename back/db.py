@@ -259,10 +259,21 @@ def get_all_strategy_kpis ():
   } for kpi in kpis if kpi['accountType'] == 'strategy_backtest' or kpi['accountType'] == 'strategy_demo']
 
 def get_strategys_demo_trades (magic):
-  runId = str(magic) + '_D'
+  accountId = str(magic) + '_D'
   sql = 'SELECT orderId, accountId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
     + 'FROM Trades WHERE accountId = %s'
-  return select_many(sql, (runId,))
+  return select_many(sql, (accountId,))
+
+def get_strategys_backtest_trades (magic):
+  accountId = str(magic) + '_B'
+  sql = 'SELECT orderId, accountId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
+    + 'FROM Trades WHERE accountId = %s'
+  return select_many(sql, (accountId,))
+
+def get_strategys_combined_trades (magic):
+  backtest_trades = get_strategys_backtest_trades(magic)
+  demo_trades = get_strategys_demo_trades(magic)
+  return backtest_trades.extend(demo_trades)
 
 def get_strategy_summaries ():
   strategies = get_strategies()

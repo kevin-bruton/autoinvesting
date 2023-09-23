@@ -9,7 +9,7 @@ from flask_cors import CORS
 from strategies_csv import save_strategies_csv, save_all_strategy_data
 from werkzeug.middleware.proxy_fix import ProxyFix
 from utils import get_upload_folders
-from controllers import save_new_strategies, get_account_logs
+from controllers import save_new_strategies, get_account_logs, calc_correlation_matrix
 
 load_dotenv()
 
@@ -85,6 +85,13 @@ def get_strategy_request(user, strategy_id):
       return (jsonify(strategy), 200)
     except Exception as e:
       return (jsonify({ 'error': repr(e) }), 200)
+  
+@app.route('/api/correlation-matrix', methods=['POST'])
+@token_required
+def get_correlation_matrix(user):
+  data = request.get_json()
+  matrix = calc_correlation_matrix(data['magics'], data['dataType'], data['timeframe'])
+  return (matrix, 200)
 
 @app.route('/api/accounts', methods=['GET'])
 @token_required

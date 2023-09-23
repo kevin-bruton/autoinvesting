@@ -1,8 +1,11 @@
 from os import listdir
 from random_name import get_random_name
-from db import Strategy, save_strategy, Trade, save_trade, Account, save_backtest, save_account
+from db import Strategy, save_strategy, Trade, save_trade, \
+  Account, save_backtest, save_account, \
+  get_strategys_backtest_trades, get_strategys_demo_trades, get_strategys_combined_trades
 from utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
+import pandas as pd
 
 date_fmt = '%Y-%m-%d'
 
@@ -98,3 +101,29 @@ def get_account_logs (account_id):
   except FileNotFoundError:
     return 'No logs found for this account'
   return log
+
+def calc_correlation_matrix (magics, data_type, timeframe):
+  """
+    magic = list of integers
+    data_type = 'demo', 'backtest' or 'combined'
+    timeframe has to be 'D', 'W' or 'M'
+  """
+  data = pd.DataFrame()
+  for magic in magics:
+    if data_type == 'backtest':
+      trades = get_strategys_backtest_trades(magic)
+    elif data_type == 'demo':
+      trades = get_strategys_demo_trades(magic)
+    elif data_type == 'combined':
+      trades = get_strategys_combined_trades(magic)
+    df = pd.DataFrame(trades)
+    df = df[['closeTime', 'profit']]
+    df = df.groupby(pd.Grouper(key='closeTime', freq=timeframe)).sum()
+    df[magic] = df['profit'].cumsum()
+    # df['profit_'+str(magic)] = df['profit']
+    df = df.drop(columns='profit')
+    if data.empty:
+      data = df
+    else:
+      data = pd.concat([data, df], axis=1, join='outer').fillna(0)
+  return '{ "data": ' + data.corr().to_json(orient='columns') + '}'
