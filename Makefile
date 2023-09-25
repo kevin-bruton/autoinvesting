@@ -2,7 +2,7 @@ deploy-front:
 	$(info *************************** )
 	$(info ***** DEPLOYING FRONT ***** )
 	$(info *************************** )
-	cd autoinvesting-ui && git pull && npm run build-pro
+	cd autoinvesting-ui && git pull
 deploy-back:
 	$(info ************************** )
 	$(info ***** DEPLOYING BACK ***** )
