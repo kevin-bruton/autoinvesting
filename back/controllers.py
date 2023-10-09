@@ -1,4 +1,4 @@
-from os import listdir
+from os import listdir, path
 from random_name import get_random_name
 from db import Strategy, save_strategy, Trade, save_trade, \
   Account, save_backtest, save_account, \
@@ -138,3 +138,17 @@ def decommission_strategy (magic):
 
 def reactivate_strategy (magic):
   react_strategy(magic)
+
+def apply_position_sizing (pos_sizes):
+  folder = f"{get_project_root_dir()}/files/eas_to_install_on_live_account/"
+  files = [f for f in listdir(folder) if '.mq4' in f]
+  for magic, size in pos_sizes.items():
+    for file in files:
+      if magic in file:
+        with open(f"{folder}{file}", 'r') as f:
+          content = f.read()
+        sections = content.split('mmLots = ')
+        part2 = sections[1][sections[1].index(';'):]
+        new_content = f"{sections[0]}mmLots = {size:.2f}{part2}"
+        with open(f"{folder}{file}", 'w') as f:
+          f.write(new_content)
