@@ -141,7 +141,7 @@ def get_user (username, passwd):
 
 def get_strategies ():
   # sql = "SELECT strategyName, magic, symbols, timeframes, btStart, btEnd, btDeposit, btKpis, demoStart, demoKpis FROM Strategies"
-  sql = "SELECT strategyName, magic, symbols, timeframes, description, workflow FROM Strategies"
+  sql = "SELECT strategyName, magic, symbols, timeframes, description, workflow, DATE_FORMAT(decommissioned, '%Y-%m-%d %H:%i:%S') as decommissioned FROM Strategies"
   return select_many(sql)
 
 def get_accounts ():
@@ -337,6 +337,15 @@ def save_user (user):
 def save_strategy (strategy):
   sql = f"INSERT INTO Strategies ({strategy_fields}) VALUES ({values_placeholder(strategy_fields)})"
   return insert_one(sql, strategy)
+
+def decommission_strategy (magic):
+  todays_datetime = datetime.strftime(datetime.now(), datetime_fmt)
+  sql = 'UPDATE Strategies SET decommissioned=%s WHERE magic=%s'
+  return update_one(sql, (todays_datetime, magic))
+
+def reactivate_strategy (magic):
+  sql = 'UPDATE Strategies SET decommissioned=%s WHERE magic=%s'
+  return update_one(sql, (None, magic))
 
 def save_account (account):
   sql = f"INSERT INTO Accounts ({account_fields}) VALUES ({values_placeholder(account_fields)})"

@@ -2,7 +2,8 @@ from os import listdir
 from random_name import get_random_name
 from db import Strategy, save_strategy, Trade, save_trade, \
   Account, save_backtest, save_account, \
-  get_strategys_backtest_trades, get_strategys_demo_trades, get_strategys_combined_trades
+  get_strategys_backtest_trades, get_strategys_demo_trades, get_strategys_combined_trades, \
+  decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
 from utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 import pandas as pd
@@ -127,3 +128,9 @@ def calc_correlation_matrix (magics, data_type, timeframe):
     else:
       data = pd.concat([data, df], axis=1, join='outer').fillna(0)
   return '{ "data": ' + data.corr().to_json(orient='columns') + '}'
+
+def decommission_strategy (magic):
+  decom_strategy(magic)
+
+def reactivate_strategy (magic):
+  react_strategy(magic)

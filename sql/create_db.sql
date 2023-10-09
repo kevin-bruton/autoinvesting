@@ -41,6 +41,7 @@ CREATE TABLE Strategies (
     timeframes VARCHAR(55) NOT NULL,
     description TEXT,
     workflow VARCHAR(255),
+    decommissioned DATETIME,
     PRIMARY KEY (magic)
 );
 

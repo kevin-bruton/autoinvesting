@@ -9,7 +9,7 @@ from flask_cors import CORS
 from strategies_csv import save_strategies_csv, save_all_strategy_data
 from werkzeug.middleware.proxy_fix import ProxyFix
 from utils import get_upload_folders
-from controllers import save_new_strategies, get_account_logs, calc_correlation_matrix
+from controllers import save_new_strategies, get_account_logs, calc_correlation_matrix, decommission_strategy, reactivate_strategy
 
 load_dotenv()
 
@@ -154,6 +154,24 @@ def save_strategy_request(user):
     if 'Duplicate entry' in error_msg:
       error_msg = error_msg[error_msg.find('Duplicate entry') : error_msg.find(' for key')]
     return (jsonify({'error': error_msg}), 200)
+  
+@app.route('/api/strategy-decommission/<magic>', methods=['GET'])
+@admin_only
+def decommission_strategy_request(user, magic):
+  try:
+    decommission_strategy(magic)
+    return (jsonify({"result": "success"}), 200)
+  except Exception as e:
+    return (jsonify({"error": repr(e)}), 200)
+
+@app.route('/api/strategy-reactivate/<magic>', methods=['GET'])
+@admin_only
+def reactivate_strategy_request(user, magic):
+  try:
+    reactivate_strategy(magic)
+    return (jsonify({"result": "success"}), 200)
+  except Exception as e:
+    return (jsonify({"error": repr(e)}), 200)
 
 @app.route('/api/strategies-csv', methods=['POST'])
 @admin_only
