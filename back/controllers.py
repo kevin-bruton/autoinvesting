@@ -103,6 +103,10 @@ def get_account_logs (account_id):
     return 'No logs found for this account'
   return log
 
+def log(txt):
+    with open("/home/admin/autoinvesting/back/correlation.log", "a") as f:
+        f.write(txt + "\n")
+
 def calc_correlation_matrix (magics, data_type, timeframe):
   """
     magic = list of integers
@@ -120,7 +124,7 @@ def calc_correlation_matrix (magics, data_type, timeframe):
     df = pd.DataFrame(trades)
     df = df[['closeTime', 'profit']]
     df = df.groupby(pd.Grouper(key='closeTime', freq=timeframe)).sum()
-    df[magic] = df['profit'].cumsum()
+    df[magic] = df['profit'].cumsum().astype(float)
     # df['profit_'+str(magic)] = df['profit']
     df = df.drop(columns='profit')
     if data.empty:
