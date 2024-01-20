@@ -1,4 +1,5 @@
 from os import getenv
+import traceback
 
 import db
 from auth import (admin_only, generate_user_token, token_required,
@@ -244,8 +245,10 @@ def apply_positon_sizing_request(user):
     apply_position_sizing(data)
     return (jsonify({'result': 'success'}), 200)
   except Exception as e:
+    print(e, traceback.format_exc())
     return (jsonify({'error': repr(e)}, 200))
 
 if __name__ == '__main__':
+    #app.run(debug=True, port=8080)
     app.run()
 

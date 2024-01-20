@@ -1,4 +1,5 @@
-from os import listdir, path
+from os import listdir, path, remove
+from shutil import copy2
 from random_name import get_random_name
 from db import Strategy, save_strategy, Trade, save_trade, \
   Account, save_backtest, save_account, \
@@ -7,6 +8,7 @@ from db import Strategy, save_strategy, Trade, save_trade, \
 from utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 import pandas as pd
+from create_templates import create_live_templates
 
 date_fmt = '%Y-%m-%d'
 
@@ -141,14 +143,28 @@ def reactivate_strategy (magic):
 
 def apply_position_sizing (pos_sizes):
   folder = f"{get_project_root_dir()}/files/eas_to_install_on_live_account/"
+  src_folder = f"{get_project_root_dir()}/files/eas_to_install_on_demo_account/"
   files = [f for f in listdir(folder) if '.mq4' in f]
+  # Delete existing files
+  for filename in files:
+      remove(folder + filename)
+
+  demo_filenames = [f for f in listdir(src_folder) if '.mq4' in f]
   for magic, size in pos_sizes.items():
-    for file in files:
-      if magic in file:
-        with open(f"{folder}{file}", 'r') as f:
-          content = f.read()
-        sections = content.split('mmLots = ')
-        part2 = sections[1][sections[1].index(';'):]
-        new_content = f"{sections[0]}mmLots = {size:.2f}{part2}"
-        with open(f"{folder}{file}", 'w') as f:
-          f.write(new_content)
+    found_filenames = [f for f in demo_filenames if magic in f]
+    if len(found_filenames) == 0:
+      raise Exception("Could not find demo file with magic", magic)
+    filename = found_filenames[0]
+    # Copy needed strategy file from demo to live directory
+    copy2(src_folder + filename, folder)
+    # Update the contents with the applied position sizes  
+    with open(f"{folder}{filename}", 'r') as f:
+      content = f.read()
+    sections = content.split('mmLots = ')
+    part2 = sections[1][sections[1].index(';'):]
+    new_content = f"{sections[0]}mmLots = {size:.2f}{part2}"
+    with open(f"{folder}{filename}", 'w') as f:
+      f.write(new_content)
+  
+  # Build and create template files
+  create_live_templates()
