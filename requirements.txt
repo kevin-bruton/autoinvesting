@@ -6,3 +6,5 @@ QuantStats==0.0.58
 Werkzeug==2.1.2
 waitress==2.1.2
 PyJwt==2.6.0
+fastapi
+uvicorn

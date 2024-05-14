@@ -10,7 +10,7 @@ def authenticate_user (token, account_type, account_number):
   key_field = f'{acc_type}Key'
   acc_num_field = f'{acc_type}AccountNumber'
   subscriptions_field = f'{acc_type}Subscriptions'
-  sql = f"SELECT {key_field}, {acc_num_field}, {subscriptions_field} FROM Users WHERE {key_field} = %s AND {acc_num_field} = %s"
+  sql = f"SELECT {key_field}, {acc_num_field}, {subscriptions_field} FROM Users WHERE {key_field} = ? AND {acc_num_field} = ?"
   c = cnx.cursor(dictionary=True)
   try: 
     c.execute(sql, (token, account_number))
@@ -20,15 +20,15 @@ def authenticate_user (token, account_type, account_number):
   return json.loads(user[subscriptions_field]) if user else []
 
 def get_strategy_demo_trades (magic):
-  sql = 'SELECT runId, startDate FROM StrategyRuns WHERE magic = %s AND runType = %s'
+  sql = 'SELECT runId, startDate FROM StrategyRuns WHERE magic = ? AND runType = ?'
   demo = db.select_one(sql, (magic, 'demo'))
   print('demo:', demo)
-  sql = 'SELECT * FROM Trades WHERE runId = %s'
+  sql = 'SELECT * FROM Trades WHERE runId = ?'
   trades = db.select_many(sql, (demo['runId'],))
   return { 'demoStart': demo['startDate'], 'demoTrades': trades }
 
 def update_strategy_demo_trades (magic, trades, kpis):
-  """ sql = 'UPDATE Strategies SET demoTrades = %s, demoKpis = %s WHERE magic = %s'
+  """ sql = 'UPDATE Strategies SET demoTrades = ?, demoKpis = ? WHERE magic = ?'
   return db.update_one(sql, (trades, kpis, magic)) """
 
 

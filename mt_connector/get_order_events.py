@@ -9,7 +9,6 @@ from random import random
 from datetime import datetime, timedelta
 
 from connector import mt_connector_client
-from db import save_demo_trade
 
 class read_and_save_trades():
 
@@ -42,7 +41,7 @@ class read_and_save_trades():
         print('       Order: ', order)
         if event == 'Order modified':
             print('       Modified fields: ', modified_fields)
-        save_demo_trade('Some Strategy name', 'hi')
+        #save_demo_trade('Some Strategy name', 'hi')
         
         #print(f'on_order_event. open_orders: {len(self.connector.open_orders)} open orders')
 

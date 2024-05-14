@@ -134,11 +134,11 @@ def edge_detection (threshold_frequency=10):
       print(ind, indicator_count[ind])
    
 
-# indicator_analysis(threshold=15)
+indicator_analysis(threshold=15)
 # sl_fixed_size_analysis()
 # sl_percentage_based_analysis()
 # sl_atr_based_analysis()
-tp_atr_based_analysis()
+# tp_atr_based_analysis()
 # edge_detection(threshold_frequency=10)
 
 # %%

@@ -1,8 +1,7 @@
 from dotenv import load_dotenv
 
+from db.accounts import get_accounts, update_account_username
 from mt_connector.connector import mt_connector_client
-import back.db as db
-from back.db import Trade
 
 load_dotenv()
 
@@ -15,9 +14,9 @@ for trade in trades:
     print("\U00002705", end='') if result else print("\U0000274C", end='') """
 
 
-accounts = db.get_accounts()
+accounts = get_accounts()
 
 for account in accounts:
   if account['username'] == None:
-    result = db.update_account_username(account['accountId'], 'master')
+    result = update_account_username(account['accountId'], 'master')
     print("\U00002705", end='') if result else print("\U0000274C", end='')

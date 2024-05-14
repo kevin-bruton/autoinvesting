@@ -47,9 +47,24 @@ This was meant to be run on an Ubuntu server
 ## The waitress service
 An example waitress.service file is provided which could be used on an Ubuntu server, for example. It should be put in the `/etc/systemd/system` folder
 
+Reference:  
+```
+admin@vmi760289:/etc/systemd/system$ cat waitress.service
+[Unit]
+Description=Python Waitress Server
+
+[Service]
+WorkingDirectory=/home/admin/autoinvesting/back/
+ExecStart=/home/admin/.pyenv/versions/autoinvesting-env/bin/waitress-serve api:app
+
+[Install]
+WantedBy=multi-user.target
+```
+
+
 ## Apache
-An example Apache file is provided  
-It has to be confiured to serve the front end  
+An example Apache file is provided (in the docs directory)
+It has to be configured to serve the front end  
 and back end on the other hand as reverse proxy etc.
 
 ## Dependencies

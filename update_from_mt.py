@@ -5,10 +5,11 @@ from os import getenv
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
+from db.accounts import update_kpis
+from db.updates import register_update
 from mt_connector.connector import mt_connector_client
-import back.db as db
-from back.db import Trade
-from back.utils import get_demo_kpis
+from db.trades import Trade, get_strategys_demo_trades, save_trade
+from fast.utils import get_demo_kpis
 
 
 load_dotenv()
@@ -76,11 +77,11 @@ def mt_to_db_format(trades_dict):
 def update_strategy_run_demo_kpis (magic):
   # get start, deposit, trades
   deposit = 1000
-  trades = db.get_strategys_demo_trades(magic)
+  trades = get_strategys_demo_trades(magic)
   if len(trades):
     start_date =  trades[0]['openTime'] - timedelta(days=1)
     kpis = get_demo_kpis(start_date, trades, deposit)
-    db.update_kpis(f"{magic}_D", start_date, deposit, tuple(kpis.values()))
+    update_kpis(f"{magic}_D", start_date, deposit, tuple(kpis.values()))
 
 
 class read_and_save_trades():
@@ -134,7 +135,7 @@ class read_and_save_trades():
             for trade in trades_by_magic[magic]:
                 try:
                     if trade.orderType in ['Buy', 'Sell']:
-                        db.save_trade(trade)
+                        save_trade(trade)
                         num_trades_added += 1
                 except Exception as e:
                     if 'Duplicate entry' not in repr(e):
@@ -147,7 +148,7 @@ class read_and_save_trades():
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 update_strategy_run_demo_kpis(magic)
-        db.register_update('Success')
+        register_update('Success')
         print('Number of trades not added because they were already in the DB:', already_existing_trades)
 
         self.connector.ACTIVE = False
