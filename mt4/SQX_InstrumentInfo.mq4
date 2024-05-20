@@ -11,7 +11,7 @@
 * 
 * Requisites:
 *   - In Tools -> Options, go to the tab "Expert Advisors"
-      and add "https://www.darwinex.com/graphs/spreads" as an approved URL
+      and add "https://www.darwinex.com/graphics/spreads" as an approved URL
 **/
 string broker = "Darwinex";
 

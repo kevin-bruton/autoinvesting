@@ -1,11 +1,15 @@
 from typing import Annotated
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, status, responses, staticfiles
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+from db.common import init_db
+init_db()
 from fast.auth import is_admin, is_member
 from fast.routers import auth, admin, strategies, subscriptions, accounts, portfolio
-from db.common import init_db
+
 #from utils.config import get_config_value
 
-init_db()
 openapi_url = '/openapi.json' #if get_config_value('enable_openapi_docs') else ''
 app = FastAPI(title="main-app", openapi_url=openapi_url)
 

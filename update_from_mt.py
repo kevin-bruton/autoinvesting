@@ -4,6 +4,7 @@ from time import sleep
 from os import getenv
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
+load_dotenv(override=True)
 
 from db.accounts import update_kpis
 from db.updates import register_update
@@ -11,11 +12,9 @@ from mt_connector.connector import mt_connector_client
 from db.trades import Trade, get_strategys_demo_trades, save_trade
 from fast.utils import get_demo_kpis
 
-
-load_dotenv()
-
 LOOKBACK_DAYS_TO_UPDATE = 365
 
+datetime_fmt = '%Y-%m-%d %H:%M:%S'
 deleted_strategies = ['220612018', '-1254135478', '-1254135477', '220804002']
 
 def old_to_new_magic(magic):
@@ -35,7 +34,7 @@ def old_to_new_magic_in_trades(trades_dict):
     trades_dict[order_id]['magic'] = old_to_new_magic(mt_magic)
   return trades_dict
 
-def mt_to_db_format(trades_dict):
+def mt_to_db_format(trades_dict, balance):
     trades_dict = old_to_new_magic_in_trades(trades_dict)
     trades_by_magic = {}
     order_ids = trades_dict.keys()
@@ -57,7 +56,7 @@ def mt_to_db_format(trades_dict):
             mt_trade['close_price'],
             mt_trade['lots'],
             mt_trade['pnl'],
-            None, # balance
+            balance,
             mt_trade['comment'].replace('[', '').replace(']', ''),
             mt_trade['comment'],
             mt_trade['SL'],
@@ -79,7 +78,7 @@ def update_strategy_run_demo_kpis (magic):
   deposit = 1000
   trades = get_strategys_demo_trades(magic)
   if len(trades):
-    start_date =  trades[0]['openTime'] - timedelta(days=1)
+    start_date =  datetime.strptime(trades[0]['openTime'],datetime_fmt) - timedelta(days=1)
     kpis = get_demo_kpis(start_date, trades, deposit)
     update_kpis(f"{magic}_D", start_date, deposit, tuple(kpis.values()))
 
@@ -102,7 +101,7 @@ class read_and_save_trades():
         self.connector.start()
         
         # account information is stored in self.connector.account_info.
-        print("Account info:", self.connector.account_info)
+        #print("Account info:", self.connector.account_info)
 
         self.connector.get_historic_trades(lookback_days=LOOKBACK_DAYS_TO_UPDATE)
 
@@ -118,11 +117,11 @@ class read_and_save_trades():
         pass
 
     def on_historic_trades(self):
-        print(' ***** RECEIVED HISTORIC DATA ***** ')
+        #print(' ***** RECEIVED HISTORIC DATA ***** ')
         mt_trades_dict = self.connector.historic_trades
-        trades_by_magic = mt_to_db_format(mt_trades_dict)
-        print(' ****** MT TRADES ****** ')
-        print('Magics of the trades retrieved:', trades_by_magic.keys())
+        trades_by_magic = mt_to_db_format(mt_trades_dict, self.connector.account_info['balance'])
+        #print(' ****** MT TRADES ****** ')
+        #print('Magics of the trades retrieved:', trades_by_magic.keys())
 
         # SAVE TO DB
         # With mt trades insert all trades into db for each strategy
@@ -138,26 +137,31 @@ class read_and_save_trades():
                         save_trade(trade)
                         num_trades_added += 1
                 except Exception as e:
-                    if 'Duplicate entry' not in repr(e):
+                    if 'UNIQUE constraint failed' not in repr(e):
                         print("Error saving trade:", repr(e), "; TRADE: ", trade)
                         # raise Exception(e)
                     else:
                         already_existing_trades += 1
             if num_trades_added > 0:
-                print('For magic', magic, 'added', num_trades_added, 'trades')
+                #print('For magic', magic, 'added', num_trades_added, 'trades')
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 update_strategy_run_demo_kpis(magic)
         register_update('Success')
-        print('Number of trades not added because they were already in the DB:', already_existing_trades)
+        print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 
         self.connector.ACTIVE = False
 
+def run_update_from_mt():
+    with open('logs/update_from_mt.log', 'a') as f:
+        f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Starting update from MT4\n')
 
-MT4_files_dir = getenv('MT_FILES_DIR')
+    metatrader_files_dir = getenv('MT_FILES_DIR')
+    #print('Metatrader files directory:', metatrader_files_dir)
+    processor = read_and_save_trades(metatrader_files_dir)
 
-processor = read_and_save_trades(MT4_files_dir)
+    while processor.connector.ACTIVE:
+        sleep(1)
 
-while processor.connector.ACTIVE:
-    sleep(1)
-
+if __name__ == '__main__':
+    run_update_from_mt()

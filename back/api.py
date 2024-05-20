@@ -232,7 +232,7 @@ def get_upload_folders_request(user):
 @token_required
 def get_last_update_request(user):
   try: 
-    last_update = db.get_last_update()
+    last_update = db.updates.get_last_update()
     return (jsonify({ 'success': True, 'data': last_update }))
   except Exception as e:
     return (jsonify({ 'error': repr(e) }), 200)

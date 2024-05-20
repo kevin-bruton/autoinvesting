@@ -187,7 +187,7 @@ class mt_connector_client():
             self._last_open_orders_str = text
             try:
                 data = json.loads(text)
-                print('[MT_CONNECTOR] READ ORDERS JSON SUCCESSFULLY!')
+                #print('[MT_CONNECTOR] READ ORDERS JSON SUCCESSFULLY!')
             except Exception as e:
                 print('[MT_CONNECTOR] CAUGHT EXCEPTION PARSING ORDERS JSON')
 
