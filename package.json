@@ -1,0 +1,12 @@
+{
+  "name": "autoinvesting",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "cron": "python cron.py",
+    "fastapi": "python fastapi.py"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

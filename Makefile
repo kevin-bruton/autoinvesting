@@ -1,3 +1,4 @@
+
 deploy-front:
 	$(info *************************** )
 	$(info ***** DEPLOYING FRONT ***** )
@@ -27,4 +28,3 @@ trade-copier:
 	$(info ***** TRADE COPIER ****** )
 	$(info ************************* )
 	cd autoinvesting && python trade_copier.py
-
