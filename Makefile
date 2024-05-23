@@ -1,18 +1,9 @@
 
-deploy-front:
+deploy:
 	$(info *************************** )
-	$(info ***** DEPLOYING FRONT ***** )
+	$(info ***** UPDATING SERVER ***** )
 	$(info *************************** )
-	cd autoinvesting-ui && git pull
-deploy-back:
-	$(info ************************** )
-	$(info ***** DEPLOYING BACK ***** )
-	$(info ************************** )
-	sudo systemctl stop waitress.service
-	cd autoinvesting && git pull
-	sudo systemctl start waitress.service
-	sudo systemctl status waitress.service
-deploy:	deploy-front deploy-back
+	git pull
 update-from-mt:
 	$(info ************************* )
 	$(info *** UPDATING FROM MT  *** )
@@ -28,3 +19,13 @@ trade-copier:
 	$(info ***** TRADE COPIER ****** )
 	$(info ************************* )
 	cd autoinvesting && python trade_copier.py
+cron:
+	$(info ************************* )
+	$(info ***** CRON ****** )
+	$(info ************************* )
+	python cron.py
+fastapi:
+	$(info ************************* )
+	$(info ***** FASTAPI ****** )
+	$(info ************************* )
+	python run_fastapi.py
