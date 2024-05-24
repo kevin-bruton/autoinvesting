@@ -3,7 +3,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db.common import init_db
+from db.init import init_db
 init_db()
 from fast.auth import is_admin, is_member
 from fast.routers import auth, admin, strategies, subscriptions, accounts, portfolio

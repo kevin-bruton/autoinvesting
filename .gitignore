@@ -3,6 +3,6 @@
 **/.DS_Store
 files
 **/__pycache__
-venv-autoinvesting
+.venv
 trade_copier.log
 autoinvesting.db
