@@ -21,11 +21,11 @@ trade-copier:
 	cd autoinvesting && python trade_copier.py
 cron:
 	$(info ************************* )
-	$(info ***** CRON ****** )
+	$(info ********* CRON ********** )
 	$(info ************************* )
 	python cron.py
-fastapi:
+api:
 	$(info ************************* )
-	$(info ***** FASTAPI ****** )
+	$(info ******* FASTAPI ********* )
 	$(info ************************* )
 	python run_fastapi.py

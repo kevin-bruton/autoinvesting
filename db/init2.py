@@ -3,7 +3,7 @@ import sqlite3
 from os import getenv
 
 def init_db():
-  db_path = getenv('DB_FILE')
+  db_path = 'C:/repo/autoinvesting/autoinvesting2.db' # getenv('DB_FILE')
   try:
     conn = sqlite3.connect(db_path)
   except sqlite3.Error as e:
