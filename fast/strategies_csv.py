@@ -1,11 +1,11 @@
 import json
 
-from db.users import User, save_user
-from db.strategies import Strategy, save_strategy
-from db.accounts import Account, save_account
-from db.trades import Trade, save_trade
-from db.orders import Order, save_order
-from db.subscriptions import Subscription, save_subscription
+from db2.users import User, save_user
+from db2.strategies import Strategy, save_strategy
+from db2.accounts import Account, save_account
+from db2.trades import Trade, save_trade
+from db2.orders import Order, save_order
+#from db2.subscriptions import Subscription, save_subscription
 
 def save_all_strategy_data (content):
   def save_all_users(users, results):
@@ -107,19 +107,19 @@ def save_all_strategy_data (content):
           return {'results': results}
     print('Finished saving orders. There were:', len(orders))
     return results
-  def save_all_subscriptions(subscriptions, results):
-    for sb in subscriptions:
-      subscription = Subscription(sb['magicAccountId'], sb['accountId'], sb['magic'])
-      try:
-        res = save_subscription(subscription)
-        results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': True })
-      except Exception as e:
-        results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': False, 'error': repr(e) })
-        print('Caught exception saving subscription:', subscription, repr(e))
-        if 'UNIQUE constraint failed' not in repr(e):
-          return {'results': results}
-    print('Finished saving subscriptions. There were:', len(orders))
-    return results
+  #def save_all_subscriptions(subscriptions, results):
+  #  for sb in subscriptions:
+  #    subscription = Subscription(sb['magicAccountId'], sb['accountId'], sb['magic'])
+  #    try:
+  #      res = save_subscription(subscription)
+  #      results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': True })
+  #    except Exception as e:
+  #      results.append({ 'save_subscription': f"{sb['accountId']}_{sb['magic']}", 'success': False, 'error': repr(e) })
+  #      print('Caught exception saving subscription:', subscription, repr(e))
+  #      if 'UNIQUE constraint failed' not in repr(e):
+  #        return {'results': results}
+  #  print('Finished saving subscriptions. There were:', len(orders))
+  #  return results
   
   results = []
   data = json.loads(content)
@@ -128,14 +128,14 @@ def save_all_strategy_data (content):
   accounts = data['accounts']
   trades = data['trades']
   orders = data['orders']
-  subscriptions = data['subscriptions']
+  #subscriptions = data['subscriptions']
 
   results = save_all_users(users, results)
   results = save_all_strategies(strategies, results)
   results = save_all_accounts(accounts, results)
   results = save_all_trades(trades, results)
   results = save_all_orders(orders, results)
-  results = save_all_subscriptions(subscriptions, results)
+  #results = save_all_subscriptions(subscriptions, results)
   return {'results': results}
 
 def save_strategies_csv (csv_content):

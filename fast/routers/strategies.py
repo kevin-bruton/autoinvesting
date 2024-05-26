@@ -1,8 +1,8 @@
 from typing import Annotated
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
-from db.orders import get_orders
-from db.strategies import get_strategy_detail, get_strategy_summaries, get_strategies
+from db2.orders import get_orders
+from db2.strategies import get_strategy_detail, get_strategy_summaries, get_strategies
 from fast.controllers import calc_correlation_matrix
 
 route = APIRouter()

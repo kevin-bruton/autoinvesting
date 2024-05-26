@@ -1,12 +1,12 @@
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from db.accounts import get_accounts
-from db.orders import get_account_orders
-from db.subscriptions import update_subscriptions
-from db.trades import get_account_trades
-from db.users import get_users, get_users_account_ids
-from db.updates import get_last_update
+from db2.accounts import get_accounts
+from db2.orders import get_account_orders
+#from db2.subscriptions import update_subscriptions
+from db2.trades import get_account_trades
+from db2.users import get_users, get_users_account_ids
+from db2.updates import get_last_update
 from fast.controllers import get_account_logs
 
 from fast.utils import get_upload_folders
@@ -55,14 +55,14 @@ def get_account_connection_status(account_id: str):
 class SubscriptionRequest(BaseModel):
   magics: list[int]
 
-@route.post('/account/<account_id>/subscribe')
+""" @route.post('/account/<account_id>/subscribe')
 def subscribe_to_strategies(account_id: str, magics: SubscriptionRequest):
   try:
     update_subscriptions(account_id, magics)
     return {'success': True}
   except Exception as e:
     return {'error': repr(e)}
-
+ """
 @route.get('/updates/last')
 def get_last_update_request():
   try: 

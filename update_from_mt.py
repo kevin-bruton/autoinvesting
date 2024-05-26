@@ -1,15 +1,13 @@
-
-import json
 from time import sleep
 from os import getenv
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db.accounts import update_kpis
-from db.updates import register_update
+from db2.accounts import update_kpis
+from db2.updates import register_update
 from mt_connector.connector import mt_connector_client
-from db.trades import Trade, get_strategys_demo_trades, save_trade
+from db2.trades import Trade, get_strategys_demo_trades, save_trade
 from fast.utils import get_demo_kpis
 
 LOOKBACK_DAYS_TO_UPDATE = 365

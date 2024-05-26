@@ -3,8 +3,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db.init import init_db
-from db.init2 import init_db as init_db2
+from db1.init import init_db
+from db2.init import init_db as init_db2
 init_db()
 init_db2()
 from fast.auth import is_admin, is_member

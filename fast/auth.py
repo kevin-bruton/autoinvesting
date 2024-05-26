@@ -3,7 +3,7 @@ from typing import Annotated, Union
 from fastapi import Cookie, Depends, HTTPException, Request
 import jwt
 
-from db.users import get_user
+from db2.users import get_user
 
 def generate_user_token (username, password, host):
   user = get_user(username, password)

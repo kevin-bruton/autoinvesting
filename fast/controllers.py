@@ -1,10 +1,10 @@
 from os import listdir, path, remove
 from shutil import copy2
 from fast.random_name import get_random_name
-from db.strategies import Strategy, save_strategy, \
+from db2.strategies import Strategy, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
-from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_demo_trades, save_trade
-from db.accounts import Account, save_backtest, save_account
+from db2.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_demo_trades, save_trade
+from db2.accounts import Account, save_backtest, save_account
 from fast.utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 import pandas as pd
