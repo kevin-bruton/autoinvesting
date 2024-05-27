@@ -4,7 +4,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db2.accounts import update_kpis
+#from db2.accounts import update_kpis
+import db2
 from db2.updates import register_update
 from mt_connector.connector import mt_connector_client
 from db2.trades import Trade, get_strategys_demo_trades, save_trade
@@ -40,27 +41,26 @@ def mt_to_db_format(trades_dict, balance):
         # trades_dict[order_id]['order_id'] = order_id
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
-        account_id = f"{mt_trade['magic']}_D"
+        #account_id = f"{mt_trade['magic']}_D"
+        strategyRunId = db2.get_trade_strategyrun_id(str(mt_trade['magic']), 'paper')
         trade = Trade(
-            f"{order_id}_{account_id}",
-            None, # masterOrderId
-            account_id,
-            mt_trade['magic'],
-            mt_trade['symbol'],
-            mt_trade['type'][0].upper() + mt_trade['type'][1:],
-            mt_trade['open_time'].replace('.', '-'),
-            mt_trade['close_time'].replace('.', '-'),
-            mt_trade['open_price'],
-            mt_trade['close_price'],
-            mt_trade['lots'],
-            mt_trade['pnl'],
-            balance,
-            mt_trade['comment'].replace('[', '').replace(']', ''),
-            mt_trade['comment'],
-            mt_trade['SL'],
-            mt_trade['TP'],
-            mt_trade['swap'],
-            mt_trade['commission']
+            orderId=f"{order_id}_{strategyRunId}",
+            strategyRunId=strategyRunId,
+            symbol=mt_trade['symbol'],
+            orderType=mt_trade['type'][0].upper() + mt_trade['type'][1:],
+            openTime=mt_trade['open_time'].replace('.', '-'),
+            closeTime=mt_trade['close_time'].replace('.', '-'),
+            openPrice=mt_trade['open_price'],
+            closePrice=mt_trade['close_price'],
+            size=mt_trade['lots'],
+            profit=mt_trade['pnl'],
+            balance=balance,
+            closeType=mt_trade['comment'].replace('[', '').replace(']', ''),
+            comment=mt_trade['comment'],
+            sl=mt_trade['SL'],
+            tp=mt_trade['TP'],
+            swap=mt_trade['swap'],
+            commission=mt_trade['commission']
         )
         if trade.orderType == 'Unknown':
             continue
@@ -71,7 +71,7 @@ def mt_to_db_format(trades_dict, balance):
             trades_by_magic[mt_trade['magic']].append(trade)
     return trades_by_magic
 
-def update_strategy_run_demo_kpis (magic):
+""" def update_strategy_run_demo_kpis (magic):
   # get start, deposit, trades
   deposit = 1000
   trades = get_strategys_demo_trades(magic)
@@ -79,7 +79,7 @@ def update_strategy_run_demo_kpis (magic):
     start_date =  datetime.strptime(trades[0]['openTime'],datetime_fmt) - timedelta(days=1)
     kpis = get_demo_kpis(start_date, trades, deposit)
     update_kpis(f"{magic}_D", start_date, deposit, tuple(kpis.values()))
-
+ """
 
 class read_and_save_trades():
 
@@ -144,7 +144,7 @@ class read_and_save_trades():
                 #print('For magic', magic, 'added', num_trades_added, 'trades')
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
-                update_strategy_run_demo_kpis(magic)
+                #update_strategy_run_demo_kpis(magic)
         register_update('Success')
         print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 

@@ -1,7 +1,7 @@
 import sqlite3
 from os import getenv
 
-db_path = db_path = '/home/kevin.bruton/repo2/autoinvesting/autoinvesting2.db' # getenv('DB_FILE')
+db_path = getenv('DB_FILE')
 datetime_fmt = '%Y-%m-%d %H:%M:%S'
 values_placeholder = lambda fields: ','.join(['?'] * len(fields.split(',')))
 
