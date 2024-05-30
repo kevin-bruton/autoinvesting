@@ -3,10 +3,9 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-from db1.init import init_db
-from db.init import init_db as init_db2
+
+from db.init import init_db
 init_db()
-init_db2()
 from fast.auth import is_admin, is_member
 from fast.routers import auth, admin, strategies, accounts, portfolio
 
