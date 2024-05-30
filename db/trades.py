@@ -1,5 +1,5 @@
 from collections import namedtuple
-from db2.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
+from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
 
 trade_fields = 'orderId, strategyRunId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, closeType, comment, sl, tp, swap, commission'
 Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None))

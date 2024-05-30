@@ -1,5 +1,5 @@
 from collections import namedtuple
-from db2.common import query_many, query_one, mutate_one,values_placeholder
+from db.common import query_many, query_one, mutate_one,values_placeholder
 
 user_fields = 'accountType, username, passwd, email, firstName, lastName, city, country'
 User = namedtuple('User', user_fields, defaults=(None, None))

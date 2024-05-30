@@ -1,6 +1,6 @@
 from datetime import datetime
 from collections import namedtuple
-from db2.common import mutate_many, mutate_one, query_many, query_one, values_placeholder
+from db.common import mutate_many, mutate_one, query_many, query_one, values_placeholder
 
 account_fields = 'accountId, accountType, broker, platform, username, balance, equity, lastConnectionUpdate, isConnected'
 Account = namedtuple('Account', account_fields, defaults=(0, 0, None, None))

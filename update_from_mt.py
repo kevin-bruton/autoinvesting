@@ -5,10 +5,10 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 #from db2.accounts import update_kpis
-import db2
-from db2.updates import register_update
+import db
+from db.updates import register_update
 from mt_connector.connector import mt_connector_client
-from db2.trades import Trade, get_strategys_demo_trades, save_trade
+from db.trades import Trade, get_strategys_demo_trades, save_trade
 from fast.utils import get_demo_kpis
 
 LOOKBACK_DAYS_TO_UPDATE = 365
@@ -42,7 +42,7 @@ def mt_to_db_format(trades_dict, balance):
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
         #account_id = f"{mt_trade['magic']}_D"
-        strategyRunId = db2.get_trade_strategyrun_id(str(mt_trade['magic']), 'paper')
+        strategyRunId = db.get_trade_strategyrun_id(str(mt_trade['magic']), 'paper')
         trade = Trade(
             orderId=f"{order_id}_{strategyRunId}",
             strategyRunId=strategyRunId,

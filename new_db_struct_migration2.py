@@ -1,8 +1,8 @@
 import db1 as db1
-import db2
+import db
 
 db1.init_db()
-db2.init_db()
+db.init_db()
 """ 
 users = db1.get_users()
 for u in users:
@@ -106,12 +106,12 @@ for order in orders:
         continue
     runType = 'backtest' if order['accountId'][-1:] == 'B' else 'paper'
     #print('strategyId:', strategyId, 'runType:', runType)
-    strategyRunId = db2.get_trade_strategyrun_id(strategyId, runType)
+    strategyRunId = db.get_trade_strategyrun_id(strategyId, runType)
     #print('strategyRunId:', strategyRunId)
     if not strategyRunId:
         print(dict(order))
         print('strategyRunId:', strategyRunId, 'strategyId:', strategyId, 'runType:', runType)
-    db2.save_order(db2.Order(
+    db.save_order(db.Order(
         orderId=order['orderId'],
         strategyRunId=strategyRunId,
         status=order['status'],

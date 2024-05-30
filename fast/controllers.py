@@ -1,10 +1,10 @@
 from os import listdir, path, remove
 from shutil import copy2
 from fast.random_name import get_random_name
-from db2.strategies import Strategy, save_strategy, \
+from db.strategies import Strategy, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
-from db2.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_demo_trades, save_trade
-from db2.accounts import Account, save_backtest, save_account
+from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_demo_trades, save_trade
+from db.accounts import Account, save_account
 from fast.utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 import pandas as pd
@@ -14,7 +14,9 @@ date_fmt = '%Y-%m-%d'
 datetime_fmt = '%Y-%m-%d %H:%M:%S'
 
 def save_new_strategies (upload_folder):
-  folder = f"{get_project_root_dir()}/files/{upload_folder}"
+  # Revise this implementation with the new db structure
+  pass
+"""   folder = f"{get_project_root_dir()}/files/{upload_folder}"
   files = listdir(folder)
   csv_files = [f for f in files if f[-3:] == 'csv']
   deposit = 1000
@@ -97,6 +99,7 @@ def save_new_strategies (upload_folder):
       for trade in trades:
         save_trade(trade)
   return True
+ """
 
 def get_account_logs (account_id):
   try:

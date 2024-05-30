@@ -1,7 +1,7 @@
 from datetime import datetime
 from collections import namedtuple
-from db2.common import query_many, query_one, mutate_one, values_placeholder, datetime_fmt
-from db2.trades import get_trades_of_account
+from db.common import query_many, query_one, mutate_one, values_placeholder, datetime_fmt
+from db.trades import get_trades_of_account
 
 strategyrun_fields = 'strategyId, accountId, symbol, timeframes, type, startDate, endDate, strategyRunId'
 StrategyRun = namedtuple('Strategy', strategyrun_fields, defaults=(None, None, None, None, None, None, None))

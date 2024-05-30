@@ -1,5 +1,5 @@
 from collections import namedtuple
-from db2.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
+from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
 
 order_fields = 'orderId, strategyRunId, status, symbol, orderType, openTime, openPrice, size, comment, sl, tp'
 Order = namedtuple('Order', order_fields)

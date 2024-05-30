@@ -1,5 +1,5 @@
 from datetime import datetime
-from db2.common import query_one, mutate_one
+from db.common import query_one, mutate_one
 
 def register_update (result):
   now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')

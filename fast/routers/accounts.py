@@ -1,12 +1,12 @@
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from db2.accounts import get_accounts
-from db2.orders import get_account_orders
+from db.accounts import get_accounts
+from db.orders import get_account_orders
 #from db2.subscriptions import update_subscriptions
-from db2.trades import get_account_trades
-from db2.users import get_users, get_users_account_ids
-from db2.updates import get_last_update
+from db.trades import get_account_trades
+from db.users import get_users, get_users_account_ids
+from db.updates import get_last_update
 from fast.controllers import get_account_logs
 
 from fast.utils import get_upload_folders

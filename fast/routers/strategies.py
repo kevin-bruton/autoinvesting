@@ -1,27 +1,26 @@
 from typing import Annotated
 from fastapi import APIRouter, Response
 from pydantic import BaseModel
-from db2.orders import get_orders
-from db2.strategies import get_strategy_detail, get_strategy_summaries, get_strategies
+import db
 from fast.controllers import calc_correlation_matrix
 
 route = APIRouter()
 
 @route.get('/strategies')
 def get_strategies_request():
-  return {'success': True, 'data': get_strategies()}
+  return {'success': True, 'data': db.get_strategies()}
 
 @route.get('/orders')
 def get_orders_request():
-  return {'success': True, 'data': get_orders()}
+  return {'success': True, 'data': db.get_orders()}
 
 @route.get('/trades')
 def get_trades():
-  return {'success': True, 'data': get_trades()}
+  return {'success': True, 'data': db.get_trades()}
 
 @route.get('/strategies/summary')
 def get_strategies_summaries_request():
-  return {'success': True, 'data': get_strategy_summaries()}
+  return {'success': True, 'data': db.get_strategy_summaries()}
 
 
 @route.get('/strategies/{strategy_id}')
@@ -34,7 +33,7 @@ def get_strategy_request(strategy_id: str):
       return { 'error': repr(e) }
   else: """
   try:
-    strategy = get_strategy_detail(strategy_id)
+    strategy = db.get_strategy_detail(strategy_id)
     return strategy
   except Exception as e:
     return { 'error': repr(e) }

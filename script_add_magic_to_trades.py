@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from db2.accounts import get_accounts, update_account_username
+from db.accounts import get_accounts, update_account_username
 from mt_connector.connector import mt_connector_client
 
 load_dotenv()

@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from db2.strategies import save_strategy
+from db.strategies import save_strategy
 from fast.controllers import decommission_strategy, reactivate_strategy, save_new_strategies
 
 from fast.strategies_csv import save_all_strategy_data, save_strategies_csv
