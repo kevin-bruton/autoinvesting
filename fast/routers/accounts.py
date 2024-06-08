@@ -2,6 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
 from db.accounts import get_accounts
+from db.strategy_runs import get_account_strategyruns
 from db.orders import get_account_orders
 #from db2.subscriptions import update_subscriptions
 from db.trades import get_account_trades
@@ -37,7 +38,16 @@ def get_account_orders_request(account_id: str):
   orders = get_account_orders(account_id)
   return {'success': True, 'data': orders}
 
-@route.get('/api/account/{account_id}/trades')
+@route.get('/account/{account_id}/strategyruns')
+def get_account_strategies_req(account_id: str):
+  try:
+    strategies = get_account_strategyruns(account_id)
+  except Exception as e:
+    print('get_account_strategyruns error: ', e)
+    return {'success': False}
+  return {'success': True, 'data': strategies}
+
+@route.get('/account/{account_id}/trades')
 def get_accounts_trades(account_id: str):
   trades = get_account_trades(account_id)
   return {'success': True, 'data': trades}

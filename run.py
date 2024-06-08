@@ -9,6 +9,7 @@ from fast.api_server import run_api_server
 from scripts.create_mt_templates import create_mt_templates
 from scripts.import_strategies import import_strategies
 from scripts.update_from_ib import update_from_ib
+from scripts.encrypt_text import do_decrypt, do_encrypt
 
 cmds = {
     'api': run_api_server,
@@ -16,7 +17,9 @@ cmds = {
     'update_from_mt': run_update_from_mt,
     'create_mt_templates': create_mt_templates,
     'import_strategies': import_strategies,
-    'update_from_ib': update_from_ib
+    'update_from_ib': update_from_ib,
+    'encrypt': do_encrypt,
+    'decrypt': do_decrypt
 }
 
 if len(sys.argv) < 2:

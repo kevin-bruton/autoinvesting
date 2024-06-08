@@ -56,10 +56,13 @@ def get_account_trades (account_id):
     }} for t in trades]
 
 def get_strategys_demo_trades (strategyId):
-  accountId = str(magic) + '_D'
-  sql = 'SELECT orderId, accountId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
-    + 'FROM Trades WHERE accountId = ?'
-  return query_many(sql, (accountId,))
+  sql = '''
+    SELECT orderId, accountId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+    FROM Trades
+    INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+    WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'paper'
+  '''
+  return query_many(sql, (strategyId,))
 
 def get_strategys_backtest_trades (magic):
   accountId = str(magic) + '_B'
@@ -79,3 +82,11 @@ def save_trade (trade: Trade):
 def update_trade_magic (orderId, magic):
   sql = 'UPDATE Trades SET magic = ? WHERE orderId = ?'
   return mutate_one(sql, (magic, orderId,))
+
+def get_strategyrun_trades (strategyrun_id):
+  sql = '''
+      SELECT orderId, strategyRunId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balanace, closeType, comment, sl, tp, swap, commission
+      FROM Trades
+      WHERE strategyRunId = ?
+    '''
+  return query_many(sql, (strategyrun_id,))

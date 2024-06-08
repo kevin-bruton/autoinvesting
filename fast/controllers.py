@@ -113,26 +113,26 @@ def log(txt):
     with open("/home/admin/autoinvesting/back/correlation.log", "a") as f:
         f.write(txt + "\n")
 
-def calc_correlation_matrix (magics, data_type, timeframe):
+def calc_correlation_matrix (strategyIds, strategyRunType, timeframe):
   """
     magic = list of integers
     data_type = 'demo', 'backtest' or 'combined'
     timeframe has to be 'D', 'W' or 'M'
   """
   data = pd.DataFrame()
-  for magic in magics:
-    if data_type == 'backtest':
-      trades = get_strategys_backtest_trades(magic)
-    elif data_type == 'demo':
-      trades = get_strategys_demo_trades(magic)
-    elif data_type == 'combined':
-      trades = get_strategys_combined_trades(magic)
+  for strategyId in strategyIds:
+    if strategyRunType == 'backtest':
+      trades = get_strategys_backtest_trades(strategyId)
+    elif strategyRunType == 'demo':
+      trades = get_strategys_demo_trades(strategyId)
+    elif strategyRunType == 'combined':
+      trades = get_strategys_combined_trades(strategyId)
     for index, trade in enumerate(trades):
-      trades[index] = {'closeTime': datetime.strptime(trade['closeTime'],datetime_fmt), 'profit': trade['profit']}
+      trades[index] = {'closeTime': trade['closeTime'], 'profit': trade['profit']}
     df = pd.DataFrame(trades)
     #df = df[['closeTime', 'profit']]
     df = df.groupby(pd.Grouper(key='closeTime', freq=timeframe)).sum()
-    df[magic] = df['profit'].cumsum().astype(float)
+    df[strategyId] = df['profit'].cumsum().astype(float)
     # df['profit_'+str(magic)] = df['profit']
     df = df.drop(columns='profit')
     if data.empty:

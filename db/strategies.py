@@ -33,3 +33,11 @@ def get_all_strategy_data ():
   sql = "SELECT strategyId,friendlyName,type,description,workflow,decommissioned FROM Strategies"
   return query_many(sql)
 
+def get_strategy(strategy_id, username):
+  sql = """
+      SELECT strategyId, friendlyName, type, description, workflow, decommissioned, strategyRunId
+      FROM Strategies
+      INNER JOIN Accounts ON Accounts.accountId = Strategies.accountId
+      WHERE strategyId=?
+    """
+  return

@@ -62,6 +62,7 @@ def init_db():
           timeframes VARCHAR(55) NOT NULL,
           startDate TIMESTAMP,
           endDate TIMESTAMP,
+          startingBalance REAL,
           FOREIGN KEY (strategyId) REFERENCES Strategies(strategyId),
           FOREIGN KEY (accountId) REFERENCES Accounts(accountId)
       );

@@ -1,10 +1,18 @@
+import os
+from uvicorn.config import LOGGING_CONFIG
 from uvicorn import run
 
 def run_api_server():
   print('Starting API server...')
-  run("fast.api_routes:app", \
-      host="0.0.0.0", \
-      port=10443, \
-      #ssl_keyfile=get_config_value('ssl_privkey'), \
-      #ssl_certfile=get_config_value('ssl_fullchain')
+  print('ssl_keyfile:', os.getenv('SLL_FULLCHAIN'))
+  LOGGING_CONFIG["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+  LOGGING_CONFIG["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
+  LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s %(levelprefix)s %(message)s"
+  LOGGING_CONFIG["formatters"]["access"]["fmt"] = '%(asctime)s %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
+  run(
+      "fast.api_routes:app",
+      host="0.0.0.0",
+      port=443,
+      ssl_keyfile=os.getenv('SLL_PRIVKEY'),
+      ssl_certfile=os.getenv('SLL_FULLCHAIN'),
     )

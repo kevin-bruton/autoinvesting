@@ -17,3 +17,12 @@ def get_strategy_runs ():
 def save_strategyrun (strategyrun: StrategyRun) -> int:
   sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
   return mutate_one(sql, strategyrun)
+
+def get_account_strategyruns (account_id: str) -> list[StrategyRun]:
+  sql = '''
+      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startDate, startingBalance
+      FROM StrategyRuns
+      INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
+      WHERE Strategies.decommissioned is not NULL AND accountId = ?
+    '''
+  return query_many(sql, (account_id,))
