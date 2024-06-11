@@ -12,24 +12,24 @@
 # The filename of the mq4 file should be of the format {symbol}_{timeframe}_{magic}
 # eg. EURUSD_H1_230601001
 #
-
 from enum import Enum
 from dotenv import load_dotenv
-load_dotenv() 
+load_dotenv()
 
+from sys import argv
 from os import listdir, remove, getenv
 from os.path import isfile, join
 from random import randrange
 from fast.utils import get_project_root_dir
 
 def create_live_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/'
+    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
     destination_dir = f'{getenv("MT_LIVE_FILES_DIR")}/EaTemplates/'
     _create_templates(source_dir, destination_dir)
 
 def create_demo_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_demo_account/'
-    destination_dir = f'{getenv("MT_DEMO_FILES_DIR")}/EaTemplates/' 
+    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
+    destination_dir = f'{getenv("MT_DEMO_FILES_DIR")}/EaTemplates/'
     _create_templates(source_dir, destination_dir)
     
 
@@ -150,17 +150,17 @@ name=main
         template += '</expert>\n'
         template += '</chart>\n'
 
-        template_filename = destination_dir + f'{symbol}_{period}_{magic}.tpl'
-        template_file = open(template_filename, 'w')
+        template_file = open(destination_dir + f'{symbol}_{period}_{magic}.tpl', 'w')
         template_file.write(template)
         template_file.close()
-        print(f'  {template_filename} created.')
 
-def create_templates(mode: str):
-    if mode not in ['live', 'demo']:
-        raise Exception('Invalid mode. Use "live" or "demo"')
-    if mode == 'live':
+class Mode(Enum):
+    LIVE = 'live'
+    DEMO = 'demo'
+
+def create_templates(version: Mode):
+    if version == Mode.LIVE:
         create_live_templates()
-    elif mode == 'demo':
+    elif version == Mode.DEMO:
         create_demo_templates()
     print('Templates created.')

@@ -3,7 +3,7 @@
 Strategy performance tracking and investing
 
 ## Setup Platform
-Environment variables must be set in the `.env` file for the corresponding with the corresponding FLASK_APP='back/api.py', MT_FILES_DIR, etc.
+Environment variables must be set in the `.env` file for the corresponding with the corresponding FLASK_APP='back/api.py', MT_DEMO_FILES_DIR, etc.
 
 Create an autoinvesting MySQL database, adding it's name and credentials to the `.env` file.
 

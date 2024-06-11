@@ -23,6 +23,6 @@ def get_account_strategyruns (account_id: str) -> list[StrategyRun]:
       SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startDate, startingBalance
       FROM StrategyRuns
       INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
-      WHERE Strategies.decommissioned is not NULL AND accountId = ?
+      WHERE Strategies.decommissioned is NULL AND accountId = ?
     '''
   return query_many(sql, (account_id,))

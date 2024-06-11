@@ -125,10 +125,10 @@ class read_and_save_trades():
         # With mt trades insert all trades into db for each strategy
         # ignoring duplicate key errors (if they already exist, as this is expected)
         already_existing_trades = 0
+        num_trades_added = 0
         for magic in trades_by_magic.keys():
             if str(magic) in deleted_strategies:
                 continue
-            num_trades_added = 0
             for trade in trades_by_magic[magic]:
                 try:
                     if trade.orderType in ['Buy', 'Sell']:
@@ -154,7 +154,7 @@ def run_update_from_mt():
     with open('logs/update_from_mt.log', 'a') as f:
         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Starting update from MT4\n')
 
-    metatrader_files_dir = getenv('MT_FILES_DIR')
+    metatrader_files_dir = getenv('MT_DEMO_FILES_DIR')
     #print('Metatrader files directory:', metatrader_files_dir)
     processor = read_and_save_trades(metatrader_files_dir)
 

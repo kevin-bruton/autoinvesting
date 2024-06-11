@@ -120,7 +120,7 @@ def run_receiver (trade_queue):
     if event == 'order_removed':    handle_order_removed(trade_queue, mt_order)
 
   print('[RECEIVER] Waiting to receive trades...')
-  tradeReceiver = TradeReceiver(getenv('MT_FILES_DIR'), on_order_event)
+  tradeReceiver = TradeReceiver(getenv('MT_DEMO_FILES_DIR'), on_order_event)
 
   while tradeReceiver.connector.ACTIVE:
     sleep(1)

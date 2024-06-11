@@ -13,13 +13,14 @@
 # eg. EURUSD_H1_230601001
 #
 
-from os import listdir, remove
+from os import listdir, remove, getenv
 from os.path import isfile, join
 from random import randrange
+from fast.utils import get_project_root_dir
 
 def create_live_templates():
-    source_dir = '/home/admin/autoinvesting/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
-    destination_dir = '/home/admin/.wine/drive_c/DeeWhyBeach/MQL4/Files/EaTemplates/' # 'DeeWhyBeach' or 'mt4demo'
+    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
+    destination_dir = f'{getenv("MT_LIVE_FILES_DIR")}/EaTemplates/' # 'DeeWhyBeach' or 'mt4demo'
     _create_templates(source_dir, destination_dir)
 
 def create_demo_templates():

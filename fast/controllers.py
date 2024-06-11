@@ -157,10 +157,10 @@ def apply_position_sizing (pos_sizes):
       remove(folder + filename)
 
   demo_filenames = [f for f in listdir(src_folder) if '.mq4' in f]
-  for magic, size in pos_sizes.items():
-    found_filenames = [f for f in demo_filenames if magic in f]
+  for strategyId, size in pos_sizes.items():
+    found_filenames = [f for f in demo_filenames if str(strategyId) in f]
     if len(found_filenames) == 0:
-      raise Exception("Could not find demo file with magic", magic)
+      raise Exception("Could not find demo file with strategyId", strategyId)
     filename = found_filenames[0]
     # Copy needed strategy file from demo to live directory
     copy2(src_folder + filename, folder)
