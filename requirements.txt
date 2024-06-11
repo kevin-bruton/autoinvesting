@@ -1,6 +1,0 @@
-python-dotenv==0.20.0
-QuantStats==0.0.58
-PyJwt==2.6.0
-fastapi==0.111.0
-uvicorn==0.29.0
-schedule==1.2.1
