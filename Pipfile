@@ -10,6 +10,9 @@ pyjwt = "==2.6.0"
 fastapi = "==0.111.0"
 uvicorn = "==0.29.0"
 schedule = "==1.2.1"
+winwifi = "*"
+ib-insync = "*"
+cryptography = "*"
 
 [dev-packages]
 
