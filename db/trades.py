@@ -1,8 +1,8 @@
 from collections import namedtuple
 from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
 
-trade_fields = 'orderId, strategyRunId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, closeType, comment, sl, tp, swap, commission'
-Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None))
+trade_fields = 'orderId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, strategyRunId, closeType, comment, sl, tp, swap, commission'
+Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None, None))
 
 def get_trade_strategyrun_id(strategyId, runType):
   sql = "SELECT strategyRunId FROM strategyRuns WHERE strategyId = ? AND type = ?"
@@ -61,19 +61,25 @@ def get_strategys_demo_trades (strategyId):
     FROM Trades
     INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
     WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'paper'
+    ORDER BY closeTime
   '''
   return query_many(sql, (strategyId,))
 
-def get_strategys_backtest_trades (magic):
-  accountId = str(magic) + '_B'
-  sql = 'SELECT orderId, accountId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment ' \
-    + 'FROM Trades WHERE accountId = ?'
-  return query_many(sql, (accountId,))
+def get_strategys_backtest_trades (strategyId):
+  sql = '''
+      SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+      FROM Trades
+      INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest'
+      ORDER BY closeTime
+    '''
+  return query_many(sql, (strategyId,))
 
-def get_strategys_combined_trades (magic):
-  backtest_trades = get_strategys_backtest_trades(magic)
-  demo_trades = get_strategys_demo_trades(magic)
-  return backtest_trades.extend(demo_trades)
+def get_strategys_combined_trades (strategyId):
+  backtest_trades = get_strategys_backtest_trades(strategyId)
+  demo_trades = get_strategys_demo_trades(strategyId)
+  backtest_trades.extend(demo_trades)
+  return [dict(t) for t in backtest_trades]
 
 def save_trade (trade: Trade):
   sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"

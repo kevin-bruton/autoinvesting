@@ -14,6 +14,13 @@ def get_strategy_runs ():
     FROM StrategyRuns"""
   return query_many(sql)
 
+def get_strategyrun_id (strategyId: str, runType: str) -> int:
+  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND type = ?"
+  result = query_one(sql, (strategyId, runType))
+  if result and 'strategyRunId' in result.keys():
+    return result['strategyRunId']
+  return None
+
 def save_strategyrun (strategyrun: StrategyRun) -> int:
   sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
   return mutate_one(sql, strategyrun)
