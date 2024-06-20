@@ -17,7 +17,7 @@ def get_correlation_matrix(data: CorrelationMatrixData):
   return Response(content=matrix)
 
 @route.post('/position-sizing')
-def apply_positon_sizing_request(sizes: Dict[int, float]):
+def apply_positon_sizing_request(sizes: Dict[str, float]):
   try:
     apply_position_sizing(sizes)
     return {'result': 'success'}
