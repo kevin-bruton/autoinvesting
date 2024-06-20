@@ -4,7 +4,6 @@ from uvicorn import run
 
 def run_api_server():
   print('Starting API server...')
-  print('ssl_keyfile:', os.getenv('SLL_FULLCHAIN'))
   LOGGING_CONFIG["formatters"]["default"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
   LOGGING_CONFIG["formatters"]["access"]["datefmt"] = "%Y-%m-%d %H:%M:%S"
   LOGGING_CONFIG["formatters"]["default"]["fmt"] = "%(asctime)s %(levelprefix)s %(message)s"

@@ -4,8 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-python-dotenv = "==0.20.0"
-quantstats = "==0.0.58"
+python-dotenv = "*"
 pyjwt = "==2.6.0"
 fastapi = "==0.111.0"
 uvicorn = "==0.29.0"
@@ -13,6 +12,7 @@ schedule = "==1.2.1"
 winwifi = "*"
 ib-insync = "*"
 cryptography = "*"
+ipython = "*"
 
 [dev-packages]
 

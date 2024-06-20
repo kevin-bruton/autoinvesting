@@ -39,8 +39,9 @@ async def query_request(request: Request):
   try:
     #query_data = json.loads(base64.b64decode(data).decode('utf-8'))
     query_data = json.loads(data)
-    type, sql = decrypt(query_data['query'])
-    values = query_data['values']
+    print('query_data: ', query_data)
+    type, sql, values = query_data #decrypt(query_data['query'])
+    # values = query_data['values']
   except Exception as e:
     print('Error decoding query data: ', e)
     return {'success': False }
