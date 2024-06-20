@@ -7,13 +7,13 @@ from fast.controllers import apply_position_sizing, calc_correlation_matrix, get
 route = APIRouter()
 
 class CorrelationMatrixData(BaseModel):
-  magics: list[int]
+  strategyIds: list[int]
   dataType: str
   timeframe: str
 
 @route.post('/correlation-matrix')
 def get_correlation_matrix(data: CorrelationMatrixData):
-  matrix = calc_correlation_matrix(data.magics, data.dataType, data.timeframe)
+  matrix = calc_correlation_matrix(data.strategyIds, data.dataType, data.timeframe)
   return Response(content=matrix)
 
 @route.post('/position-sizing')

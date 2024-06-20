@@ -1,5 +1,6 @@
 from os import listdir, path, remove
 from shutil import copy2
+from db.strategy_runs import StrategyRun, get_strategyrun_id, save_strategyrun
 from fast.random_name import get_random_name
 from db.strategies import Strategy, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
@@ -14,19 +15,17 @@ date_fmt = '%Y-%m-%d'
 datetime_fmt = '%Y-%m-%d %H:%M:%S'
 
 def save_new_strategies (upload_folder):
-  # Revise this implementation with the new db structure
-  pass
-"""   folder = f"{get_project_root_dir()}/files/{upload_folder}"
+  folder = f"{get_project_root_dir()}/files/{upload_folder}"
   files = listdir(folder)
   csv_files = [f for f in files if f[-3:] == 'csv']
   deposit = 1000
   for filename in csv_files:
     base_filename = filename[:-4]
-    symbol, timeframe, magic = base_filename.split('_')
-    name = get_random_name()
-    strategy = Strategy(magic, name, symbol, timeframe)
+    symbol, timeframe, strategyId = base_filename.split('_')
+    friendlyName = get_random_name()
+    strategy = Strategy(strategyId, friendlyName)
     save_strategy(strategy)
-    print('Saved strategy', name, base_filename)
+    print('Saved strategy', friendlyName, base_filename)
     with open(f"{folder}/{filename}") as f:
       lines = [
         [d[1:-1] for d in l.split(';')]
@@ -37,10 +36,7 @@ def save_new_strategies (upload_folder):
         # Make sure that the csv of trades exported from SQX was done
         # including only trades from the Main backtest (options while exporting)
         Trade(
-          orderId=f"{l[0]}_{magic}_B",
-          masterOrderId=None,
-          accountId=f"{magic}_B",
-          magic=magic,
+          orderId=f"{l[0]}_{strategyId}_B",
           symbol=symbol,
           orderType=l[2],
           openTime=l[3].replace('.', '-'),
@@ -58,48 +54,14 @@ def save_new_strategies (upload_folder):
       ]
       start_date = trades[0].openTime
       end_date = trades[-1].closeTime
-      kpis = get_bt_kpis(start_date, end_date, trades, deposit)
-      print(kpis)
-      backtest = Account(
-        accountId=f"{magic}_B",
-        accountNumber=magic,
-        accountType='strategy_backtest',
-        username='master',
-        subscriptionKey=None,
-        annualPctRet=kpis['annualPctRet'],
-        maxDD=kpis['maxDD'],
-        maxPctDD=kpis['maxPctDD'],
-        annPctRetVsDdPct=kpis['annPctRetVsDdPct'],
-        winPct=kpis['winPct'],
-        profitFactor=kpis['profitFactor'],
-        numTrades=kpis['numTrades'],
-        startDate=start_date,
-        endDate=end_date,
-        deposit=deposit,
-      )
-      save_backtest(backtest)
-      demo_run = Account(
-        accountId=f"{magic}_D",
-        accountNumber=magic,
-        accountType='strategy_demo',
-        username='master',
-        subscriptionKey=None,
-        annualPctRet=None,
-        maxDD=None,
-        maxPctDD=None,
-        annPctRetVsDdPct=None,
-        winPct=None,
-        profitFactor=None,
-        numTrades=0,
-        startDate=datetime.now().strftime(date_fmt),
-        endDate=None,
-        deposit=1000
-      )
-      save_account(demo_run)
+      backtestStrategyRun = StrategyRun(strategyId, None, symbol, timeframe, 'backtest', start_date, end_date)
+      save_strategyrun(backtestStrategyRun)
       for trade in trades:
+        strategyRunId = get_strategyrun_id(strategyId, 'backtest')
+        trade = trade._replace(strategyRunId=strategyRunId)
         save_trade(trade)
   return True
- """
+
 
 def get_account_logs (account_id):
   try:
