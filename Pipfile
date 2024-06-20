@@ -13,6 +13,7 @@ schedule = "==1.2.1"
 winwifi = "*"
 ib-insync = "*"
 cryptography = "*"
+ipython = "*"
 
 [dev-packages]
 
