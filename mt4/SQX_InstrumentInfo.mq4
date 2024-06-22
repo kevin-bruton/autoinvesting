@@ -106,19 +106,19 @@ string GetPointValueInUsd (SymbolStruct &symbol)
    {
       string quoteCurrency = StringSubstr(symbol.name, 3);
       if (quoteCurrency == "USD")
-         return DoubleToStr(contractSize, 0);
+         return DoubleToStr(contractSize, 2);
       else
          return DoubleToStr(ExchangeCurrency(quoteCurrency, "USD", contractSize), 0);
    } else if (symbol.assetType == "index") {
       string indexCurrency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_MARGIN);
       Print("Index Currency: '", indexCurrency, "'");
       if (indexCurrency == "USD")
-         return DoubleToStr(contractSize, 0);
+         return DoubleToStr(contractSize, 2);
       else
-         return DoubleToStr(ExchangeCurrency(indexCurrency, "USD", contractSize), 0);
+         return DoubleToStr(ExchangeCurrency(indexCurrency, "USD", contractSize), 2);
    }
    // Not forex or index
-   return DoubleToStr(contractSize, 0);
+   return DoubleToStr(contractSize, 2);
 }
 
 string GetPipTickSize (SymbolStruct &symbol)
