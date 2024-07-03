@@ -3,7 +3,10 @@ from zipfile import ZipFile
 from datetime import datetime, timedelta
 from ib_insync import *
 
-multicharts_log_dir = 'C:/Users/Admin/AppData/Local/TS Support/MultiCharts64/15.0.26125.400/Logs/TradingServer/'
+from dotenv import load_dotenv
+load_dotenv(override=True)
+
+multicharts_log_dir = os.getenv('MC_LOG_DIR') + '/TradingServer/'
 
 
 def logtime_to_ts(str):
@@ -43,7 +46,7 @@ def is_strategy_identifier(content):
 
 def is_order_event(content):
   columns = content.split(' ')
-  return len(columns) > 0 and 'PDS' in columns[0]
+  return len(columns) > 0 and ('PDS' in columns[0] or 'CProfile::OnOrder' in columns[0] or 'CProfile::OnTrade' in columns[0])  
 
 def get_strategy_mapping():
   strat_map = {}
@@ -85,7 +88,7 @@ def get_strategy_mapping():
               broker_profile = cols[41][1:-1]
               account_id = cols[42][1:-1]
               workspace = cols[43][1:-1]
-              strategy_name = cols[44][1:]
+              strategy_name = cols[44][1:-1] if cols[44][-1] == '"' else cols[44][1:]
               if account_id not in strat_map.keys():
                 strat_map[account_id] = {}
               strat_map[account_id][strategy_id] = {
@@ -94,6 +97,8 @@ def get_strategy_mapping():
                 'strategy_name': strategy_name
               }
               print('    Register strategy:', account_id, strategy_id, strat_map[account_id][strategy_id])
+              for elTraderId, strategy in strat_map[account_id].items():
+                print('       ', elTraderId, strategy['strategy_name'])
   return strat_map
 
 def get_trade_mapping():
@@ -131,10 +136,13 @@ def update_from_ib(instance):
   strat_map = get_strategy_mapping()
   trade_map = get_trade_mapping()
   ib = connect(instance)
+  print("Connected to IB")
   fills = ib.fills()
+  print("Retrieved", len(fills), "fills")
   for fill in fills:
     account_id = fill.execution.acctNumber
     trade_id = fill.execution.orderRef.split(']')[0][17:]
+    print("Fill:", trade_id, trade_map[account_id][trade_id], account_id, fill.commissionReport.realizedPNL)
     if trade_id and trade_id in trade_map[account_id].keys():
       strategy_id = trade_map[account_id][trade_id]
       #if strategy_id in strat_map[account_id].keys():
