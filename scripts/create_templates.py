@@ -12,28 +12,41 @@
 # The filename of the mq4 file should be of the format {symbol}_{timeframe}_{magic}
 # eg. EURUSD_H1_230601001
 #
+
 from enum import Enum
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv() 
 
-from sys import argv
-from os import listdir, remove, getenv
+from os import getcwd, listdir, mkdir, remove, getenv, path
 from os.path import isfile, join
 from random import randrange
 from fast.utils import get_project_root_dir
+from db.accounts import get_platform_dir
 
+"""
 def create_live_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
-    destination_dir = f'{getenv("MT_LIVE_FILES_DIR")}/EaTemplates/'
+    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/'
+    # think this better
+    # should have to select the destination instance (out of several live mt instances - there should be only ever be one demo instance)
+    destination_dir = f'{getenv('MT_INSTANCES_DIR')}{getenv("MT_LIVE_FILES_DIR")}/EaTemplates/'
     _create_templates(source_dir, destination_dir)
 
 def create_demo_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/' # "eas_to_install_on_demo_account" or "eas_to_install_on_live_account"
-    destination_dir = f'{getenv("MT_DEMO_FILES_DIR")}/EaTemplates/'
+    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_demo_account/'
+    destination_dir = f'{getenv("MT_DEMO_FILES_DIR")}/EaTemplates/' 
     _create_templates(source_dir, destination_dir)
-    
+"""    
 
-def _create_templates(source_dir, destination_dir):
+def create_templates(account_id):
+    platform_dir = get_platform_dir(account_id)
+    if not platform_dir:
+        raise Exception('Platform directory not found for account {account_id}. Exiting...')
+    if not path.exists(path.join(get_project_root_dir(), 'files')):
+        mkdir(path.join(get_project_root_dir(), 'files'))
+        if not path.exists(path.join(get_project_root_dir(), 'files', platform_dir)):
+            mkdir(path.join(get_project_root_dir(), 'files', platform_dir))
+    source_dir = path.join(get_project_root_dir(), 'files', platform_dir)
+    destination_dir = path.join(getenv('MT_INSTANCES_DIR'), platform_dir, 'EaTemplates/')
     template = '<chart>\n'
     template2 = """scale=8
 graph=1
@@ -150,17 +163,18 @@ name=main
         template += '</expert>\n'
         template += '</chart>\n'
 
-        template_file = open(destination_dir + f'{symbol}_{period}_{magic}.tpl', 'w')
+        template_filename = destination_dir + f'{symbol}_{period}_{magic}.tpl'
+        template_file = open(template_filename, 'w')
         template_file.write(template)
         template_file.close()
+        print(f'  {template_filename} created.')
 
-class Mode(Enum):
-    LIVE = 'live'
-    DEMO = 'demo'
-
-def create_templates(version: Mode):
-    if version == Mode.LIVE:
+""" def create_templates(mode: str):
+    if mode not in ['live', 'demo']:
+        raise Exception('Invalid mode. Use "live" or "demo"')
+    if mode == 'live':
         create_live_templates()
-    elif version == Mode.DEMO:
+    elif mode == 'demo':
         create_demo_templates()
     print('Templates created.')
+ """

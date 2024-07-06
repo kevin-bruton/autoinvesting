@@ -10,7 +10,7 @@ from fast.api_server import run_api_server
 from scripts.import_strategies import import_strategies
 from scripts.update_from_ib import update_from_ib
 from scripts.encrypt_text import do_decrypt, do_encrypt
-from scripts.create_mt_templates import create_templates
+from scripts.create_templates import create_templates
 if platform.system() == 'Windows':
     from scripts.wifi_connector import check_connection
 

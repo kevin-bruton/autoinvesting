@@ -10,8 +10,10 @@ def run_api_server():
   LOGGING_CONFIG["formatters"]["access"]["fmt"] = '%(asctime)s %(levelprefix)s %(client_addr)s - "%(request_line)s" %(status_code)s'
   run(
       "fast.api_routes:app",
-      host="0.0.0.0",
-      port=443,
-      ssl_keyfile=os.getenv('SLL_PRIVKEY'),
-      ssl_certfile=os.getenv('SLL_FULLCHAIN'),
+      host="localhost",
+      port=8000,
+      #host="0.0.0.0",
+      #port=443,
+      #ssl_keyfile=os.getenv('SLL_PRIVKEY'),
+      #ssl_certfile=os.getenv('SLL_FULLCHAIN'),
     )

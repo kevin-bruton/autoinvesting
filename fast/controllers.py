@@ -9,7 +9,7 @@ from db.accounts import Account, save_account
 from fast.utils import get_bt_kpis, get_project_root_dir
 from datetime import datetime
 import pandas as pd
-from fast.create_templates import create_live_templates
+from fast.create_templates import create_templates
 
 date_fmt = '%Y-%m-%d'
 datetime_fmt = '%Y-%m-%d %H:%M:%S'
@@ -110,7 +110,7 @@ def decommission_strategy (magic):
 def reactivate_strategy (magic):
   react_strategy(magic)
 
-def apply_position_sizing (pos_sizes):
+def apply_position_sizing (account_id, pos_sizes):
   folder = f"{get_project_root_dir()}/files/eas_to_install_on_live_account/"
   src_folder = f"{get_project_root_dir()}/files/eas_to_install_on_demo_account/"
   files = [f for f in listdir(folder) if '.mq4' in f]
@@ -136,4 +136,4 @@ def apply_position_sizing (pos_sizes):
       f.write(new_content)
   
   # Build and create template files
-  create_live_templates()
+  create_templates(account_id)

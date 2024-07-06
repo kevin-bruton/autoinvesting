@@ -1,12 +1,12 @@
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from db.accounts import get_accounts
+from db.accounts import get_accounts, get_platform_dir
 from db.strategy_runs import get_account_strategyruns
 from db.orders import get_account_orders
 #from db2.subscriptions import update_subscriptions
 from db.trades import get_account_trades
-from db.users import get_users, get_users_account_ids
+from db.users import get_users, get_users_accounts
 from db.updates import get_last_update
 from fast.controllers import get_account_logs
 
@@ -30,8 +30,16 @@ def get_accounts_request():
 @route.get('/user/accounts')
 def get_users_accounts_request(request: Request):
   user = request.state.user
-  account_ids = get_users_account_ids(user['username'])
+  account_ids = get_users_accounts(user['username'])
   return {'success': True, 'data': account_ids }
+
+@route.get('/account/{account_id}/templatesdir')
+def get_account_request(account_id: str):
+  directory = get_platform_dir(account_id)
+  if directory:
+    return {'success': True, 'data': directory}
+  else:
+    return {'success': False, 'error': 'Platform directory not found'}
 
 @route.get('/account/{account_id}/orders')
 def get_account_orders_request(account_id: str):

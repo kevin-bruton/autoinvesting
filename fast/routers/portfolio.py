@@ -17,11 +17,10 @@ def get_correlation_matrix(data: CorrelationMatrixData):
   return Response(content=matrix)
 
 @route.post('/position-sizing')
-def apply_positon_sizing_request(sizes: Dict[int, float]):
+def apply_positon_sizing_request(account_id: str, sizes: Dict[int, float]):
   try:
-    apply_position_sizing(sizes)
+    apply_position_sizing(account_id, sizes)
     return {'result': 'success'}
   except Exception as e:
     print(e, traceback.format_exc())
     return {'error': repr(e)}
-  

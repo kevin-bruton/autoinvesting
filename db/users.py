@@ -12,9 +12,9 @@ def get_users () -> list[User]:
   sql = 'SELECT username, passwd, email, firstName, lastName, city, country, accountType FROM Users'
   return query_many(sql)
 
-def get_users_account_ids (username: str) -> list[str]:
-  sql = 'SELECT accountId FROM Accounts WHERE username = ?'
-  return [a['accountId'] for a in query_many(sql, (username,))]
+def get_users_accounts (username: str) -> list[str]:
+  sql = 'SELECT accountId, name FROM Accounts WHERE username = ?'
+  return query_many(sql, (username,))
 
 def save_user (user:User) -> int:
   sql = f"INSERT INTO Users ({user_fields}) VALUES ({values_placeholder(user_fields)})"

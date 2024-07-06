@@ -32,6 +32,7 @@ def init_db():
         accountType VARCHAR(55) CHECK(accountType IN ('paper', 'live')),
         broker VARCHAR(55),
         platform VARCHAR(55) CHECK(platform in ('MetaTrader', 'Multicharts')),
+        platformDir VARCHAR(255),
         username VARCHAR(55) NOT NULL,
         balance FLOAT(9),
         equity FLOAT(9),
