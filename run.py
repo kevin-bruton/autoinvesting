@@ -5,6 +5,7 @@ load_dotenv()
 import sys
 import platform
 from scripts.update_from_mt import run_update_from_mt
+from scripts.update_from_ib import update_from_ib
 from scripts.cron import run_cron
 from fast.api_server import run_api_server
 from scripts.import_strategies import import_strategies
@@ -18,6 +19,7 @@ cmds = {
     'api': run_api_server,
     'cron': run_cron if platform.system() == 'Windows' else lambda: print('winwifi not supported on this platform'),
     'update_from_mt': run_update_from_mt,
+    'update_from_ib': update_from_ib,
     'create_templates': create_templates,
     'import_strategies': import_strategies,
     'update_from_ib': update_from_ib,

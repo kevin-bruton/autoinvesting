@@ -33,3 +33,7 @@ def get_account_strategyruns (account_id: str) -> list[StrategyRun]:
       WHERE Strategies.decommissioned is NULL AND accountId = ?
     '''
   return query_many(sql, (account_id,))
+
+def create_paper_strategyrun (strategyId: str) -> int:
+  sql = "INSERT INTO StrategyRuns (strategyId, type) VALUES (?, 'paper')"
+  return mutate_one(sql, (strategyId,))

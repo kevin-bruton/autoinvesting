@@ -42,7 +42,10 @@ def mt_to_db_format(trades_dict, balance):
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
         #account_id = f"{mt_trade['magic']}_D"
-        strategyRunId = db.get_trade_strategyrun_id(str(mt_trade['magic']), 'paper')
+        strategyId = str(mt_trade['magic'])
+        strategyRunId = db.get_trade_strategyrun_id(strategyId, 'paper')
+        if not strategyRunId:
+            db.create_paper_strategy_run(strategyId)
         trade = Trade(
             orderId=f"{order_id}_{strategyRunId}",
             strategyRunId=strategyRunId,
