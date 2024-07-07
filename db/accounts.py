@@ -31,7 +31,6 @@ def set_connection_status (account_id: str, isConnected: bool) -> int:
 def get_platform_dir (account_id: str) -> str:
   sql = 'SELECT platformDir FROM Accounts WHERE accountId = ?'
   result = query_one(sql, (account_id,))
-  print('get_platform_dir result:', result)
   if result and 'platformDir' in result.keys():
     return getenv('MT_INSTANCES_DIR') + result['platformDir'] + '/MQL4/Files/EaTemplates/'
   return None
