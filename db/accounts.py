@@ -28,9 +28,16 @@ def set_connection_status (account_id: str, isConnected: bool) -> int:
   sql = 'UPDATE Accounts SET lastConnectionUpdate = ?, isConnected = ? WHERE accountId = ?;'
   mutate_one(sql, (now, int(isConnected), account_id))
 
-def get_platform_dir (account_id: str) -> str:
+def get_mt_files_dir (account_id: str) -> str:
   sql = 'SELECT platformDir FROM Accounts WHERE accountId = ?'
   result = query_one(sql, (account_id,))
   if result and 'platformDir' in result.keys():
-    return getenv('MT_INSTANCES_DIR') + result['platformDir'] + '/MQL4/Files/EaTemplates/'
+    return getenv('MT_INSTANCES_DIR') + result['platformDir'] + '/MQL4/Files/'
+  return None
+
+def get_mt_instance_dir_name (account_id: str) -> str:
+  sql = 'SELECT platformDir FROM Accounts WHERE accountId = ?'
+  result = query_one(sql, (account_id,))
+  if result and 'platformDir' in result.keys():
+    return result['platformDir']
   return None

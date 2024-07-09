@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from db.accounts import get_accounts, get_platform_dir
+from db.accounts import get_accounts, get_mt_files_dir
 from db.strategy_runs import get_account_strategyruns
 from db.orders import get_account_orders
 #from db2.subscriptions import update_subscriptions
@@ -35,7 +35,7 @@ def get_users_accounts_request(request: Request):
 
 @route.get('/account/{account_id}/templatesdir')
 def get_account_request(account_id: str):
-  directory = get_platform_dir(account_id)
+  directory = get_mt_files_dir(account_id) + 'EaTemplates/'
   if directory:
     return {'success': True, 'data': directory}
   else:

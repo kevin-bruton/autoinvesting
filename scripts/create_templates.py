@@ -21,32 +21,18 @@ from os import getcwd, listdir, mkdir, remove, getenv, path
 from os.path import isfile, join
 from random import randrange
 from fast.utils import get_project_root_dir
-from db.accounts import get_platform_dir
+from db.accounts import get_mt_files_dir, get_mt_instance_dir_name
 
-"""
-def create_live_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_live_account/'
-    # think this better
-    # should have to select the destination instance (out of several live mt instances - there should be only ever be one demo instance)
-    destination_dir = f'{getenv('MT_INSTANCES_DIR')}{getenv("MT_LIVE_FILES_DIR")}/EaTemplates/'
-    _create_templates(source_dir, destination_dir)
+def create_mt_templates(account_id, ea_source_dir):
+    """
+    Create MT4 templates from the mq4 files in the source directory
+    and place them in the account's MT4 instance's EaTemplates folder
+    """
 
-def create_demo_templates():
-    source_dir = f'{get_project_root_dir()}/files/eas_to_install_on_demo_account/'
-    destination_dir = f'{getenv("MT_DEMO_FILES_DIR")}/EaTemplates/' 
-    _create_templates(source_dir, destination_dir)
-"""    
-
-def create_templates(account_id):
-    platform_dir = get_platform_dir(account_id)
-    if not platform_dir:
-        raise Exception('Platform directory not found for account {account_id}. Exiting...')
-    if not path.exists(path.join(get_project_root_dir(), 'files')):
-        mkdir(path.join(get_project_root_dir(), 'files'))
-        if not path.exists(path.join(get_project_root_dir(), 'files', platform_dir)):
-            mkdir(path.join(get_project_root_dir(), 'files', platform_dir))
-    source_dir = path.join(get_project_root_dir(), 'files', platform_dir)
-    destination_dir = path.join(getenv('MT_INSTANCES_DIR'), platform_dir, 'EaTemplates/')
+    mt_files_dir = get_mt_files_dir(account_id)
+    if not mt_files_dir:
+        raise Exception('MT directory not found for account {account_id}. Exiting...')
+    destination_dir = path.join(mt_files_dir, 'EaTemplates/')
     template = '<chart>\n'
     template2 = """scale=8
 graph=1
@@ -93,11 +79,14 @@ name=main
 
 
     # Delete existing files in destination
+    if not path.exists(destination_dir):
+        mkdir(destination_dir)
+        print(f'  Created templates directory for account {account_id}:', destination_dir)
     files = [f for f in listdir(destination_dir) if '.tpl' in f]
     for filename in files:
         remove(destination_dir + filename)
 
-    onlyfiles = [f for f in listdir(source_dir) if isfile(join(source_dir, f))]
+    onlyfiles = [f for f in listdir(ea_source_dir) if isfile(join(ea_source_dir, f))]
     onlyMt4Files = [f[:-4] for f in onlyfiles if f[-3:] == 'mq4']
 
     for filename in onlyMt4Files:
@@ -118,19 +107,27 @@ name=main
 
         # Get period in minutes
         mins = 60
+        if period == 'M5': mins = 5
+        if period == 'M15': mins = 15
+        if period == 'M30': mins = 30
         if period == 'H1': mins = 60
         if period == 'H4': mins = 240
-        if period == 'M30': mins = 30
+        if period == 'D1': mins = 1440
 
         template += f'period={mins}\n'
 
         # Get decimals
         decimals = 5
-        if symbol == 'EURUSD':  decimals = 5
-        if symbol == 'XAUUSD':  decimals = 2
-        if symbol == 'WS30':    decimals = 0
-        if symbol == 'NDX':     decimals = 1
-        if symbol == 'AUDUSD':  decimals = 5
+        symbols_decimals = {
+            'EURUSD': 5,
+            'XAUUSD': 2,
+            'WS30':   0,
+            'NDX':    1,
+            'AUDUSD': 5
+        }
+        if not (symbol in symbols_decimals.keys()):
+            raise Exception("Error: symbol " + symbol + " decimals not registered in create_templates")
+        decimals = symbols_decimals[symbol]
 
         template += 'leftpos=1296\n'
         template += f'digits={decimals}\n'
@@ -146,7 +143,7 @@ name=main
         template += '<inputs>\n'
 
         # Get inputs
-        file1 = open(source_dir + '/' + filename + '.mq4', 'r')
+        file1 = open(ea_source_dir + '/' + filename + '.mq4', 'r')
         lines = file1.readlines()
         file1.close()
         for line in lines:
@@ -168,13 +165,3 @@ name=main
         template_file.write(template)
         template_file.close()
         print(f'  {template_filename} created.')
-
-""" def create_templates(mode: str):
-    if mode not in ['live', 'demo']:
-        raise Exception('Invalid mode. Use "live" or "demo"')
-    if mode == 'live':
-        create_live_templates()
-    elif mode == 'demo':
-        create_demo_templates()
-    print('Templates created.')
- """
