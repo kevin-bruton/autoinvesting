@@ -11,7 +11,7 @@
 * 
 * Requisites:
 *   - In Tools -> Options, go to the tab "Expert Advisors"
-      and add "https://www.darwinex.com/graphs/spreads" as an approved URL
+      and add "https://www.darwinex.com/graphics/spreads" as an approved URL
 **/
 string broker = "Darwinex";
 
@@ -67,7 +67,7 @@ string GetInfoFromBroker ()
       return "";
    }
    string data = CharArrayToString(response);
-   // Print("Response from web request:", data);
+   Print("Response from web request:", data);
    return data;
 }
 
@@ -101,11 +101,9 @@ double ExchangeCurrency (string from, string to, double amount)
    return 0;
 }
   
-string GetPointValueInUsd (SymbolStruct &symbol)
-{
+string GetPointValueInUsd (SymbolStruct &symbol) {
    double contractSize = MarketInfo(symbol.name, MODE_LOTSIZE);
-   if (symbol.assetType == "forex")
-   {
+   if (symbol.assetType == "forex") {
       string quoteCurrency = StringSubstr(symbol.name, 3);
       if (quoteCurrency == "USD")
          return DoubleToStr(contractSize, 2);
@@ -201,11 +199,14 @@ string GetCommission (SymbolStruct &symbol)
 string GetSwapLong (SymbolStruct &symbol)
 {
    double swapLong = (double)GetBrokerSymbolInfo(symbol, "swapLong");
+   Print(symbol.name, " raw swap long:", swapLong);
    string currency = "";
    if (symbol.assetType == "forex") {
       currency = StringSubstr(symbol.name, 3);
-   } else if (symbol.assetType == "index") {
-      currency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_BASE);
+   } else if (symbol.assetType == "indices") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
+   } else if (symbol.assetType == "commodities") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
    }
    if (currency == "USD")
       return DoubleToStr(swapLong, 2);
@@ -219,8 +220,10 @@ string GetSwapShort (SymbolStruct &symbol)
    string currency = "";
    if (symbol.assetType == "forex") {
       currency = StringSubstr(symbol.name, 3);
-   } else if (symbol.assetType == "index") {
-      currency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_BASE);
+   } else if (symbol.assetType == "indices") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
+   } else if (symbol.assetType == "commodities") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
    }
    if (currency == "USD")
       return DoubleToStr(swapShort, 2);
