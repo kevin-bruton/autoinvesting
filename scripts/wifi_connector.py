@@ -29,13 +29,13 @@ def connect_to_wifi(ssid):
 def check_connection():
   wifi_names = ['Oz2', 'Factory']
   if not test_connection():
-    log('Failed http test. Now trying to connect to ', wifi_names[0])
+    log('Failed http test. Now trying to connect to ' + wifi_names[0])
     if not connect_to_wifi(wifi_names[0]):
-      log('Failed to connect to ', wifi_names[0], '. Trying to connect to ', wifi_names[1])
+      log('Failed to connect to ' + wifi_names[0] + '. Trying to connect to ' + wifi_names[1])
       if not connect_to_wifi(wifi_names[1]):
-        log('Failed to connect to ', wifi_names[1])
+        log('Failed to connect to ' + wifi_names[1])
         return False
       else:
-        log('Connected to ', wifi_names[1])
+        log('Connected to ' + wifi_names[1])
     else:
-      log('Connected to ', wifi_names[0])
+      log('Connected to ' + wifi_names[0])
