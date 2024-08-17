@@ -1,3 +1,4 @@
+
 #%% Start
 import MetaTrader5 as mt
 from datetime import datetime
@@ -5,6 +6,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 rates_start_dt = datetime(2024, 1, 1)
+num_bars = 1000
+symbol = "XAUUSD"
 
 # Connect to MetaTrader
 if not mt.initialize():
@@ -14,7 +17,7 @@ if not mt.initialize():
 # display data on MetaTrader 5 version
 print('\nConnected! MT5 version info: ', mt.version())
  
-rates = mt.copy_rates_from("XAUUSD", mt.TIMEFRAME_H1, rates_start_dt, 5000)
+rates = mt.copy_rates_from(symbol, mt.TIMEFRAME_H1, rates_start_dt, num_bars)
 
 # shut down connection to the MetaTrader 5 terminal
 mt.shutdown()
@@ -34,7 +37,7 @@ rates_df['hour'] = rates_df['time'].dt.hour
 # Group data by hour and sum the total volume for each hour
 hourly_data = rates_df.groupby('hour')['tick_volume'].sum()
 
-spread_data = rates_df.groupby('hour')['spread'].mean()
+spread_data = rates_df.groupby('hour')['spread'].sum()
 
 # Plot the histogram
 plt.bar(hourly_data.index, hourly_data.values)

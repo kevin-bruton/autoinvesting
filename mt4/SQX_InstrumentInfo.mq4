@@ -11,7 +11,7 @@
 * 
 * Requisites:
 *   - In Tools -> Options, go to the tab "Expert Advisors"
-      and add "https://www.darwinex.com/graphs/spreads" as an approved URL
+      and add "https://www.darwinex.com/graphics/spreads" as an approved URL
 **/
 string broker = "Darwinex";
 
@@ -26,9 +26,12 @@ SymbolStruct symbols[] = {
    { "GBPJPY", "forex" },
    { "AUDUSD", "forex" },
    { "USDCHF", "forex" },
-   { "NDX", "index" },
-   { "STOXX50E", "index" },
-   { "WS30", "index" }
+   { "STOXX50E", "indices" },
+   { "SP500", "indices" },
+   { "NDX", "indices" },
+   { "WS30", "indices" },
+   { "XAUUSD", "commodities" },
+   { "XAGUSD", "commodities" },
 };
    
 int drawX = 0;
@@ -64,7 +67,7 @@ string GetInfoFromBroker ()
       return "";
    }
    string data = CharArrayToString(response);
-   Print("BROKER INFO: ", data);
+   Print("Response from web request:", data);
    return data;
 }
 
@@ -86,24 +89,21 @@ void PrintHeading ()
 double ExchangeCurrency (string from, string to, double amount)
 {
    MqlTick tick;
-   if (SymbolSelect(from + to, SYMBOL_CURRENCY_BASE))
-   {
+   if (SymbolSelect(from + to, SYMBOL_CURRENCY_BASE)) {
       SymbolInfoTick(from + to, tick);
       return tick.ask * amount;
-   } else if (SymbolSelect(to + from, SYMBOL_CURRENCY_BASE))
-   {
+   } else if (SymbolSelect(to + from, SYMBOL_CURRENCY_BASE)) {
       SymbolInfoTick(to + from, tick);
+      if (tick.bid == 0) Print("Could not get exchange rate:", to+from);
       return 1 / tick.bid * amount;
    }
    Print("Could not get a symbol to exchange. From: ", from, "; To: ", to);
    return 0;
 }
   
-string GetPointValueInUsd (SymbolStruct &symbol)
-{
+string GetPointValueInUsd (SymbolStruct &symbol) {
    double contractSize = MarketInfo(symbol.name, MODE_LOTSIZE);
-   if (symbol.assetType == "forex")
-   {
+   if (symbol.assetType == "forex") {
       string quoteCurrency = StringSubstr(symbol.name, 3);
       if (quoteCurrency == "USD")
          return DoubleToStr(contractSize, 2);
@@ -152,18 +152,21 @@ string GetSpread (SymbolStruct &symbol)
    MqlTick tick;
    SymbolInfoTick(symbol.name, tick);
    double rawSpread = MarketInfo(symbol.name, MODE_SPREAD); //(int)MathRound((tick.ask - tick.bid) * MarketInfo(symbol.name, MODE_LOTSIZE));
-   string adjustedSpread = DoubleToStr((rawSpread * (double)GetPipTickStep(symbol) / (double)GetPipTickSize(symbol)),5);
+   string adjustedSpread = DoubleToStr(rawSpread * (double)GetPipTickStep(symbol) / (double)GetPipTickSize(symbol), 5);
    // Print(symbol.name, " Spread: ", tick.ask - tick.bid, " Raw Spread: ", rawSpread, " Adjusted Spread: ", adjustedSpread, " Direct: ", MarketInfo(symbol.name, MODE_SPREAD));
    return adjustedSpread;
 }
 
 string GetCommissionType (SymbolStruct &symbol) {
    if (symbol.assetType == "forex") {
-      return "Size Based";
-   } else if (symbol.assetType == "index") {
-      return "Size Based";
+      return "Size";
+   } else if (symbol.assetType == "indices") {
+      return "Size";
+   } else if (symbol.assetType == "commodities") {
+      return "Percentage";
+   } else {
+      return "Unknown";
    }
-   return "Unknown";
 }
 
 string GetBrokerSymbolInfo (SymbolStruct &symbol, string key)
@@ -175,27 +178,35 @@ string GetBrokerSymbolInfo (SymbolStruct &symbol, string key)
    int valueIdx = StringFind(keyStr, ":");
    string keyValue = StringSubstr(keyStr,valueIdx);
    int endValueIdx = StringFind(keyValue, ",");
-   return StringSubstr(keyValue, 1, endValueIdx - 1);
+   string rawValue = StringSubstr(keyValue, 1, endValueIdx - 1);
+   if (StringSubstr(rawValue, 0, 1) == "\"" && StringSubstr(rawValue, StringLen(rawValue) - 1, 1) == "\"") {
+      return StringSubstr(rawValue, 1, StringLen(rawValue) - 2);
+   } else {
+      return rawValue;
+   }
 }
 
 string GetCommission (SymbolStruct &symbol)
 {
    double rawCommission = (double)GetBrokerSymbolInfo(symbol,"commission");
-   string baseCurrency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_BASE);;
-   if (baseCurrency == "USD")
-      return DoubleToStr(rawCommission * 2, 2); // Double commission for complete trades
+   string currency = (string)GetBrokerSymbolInfo(symbol, "currency");
+   if (currency == "USD")
+      return DoubleToStr(rawCommission * 2, 4); // Double commission for complete trades
    else
-      return DoubleToStr(ExchangeCurrency(baseCurrency, "USD", rawCommission) * 2, 2); // Double commission for complete trades
+      return DoubleToStr(ExchangeCurrency(currency, "USD", rawCommission) * 2, 4); // Double commission for complete trades
 }
 
 string GetSwapLong (SymbolStruct &symbol)
 {
    double swapLong = (double)GetBrokerSymbolInfo(symbol, "swapLong");
+   Print(symbol.name, " raw swap long:", swapLong);
    string currency = "";
    if (symbol.assetType == "forex") {
       currency = StringSubstr(symbol.name, 3);
-   } else if (symbol.assetType == "index") {
-      currency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_BASE);
+   } else if (symbol.assetType == "indices") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
+   } else if (symbol.assetType == "commodities") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
    }
    if (currency == "USD")
       return DoubleToStr(swapLong, 2);
@@ -209,8 +220,10 @@ string GetSwapShort (SymbolStruct &symbol)
    string currency = "";
    if (symbol.assetType == "forex") {
       currency = StringSubstr(symbol.name, 3);
-   } else if (symbol.assetType == "index") {
-      currency = SymbolInfoString(symbol.name, SYMBOL_CURRENCY_BASE);
+   } else if (symbol.assetType == "indices") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
+   } else if (symbol.assetType == "commodities") {
+      currency = (string)GetBrokerSymbolInfo(symbol, "currency");
    }
    if (currency == "USD")
       return DoubleToStr(swapShort, 2);
@@ -235,6 +248,20 @@ string GetTripleSwapDay (SymbolStruct &symbol)
    }
    return swapDay;
 }
+  
+void PrintSymbolInfo(SymbolStruct &symbol)
+  {
+   PrintText(symbol.name,"Name", symbol.name, 12, true);
+   PrintText(symbol.name, "PointValue", (string)GetPointValueInUsd(symbol));
+   PrintText(symbol.name, "PipTickSize", GetPipTickSize(symbol));
+   PrintText(symbol.name, "PipTickStep", GetPipTickStep(symbol));
+   PrintText(symbol.name, "Spread", GetSpread(symbol));
+   PrintText(symbol.name, "CommissionType", GetCommissionType(symbol));
+   PrintText(symbol.name, "Commission", GetCommission(symbol));
+   PrintText(symbol.name, "SwapLong", GetSwapLong(symbol));
+   PrintText(symbol.name, "SwapShort", GetSwapShort(symbol));
+   PrintText(symbol.name, "TripleSwapDay", GetTripleSwapDay(symbol));
+}
 
 void PrintText(string symbol, string field, string value, int fontSize = 12, bool onNewLine = false)
 {
@@ -257,20 +284,6 @@ void PrintText(string symbol, string field, string value, int fontSize = 12, boo
    ObjectSet(name, OBJPROP_YDISTANCE, drawY);
    ObjectSet(name, OBJPROP_BACK, false);
    ObjectSetText(name, value, fontSize, fontType, fontColor);
-}
-  
-void PrintSymbolInfo(SymbolStruct &symbol)
-  {
-   PrintText(symbol.name,"Name", symbol.name, 12, true);
-   PrintText(symbol.name, "PointValue", (string)GetPointValueInUsd(symbol));
-   PrintText(symbol.name, "PipTickSize", GetPipTickSize(symbol));
-   PrintText(symbol.name, "PipTickStep", GetPipTickStep(symbol));
-   PrintText(symbol.name, "Spread", GetSpread(symbol));
-   PrintText(symbol.name, "CommissionType", GetCommissionType(symbol));
-   PrintText(symbol.name, "Commission", GetCommission(symbol));
-   PrintText(symbol.name, "SwapLong", GetSwapLong(symbol));
-   PrintText(symbol.name, "SwapShort", GetSwapShort(symbol));
-   PrintText(symbol.name, "TripleSwapDay", GetTripleSwapDay(symbol));
 }
 
 void SetupChart () {
