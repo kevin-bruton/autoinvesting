@@ -17,7 +17,7 @@ if platform.system() == 'Windows':
 
 if __name__ == '__main__':
     cmds = {
-        'api': run_api_server, # optional second arg: dev or prods
+        'app': run_api_server, # optional second arg: dev or prod
         'cron': run_cron if platform.system() == 'Windows' else lambda: print('winwifi not supported on this platform'),
         'update_from_mt': run_update_from_mt,
         'update_from_ib': update_from_ib,

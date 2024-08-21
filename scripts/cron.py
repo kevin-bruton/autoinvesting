@@ -2,6 +2,7 @@ import schedule
 import time
 from scripts.update_from_mt import run_update_from_mt
 import platform
+
 if platform.system() == 'Windows':
   from scripts.wifi_connector import check_connection
 

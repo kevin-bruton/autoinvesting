@@ -2,6 +2,8 @@ import requests
 import winwifi
 from datetime import datetime
 
+wifi_names = ['Oz2', 'Factory']
+
 def log(txt):
   time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
   with open(f"logs/master.log", 'a') as f:
@@ -27,7 +29,6 @@ def connect_to_wifi(ssid):
   return test_connection()
 
 def check_connection():
-  wifi_names = ['Oz2', 'Factory']
   if not test_connection():
     log('Failed http test. Now trying to connect to ' + wifi_names[0])
     if not connect_to_wifi(wifi_names[0]):
