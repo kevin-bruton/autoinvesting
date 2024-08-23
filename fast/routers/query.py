@@ -3,7 +3,7 @@ from cryptography.fernet import Fernet
 from typing import Annotated
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
-from query_handler import handle_query
+from fast.query_handler import handle_query
 
 route = APIRouter()
 
@@ -21,6 +21,7 @@ async def query_request(request: Request):
     return {'success': False }
   try:
     result = handle_query(user, query_name, values)
+    print('query result: ', result)
     return {'success': True, 'data': result}
   except Exception as e:
     print('Error executing query: ', e)

@@ -7,7 +7,7 @@ load_dotenv(override=True)
 from db.init import init_db
 init_db()
 from fast.auth import is_admin, is_member
-from fast.routers import auth, admin, strategies, accounts, portfolio, dquery
+from fast.routers import auth, admin, strategies, accounts, portfolio, dquery, query
 
 #from utils.config import get_config_value
 
@@ -17,6 +17,7 @@ app = FastAPI(title="main-app", openapi_url=openapi_url)
 app.include_router(auth.route, prefix="/api")
 app.include_router(strategies.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(dquery.route, prefix="/api", dependencies=[Depends(is_member)])
+app.include_router(query.route, prefix="/api", dependencies=[Depends(is_member)])
 #app.include_router(subscriptions.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(accounts.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(portfolio.route, prefix="/api", dependencies=[Depends(is_member)])
