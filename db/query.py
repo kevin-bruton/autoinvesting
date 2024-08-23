@@ -2,7 +2,7 @@ from datetime import datetime
 from collections import namedtuple
 from db.common import mutate_many, mutate_one, query_many, query_one, values_placeholder
 
-def query (type, sql, values):
+def dbQuery (type, sql, values):
   if type == 'query_one':
     return query_one(sql, tuple(values))
   elif type == 'query_many':

@@ -3,7 +3,7 @@ import json
 from dotenv import load_dotenv
 load_dotenv()
 
-from fast.routers.query import encrypt, decrypt
+from fast.routers.dquery import encrypt, decrypt
 
 def do_encrypt():
   query = {

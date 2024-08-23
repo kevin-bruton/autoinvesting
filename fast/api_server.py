@@ -14,7 +14,7 @@ def run_api_server(mode='dev'):
   if mode == 'dev':
     def open_browser():
       print('Browser thread waiting for api server...')
-      sleep(10)
+      sleep(15)
       print('Opening browser...')
       webbrowser.open('http://localhost:8000')
     threading.Thread(target=open_browser).start()
