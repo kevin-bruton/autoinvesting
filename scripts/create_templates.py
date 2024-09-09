@@ -23,13 +23,14 @@ from random import randrange
 from fast.utils import get_project_root_dir
 from db.accounts import get_mt_files_dir, get_mt_instance_dir_name
 
-def create_mt_templates(account_id, ea_source_dir):
+def create_mt_templates(mt_instance_name):
     """
     Create MT4 templates from the mq4 files in the source directory
     and place them in the account's MT4 instance's EaTemplates folder
     """
 
-    mt_files_dir = get_mt_files_dir(account_id)
+    mt_files_dir = getenv('MT_INSTANCES_DIR') + mt_instance_name + '/MQL4/Files/'
+    ea_source_dir = path.join(get_project_root_dir(), 'files', mt_instance_name + '_eas_to_install')
     if not mt_files_dir:
         raise Exception('MT directory not found for account {account_id}. Exiting...')
     destination_dir = path.join(mt_files_dir, 'EaTemplates/')
@@ -81,7 +82,7 @@ name=main
     # Delete existing files in destination
     if not path.exists(destination_dir):
         mkdir(destination_dir)
-        print(f'  Created templates directory for account {account_id}:', destination_dir)
+        print(f'  Created templates directory for account {mt_instance_name}:', destination_dir)
     files = [f for f in listdir(destination_dir) if '.tpl' in f]
     for filename in files:
         remove(destination_dir + filename)
