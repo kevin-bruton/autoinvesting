@@ -65,6 +65,16 @@ def get_strategys_demo_trades (strategyId):
   '''
   return query_many(sql, (strategyId,))
 
+def get_strategys_live_trades (strategyId, accountId):
+  sql = '''
+    SELECT orderId, accountId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+    FROM Trades
+    INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+    WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId = ?
+    ORDER BY closeTime
+  '''
+  return query_many(sql, (strategyId, accountId,))
+
 def get_strategys_backtest_trades (strategyId):
   sql = '''
       SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
@@ -75,11 +85,11 @@ def get_strategys_backtest_trades (strategyId):
     '''
   return query_many(sql, (strategyId,))
 
-def get_strategys_combined_trades (strategyId):
-  backtest_trades = get_strategys_backtest_trades(strategyId)
-  demo_trades = get_strategys_demo_trades(strategyId)
-  backtest_trades.extend(demo_trades)
-  return [dict(t) for t in backtest_trades]
+def get_strategys_combined_trades (strategyId, accountId):
+  trades = get_strategys_backtest_trades(strategyId)
+  live_trades = get_strategys_live_trades(strategyId, accountId)
+  trades.extend(live_trades)
+  return [dict(t) for t in trades]
 
 def save_trade (trade: Trade):
   sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"

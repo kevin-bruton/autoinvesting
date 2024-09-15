@@ -4,9 +4,9 @@ from db.strategy_runs import StrategyRun, get_strategyrun_id, save_strategyrun
 from fast.random_name import get_random_name
 from db.strategies import Strategy, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
-from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_demo_trades, save_trade
+from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, save_trade
 from db.accounts import Account, get_mt_instance_dir_name, save_account
-from fast.utils import get_bt_kpis, get_project_root_dir
+from fast.utils import get_bt_kpis, get_performance_metrics, get_project_root_dir, normalize_position_sizes, dec2
 from datetime import datetime
 import pandas as pd
 from scripts.create_templates import create_mt_templates
@@ -75,20 +75,45 @@ def log(txt):
     with open("/home/admin/autoinvesting/back/correlation.log", "a") as f:
         f.write(txt + "\n")
 
-def calc_correlation_matrix (strategyIds, strategyRunType, timeframe):
+def get_portfolio_evaluation (data_type, account_id, strategy_ids):
+  trades = []
+  for strategy_id in strategy_ids:
+    if data_type == 'backtest':
+      strat_trades = get_strategys_backtest_trades(strategy_id)
+    elif data_type == 'live':
+      strat_trades = get_strategys_live_trades(strategy_id, account_id)
+    elif data_type == 'combined':
+      strat_trades = get_strategys_combined_trades(strategy_id, account_id)
+    trades.extend(strat_trades)
+
+  # Order all trades of the different strategies
+  trades = sorted(trades, key=lambda t: t['closeTime'])
+  # Adjust profits for a position size of 1 for all trades
+  trades = normalize_position_sizes(trades)
+  capital, start_date, end_date, metrics = get_performance_metrics(trades)
+  print('Metrics:', metrics)
+  for index, trade in enumerate(trades):
+    trades[index] = {'closeTime': trade['closeTime'], 'profits': dec2(trade['balance'] - capital)}
+  df = pd.DataFrame(trades)
+  #df = df[['closeTime', 'profit']]
+  df = df.groupby(by=pd.Grouper(key='closeTime', freq='W')).last(skipna=True).ffill()
+  #df[strategyId] = df['profit'].cumsum().astype(float)
+  return { 'capital': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics, 'chartData': df }
+
+def calc_correlation_matrix (accountId, data_type, timeframe, strategyIds):
   """
     magic = list of integers
-    data_type = 'demo', 'backtest' or 'combined'
+    data_type = 'live', 'backtest' or 'combined'
     timeframe has to be 'D', 'W' or 'M'
   """
   data = pd.DataFrame()
   for strategyId in strategyIds:
-    if strategyRunType == 'backtest':
+    if data_type == 'backtest':
       trades = get_strategys_backtest_trades(strategyId)
-    elif strategyRunType == 'demo':
-      trades = get_strategys_demo_trades(strategyId)
-    elif strategyRunType == 'combined':
-      trades = get_strategys_combined_trades(strategyId)
+    elif data_type == 'live':
+      trades = get_strategys_live_trades(strategyId, accountId)
+    elif data_type == 'combined':
+      trades = get_strategys_combined_trades(strategyId, accountId)
     for index, trade in enumerate(trades):
       trades[index] = {'closeTime': trade['closeTime'], 'profit': trade['profit']}
     df = pd.DataFrame(trades)
@@ -101,8 +126,9 @@ def calc_correlation_matrix (strategyIds, strategyRunType, timeframe):
       data = df
     else:
       data = pd.concat([data, df], axis=1, join='outer').fillna(0)
-  correlation_json = data.corr().to_json(orient='columns')
-  return '{ "data": ' + correlation_json + '}'
+  correlation_json = data.corr()#.to_json(orient='columns')
+  return correlation_json
+  #return '{ "data": ' + correlation_json + '}'
 
 def decommission_strategy (magic):
   decom_strategy(magic)
