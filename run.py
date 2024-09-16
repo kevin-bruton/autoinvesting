@@ -15,9 +15,22 @@ from scripts.create_templates import create_mt_templates
 if platform.system() == 'Windows':
     from scripts.wifi_connector import check_connection
 
+def update_app ():
+    import os
+    print('Updating autoinvesting (git pull)...')
+    os.system('git pull')
+    os.chdir('../autoinvesting-ui')
+    print('Updating autoinvesting-ui (git pull)...')
+    os.system('git pull')
+    print('Building autoinvesting-ui (npm run build)...')
+    os.system('npm run build')
+    os.chdir('../autoinvesting')
+    print('Done updating autoinvesting and autoinvesting-ui!!!')
+
 if __name__ == '__main__':
     cmds = {
         'app': run_api_server, # optional second arg: dev or prod
+        'update_app': update_app,
         'cron': run_cron if platform.system() == 'Windows' else lambda: print('winwifi not supported on this platform'),
         'update_from_mt': run_update_from_mt,
         'update_from_ib': update_from_ib,
