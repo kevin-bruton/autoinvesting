@@ -17,15 +17,15 @@ if platform.system() == 'Windows':
 
 def update_app ():
     import os
-    print('Updating autoinvesting (git pull)...')
+    print('\nSTEP 1. UPDATE AUTOINVESTING (git pull)...')
     os.system('git pull')
     os.chdir('../autoinvesting-ui')
-    print('Updating autoinvesting-ui (git pull)...')
+    print('\nSTEP 2. UPDATE AUTOINVESTING-UI (git pull)...')
     os.system('git pull')
-    print('Building autoinvesting-ui (npm run build)...')
+    print('\nSTEP 3. BUILD AUTOINVESTING-UI (npm run build)...')
     os.system('npm run build')
     os.chdir('../autoinvesting')
-    print('Done updating autoinvesting and autoinvesting-ui!!!')
+    print('\nDONE UPDATING AUTOINVESTING AND AUTOINVESTING-UI!!!\n')
 
 if __name__ == '__main__':
     cmds = {
