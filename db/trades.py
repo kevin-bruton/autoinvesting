@@ -1,5 +1,6 @@
 from collections import namedtuple
 from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
+from fast.utils import normalize_position_sizes
 
 trade_fields = 'orderId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, strategyRunId, closeType, comment, sl, tp, swap, commission'
 Trade = namedtuple('Trade', trade_fields, defaults=(None, None, None, None, None, None, None))
@@ -73,7 +74,8 @@ def get_strategys_live_trades (strategyId, accountId):
     WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId = ?
     ORDER BY closeTime
   '''
-  return query_many(sql, (strategyId, accountId,))
+  trades = query_many(sql, (strategyId, accountId,))
+  return normalize_position_sizes(trades)
 
 def get_strategys_backtest_trades (strategyId):
   sql = '''
@@ -83,11 +85,14 @@ def get_strategys_backtest_trades (strategyId):
       WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest'
       ORDER BY closeTime
     '''
-  return query_many(sql, (strategyId,))
+  trades = query_many(sql, (strategyId,))
+  return normalize_position_sizes(trades)
 
 def get_strategys_combined_trades (strategyId, accountId):
   trades = get_strategys_backtest_trades(strategyId)
+  trades = normalize_position_sizes(trades)
   live_trades = get_strategys_live_trades(strategyId, accountId)
+  live_trades = normalize_position_sizes(live_trades)
   trades.extend(live_trades)
   return [dict(t) for t in trades]
 

@@ -18,12 +18,12 @@ def get_upload_folders ():
   files = [f for f in files if not path.isfile('files/' + f)] #Filtering only the directories.
   return files
 
-def normalize_position_sizes (row_trades, normalized_trade_size=1):
+def normalize_position_sizes (raw_trades, normalized_trade_size=1):
   """
   Normalize the position sizes of trades to 1 and adjust profit of each trade accordingly.
   """
   trades = []
-  for t in row_trades:
+  for t in raw_trades:
     trade = dict(t)
     multiplier = normalized_trade_size / trade['size']
     trade['size'] = normalized_trade_size
