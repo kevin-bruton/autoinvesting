@@ -23,17 +23,14 @@ from random import randrange
 from fast.utils import get_project_root_dir
 from db.accounts import get_mt_files_dir, get_mt_instance_dir_name
 
-def create_mt_templates(mt_instance_name):
+def create_mt_templates(mt_files_source_dir, tpl_destination_dir):
     """
     Create MT4 templates from the mq4 files in the source directory
     and place them in the account's MT4 instance's EaTemplates folder
     """
 
-    mt_files_dir = getenv('MT_INSTANCES_DIR') + mt_instance_name + '/MQL4/Files/'
-    ea_source_dir = path.join(get_project_root_dir(), 'files', mt_instance_name + '_eas_to_install')
-    if not mt_files_dir:
+    if not mt_files_source_dir:
         raise Exception('MT directory not found for account {account_id}. Exiting...')
-    destination_dir = path.join(mt_files_dir, 'EaTemplates/')
     template = '<chart>\n'
     template2 = """scale=8
 graph=1
@@ -78,16 +75,15 @@ name=main
 <expert>
 """
 
-
     # Delete existing files in destination
-    if not path.exists(destination_dir):
-        mkdir(destination_dir)
-        print(f'  Created templates directory for account {mt_instance_name}:', destination_dir)
-    files = [f for f in listdir(destination_dir) if '.tpl' in f]
+    if not path.exists(tpl_destination_dir):
+        mkdir(tpl_destination_dir)
+        print(f'  Created templates directory:', mt_files_source_dir)
+    files = [f for f in listdir(tpl_destination_dir) if '.tpl' in f]
     for filename in files:
-        remove(destination_dir + filename)
+        remove(tpl_destination_dir + filename)
 
-    onlyfiles = [f for f in listdir(ea_source_dir) if isfile(join(ea_source_dir, f))]
+    onlyfiles = [f for f in listdir(mt_files_source_dir) if isfile(join(mt_files_source_dir, f))]
     onlyMt4Files = [f[:-4] for f in onlyfiles if f[-3:] == 'mq4']
 
     for filename in onlyMt4Files:
@@ -144,7 +140,7 @@ name=main
         template += '<inputs>\n'
 
         # Get inputs
-        file1 = open(ea_source_dir + '/' + filename + '.mq4', 'r')
+        file1 = open(mt_files_source_dir + '/' + filename + '.mq4', 'r')
         lines = file1.readlines()
         file1.close()
         for line in lines:
@@ -161,7 +157,7 @@ name=main
         template += '</expert>\n'
         template += '</chart>\n'
 
-        template_filename = destination_dir + f'{symbol}_{period}_{magic}.tpl'
+        template_filename = tpl_destination_dir + f'{symbol}_{period}_{magic}.tpl'
         template_file = open(template_filename, 'w')
         template_file.write(template)
         template_file.close()

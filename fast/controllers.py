@@ -1,4 +1,4 @@
-from os import listdir, mkdir, path, remove
+from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
 from db.strategy_runs import StrategyRun, get_strategyrun_id, save_strategyrun
 from fast.random_name import get_random_name
@@ -137,7 +137,7 @@ def reactivate_strategy (magic):
   react_strategy(magic)
 
 def apply_position_sizing (account_id, pos_sizes):
-  account_ea_folder = f"{get_project_root_dir()}/files/{get_mt_instance_dir_name(account_id)}_eas_to_install/"
+  mt_files_account_ea_folder = f"{get_project_root_dir()}/files/{get_mt_instance_dir_name(account_id)}_eas_to_install/"
   src_folder = f"{get_project_root_dir()}/files/all_eas/"
   if not path.exists(src_folder):
     mkdir(src_folder)
@@ -146,14 +146,14 @@ def apply_position_sizing (account_id, pos_sizes):
   if len(src_folder_filenames) == 0:
     raise Exception("No EA files found in source folder:", src_folder)
   
-  if not path.exists(account_ea_folder):
-    mkdir(account_ea_folder)
+  if not path.exists(mt_files_account_ea_folder):
+    mkdir(mt_files_account_ea_folder)
     print('  Created new EA folder for account', account_id)
-  files = [f for f in listdir(account_ea_folder) if '.mq4' in f]
+  files = [f for f in listdir(mt_files_account_ea_folder) if '.mq4' in f]
   # Delete existing files
   for filename in files:
-      remove(account_ea_folder + filename)
-  print('  Deleted existing EA files in', account_ea_folder)
+      remove(mt_files_account_ea_folder + filename)
+  print('  Deleted existing EA files in', mt_files_account_ea_folder)
 
   for strategyId, size in pos_sizes.items():
     found_filenames = [f for f in src_folder_filenames if str(strategyId) in f]
@@ -161,15 +161,16 @@ def apply_position_sizing (account_id, pos_sizes):
       raise Exception("Could not find demo file with strategyId", strategyId)
     filename = found_filenames[0]
     # Copy required strategy file from source to account directory
-    copy2(src_folder + filename, account_ea_folder)
+    copy2(src_folder + filename, mt_files_account_ea_folder)
     # Update the contents with the applied position sizes  
-    with open(f"{account_ea_folder}{filename}", 'r') as f:
+    with open(f"{mt_files_account_ea_folder}{filename}", 'r') as f:
       content = f.read()
     sections = content.split('mmLots = ')
     part2 = sections[1][sections[1].index(';'):]
     new_content = f"{sections[0]}mmLots = {size:.2f}{part2}"
-    with open(f"{account_ea_folder}{filename}", 'w') as f:
+    with open(f"{mt_files_account_ea_folder}{filename}", 'w') as f:
       f.write(new_content)
   
   # Build and create template files
-  create_mt_templates(account_id, account_ea_folder)
+  templates_folder = getenv('MT_INSTANCES_DIR') + get_mt_instance_dir_name(account_id) + '/MQL4/Files/EaTemplates/'
+  create_mt_templates(mt_files_account_ea_folder, templates_folder)
