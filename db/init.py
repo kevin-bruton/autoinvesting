@@ -110,8 +110,45 @@ def init_db():
       ''')
     c.execute('''
       CREATE TABLE IF NOT EXISTS Updates (
-          updateTime TIMESTAMP NOT NULL PRIMARY KEY,
-          result TEXT
+          eventName TEXT NOT NULL,
+          eventDatetime TEXT,
+          filename TEXT
+      );
+      ''')
+    c.execute('''
+      CREATE TABLE IF NOT EXISTS RawMcOrders (
+          orderId INT NOT NULL PRIMARY KEY,
+          brokerId INT,
+          strategyRef INT,
+          action TEXT,
+          category TEXT,
+          generatedDt TEXT,
+          finalDt TEXT,
+          initialPrice FLOAT,
+          fillPrice FLOAT,
+          qty INT,
+          fillQty INT,
+          brokerProfile TEXT,
+          account TEXT,
+          symbol TEXT
+      );
+      ''')
+    c.execute('''
+      CREATE TABLE IF NOT EXISTS McStrategyRefs (
+          strategyRef INT NOT NULL PRIMARY KEY,
+          chartSymbol,
+          chartRootSymbol,
+          chartExchange,
+          dataProvider,
+          brokerSymbol,
+          brokerRootSymbol,
+          brokerExchange,
+          broker,
+          brokerProfile,
+          accountId,
+          workspace,
+          strategyName,
+          regDatetime
       );
       ''')
     conn.commit()

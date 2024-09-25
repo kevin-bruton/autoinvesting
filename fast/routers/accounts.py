@@ -7,7 +7,7 @@ from db.orders import get_account_orders
 #from db2.subscriptions import update_subscriptions
 from db.trades import get_account_trades
 from db.users import get_users, get_users_accounts
-from db.updates import get_last_update
+from db.updates import get_last_mt_trades_update
 from fast.controllers import get_account_logs
 
 from fast.utils import get_upload_folders
@@ -84,7 +84,7 @@ def subscribe_to_strategies(account_id: str, magics: SubscriptionRequest):
 @route.get('/updates/last')
 def get_last_update_request():
   try: 
-    last_update = get_last_update()
+    last_update = get_last_mt_trades_update()
     return { 'success': True, 'data': last_update['MAX(updateTime)'] }
   except Exception as e:
     return { 'error': repr(e) }

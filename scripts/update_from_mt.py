@@ -6,7 +6,7 @@ load_dotenv(override=True)
 
 #from db2.accounts import update_kpis
 import db
-from db.updates import register_update
+from db.updates import register_mt_trades_update
 from mt_connector.connector import mt_connector_client
 from db.trades import Trade, get_strategys_demo_trades, save_trade
 from fast.utils import get_demo_kpis
@@ -148,7 +148,7 @@ class read_and_save_trades():
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
-        register_update('Success')
+        register_mt_trades_update('Success')
         print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 
         self.connector.ACTIVE = False
