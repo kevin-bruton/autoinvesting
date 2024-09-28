@@ -21,7 +21,7 @@ async def query_request(request: Request):
     print('Error decoding query data: ', e)
     return {'success': False }
   try:
-    result = handle_query(user, query_name, values)
+    result = await handle_query(user, query_name, values)
     #print('query result: ', result)
     return {'success': True, 'data': result}
   except Exception as e:

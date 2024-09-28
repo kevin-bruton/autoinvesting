@@ -3,6 +3,7 @@ from datetime import datetime
 
 from db.mc_raw_orders import RawOrder, register_mc_raw_order
 from db.mc_strategy_refs import register_mc_strategy_ref
+from fast.routers.send_sse import send_sse
 
 strategies = []
 orders = []
@@ -60,6 +61,7 @@ def _processStrategyIdentifier(logentry_ts, content):
     regDatetime=logentry_ts
   )
   print("Strategy registered. strategyRef:", data[0], "strategyName:", data[15], "workspace:", data[14])
+  send_sse('logprocessing', 'Strategy registered. strategyRef: ' + data[0] + ' strategyName: ' + data[15] + ' workspace: ' + data[14])
   """
   found_strategies = [s for s in strategies if s['strategyId'] == strategyId]
   if len(found_strategies) == 0:
@@ -101,7 +103,8 @@ def _processOrderEvent(content):
   brokerProfile = _getKeyValue(content, 'Broker')
   account = _getKeyValue(content, 'Account')
   symbol = _getSymbol(content)
-  print('  Processed event. orderId:', orderId, 'brId:', brokerId, 'state:', state)
+  print('  Processed order. orderId:', orderId, 'brId:', brokerId, 'state:', state)
+  send_sse('logprocessing', 'Processed order. orderId: ' + str(orderId) + ' brId: ' + str(brokerId) + ' state: ' + state)
   register_mc_raw_order(RawOrder(orderId, brokerId, strategyRef, action, category, generatedTs, finalTs, initialPrice, fillPrice, qty, fillQty, brokerProfile, account, symbol))
 
 

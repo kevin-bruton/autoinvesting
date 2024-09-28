@@ -3,11 +3,11 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response, 
 from dotenv import load_dotenv
 load_dotenv(override=True)
 
-
 from db.init import init_db
 init_db()
 from fast.auth import is_admin, is_member
 from fast.routers import auth, admin, strategies, accounts, portfolio, dquery, query
+from fast.routers import send_sse
 
 #from utils.config import get_config_value
 
@@ -15,6 +15,7 @@ openapi_url = '/openapi.json' #if get_config_value('enable_openapi_docs') else '
 app = FastAPI(title="main-app", openapi_url=openapi_url)
 
 app.include_router(auth.route, prefix="/api")
+app.include_router(send_sse.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(strategies.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(dquery.route, prefix="/api", dependencies=[Depends(is_member)])
 app.include_router(query.route, prefix="/api", dependencies=[Depends(is_member)])

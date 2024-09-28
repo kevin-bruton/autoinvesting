@@ -1,4 +1,6 @@
 
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from db.query import dbQuery
 from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades
 from db.users import get_users, get_users_accounts
@@ -6,7 +8,7 @@ from db.strategy_runs import get_account_strategyruns
 from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation
 from mc.log_analysis.read_logs import process_last_logentries
 
-def handle_query (user, query_name, values):
+async def handle_query (user, query_name, values):
   match query_name:
     case 'get_users_accounts':
       account_ids = get_users_accounts(user['username'])
@@ -54,8 +56,10 @@ def handle_query (user, query_name, values):
       )
     case 'save_mc_latest_orders':
       print('save_mc_latest_orders: ', values)
-      process_last_logentries()
-
+      loop = asyncio.get_event_loop()
+      with ThreadPoolExecutor() as pool:
+        await loop.run_in_executor(pool, process_last_logentries)
+      return {'message': 'Started processing latest MC log entries'}
       
     case _:
       return 'Unknown query name'

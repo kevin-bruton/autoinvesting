@@ -3,6 +3,7 @@ from zipfile import ZipFile
 from datetime import datetime
 
 from db.updates import get_mc_logfile_entry_read_ts, get_mc_logfile_modified_ts, register_mc_logfile_entry_read_ts, register_mc_logfile_modified_ts
+from fast.routers.send_sse import send_sse
 from mc.log_analysis.process_logentry import processLogentry, getOrders, getStrategies
 
 # from db.orders import get_last_filled_order_id, save_log_orders, get_order
@@ -174,6 +175,7 @@ def process_log_line(line, last_read_log_entry_ts):
   #print(ts_to_str(logentry_ts)[:16], ts_to_str(last_read_log_entry_ts)[:16])
   if logentry_ts[:13] != last_read_log_entry_ts[:13]:
     print('  Reading log entries at hour: ', logentry_ts[:13])
+    send_sse('logprocessing', 'Reading log entries at hour: ' + logentry_ts[:13])
   processLogentry(logentry_ts, content)
   return logentry_ts
 
@@ -182,6 +184,7 @@ def process_last_logentries():
   logfilepaths = get_all_logfile_names() # files returned are ordered by modification time
   for logfilepath in logfilepaths:
     print('Processing', logfilepath)
+    send_sse('logprocessing', 'Processing ' + logfilepath)
     logfile_modified_ts = ts_to_str(os.path.getmtime(logfilepath))
     prev_modified_logfile_ts = get_mc_logfile_modified_ts(logfilepath)
     if logfile_modified_ts > prev_modified_logfile_ts:
@@ -206,6 +209,7 @@ def process_last_logentries():
 
   #save_timestamp(last_entry_ts, 'last_trading_server_log_read')
   print('  Finished processing Trading Server logs at', datetime.now())
+  send_sse('logprocessing', 'Finished processing Trading Server logs at ' + str(datetime.now()))
   # orders = getOrders()
   # strategies = getStrategies()
   # print('  read_all_logs saving ', len(orders), 'orders and', len(strategies), 'strategies to the database...')

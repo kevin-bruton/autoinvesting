@@ -17,6 +17,7 @@ ipython = "*"
 metatrader5 = "*"
 numpy = "<2.0"
 ipykernel = "*"
+sse-starlette = "*"
 
 [dev-packages]
 ipykernel = "*"
