@@ -22,7 +22,7 @@ def _getKeyValue(content, key):
   value_end_idx = content.find(';', value_idx)
   return content[value_idx:value_end_idx]
 
-def _getSymbol(content):
+def _getSymbol(content): # for MC v15, but should work for v14 also
   brSymbol = _getKeyValue(content, 'BrSymbol')
   cqgSplit = brSymbol.split('CQG')
   if len(cqgSplit) == 2:
@@ -30,7 +30,10 @@ def _getSymbol(content):
   ibSplit = brSymbol.split('Interactive')
   if len(ibSplit) == 2:
     return ibSplit[0]
-  return brSymbol
+  spaceDivided = brSymbol.split(' ')
+  if len(spaceDivided) == 2 and spaceDivided[1] == 'eBeforeMappingHookCal': # for MC v14
+    return spaceDivided[0].rstrip()
+  return brSymbol.rstrip()
 
 def _isStrategyIdentifier(content):
   return content.count('{"') == 2 and content.count('"') == 30
@@ -82,7 +85,8 @@ def _processStrategyIdentifier(logentry_ts, content):
 def _isOrderEvent(content):
   columns = content.split(' ')
   return len(columns) > 0 \
-    and 'PDS' in columns[0]
+    and ('PDS' in columns[0] # for MC v15
+         or ('CProfile::OnOrder' == columns[0] and columns[-1] == 'eBeforeMappingHookCall')) # for MC v14
 
 def _processOrderEvent(content):
   state = _getKeyValue(content, 'State')

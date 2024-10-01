@@ -14,7 +14,6 @@ route = APIRouter()
 
 def send_sse (topic: str, message: str):
     sse_queue.put([topic, message])
-    print('Added message to the queue:', message)
 
 async def _send_event(request: Request):
     print('SSE client connected!!!')
@@ -24,7 +23,7 @@ async def _send_event(request: Request):
             break
         # If there are messages in the queue, send them
         while not sse_queue.empty():
-            print("Checking for messages in the queue")
+            #print("Checking for messages in the queue")
             topic, message = sse_queue.get()
             yield {
                 "event": "message",
