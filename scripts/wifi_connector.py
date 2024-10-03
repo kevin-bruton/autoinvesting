@@ -14,6 +14,9 @@ def _test_connection():
     resp = requests.get('http://www.google.com', timeout=2)
     if resp.status_code != 200:
       _log('Failed http test. Connection status code:', resp.status_code)
+    else:
+      # _log('Successful http test')
+      pass
     return resp.status_code == 200
   except:
     _log('Failed http test. Connection error.')
