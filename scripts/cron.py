@@ -3,16 +3,18 @@ import time
 from scripts.update_from_mt import run_update_from_mt
 import platform
 
+MT_UPDATE_FREQ_SECS = 60 * 60
+CHECK_WIFI_FREQ_SECS = 60
+
 if platform.system() == 'Windows':
   from scripts.wifi_connector import check_connection
 
 def run_cron():
-  mt_update_freq_secs = 60 * 60
   print('\nStarting cron jobs...\n')
 
-  schedule.every(mt_update_freq_secs).seconds.do(run_update_from_mt)
+  schedule.every(MT_UPDATE_FREQ_SECS).seconds.do(run_update_from_mt)
   if platform.system() == 'Windows':
-    schedule.every(60).seconds.do(check_connection)
+    schedule.every(CHECK_WIFI_FREQ_SECS).seconds.do(check_connection)
 
   while True:
     schedule.run_pending()
