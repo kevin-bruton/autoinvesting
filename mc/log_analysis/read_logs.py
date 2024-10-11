@@ -181,6 +181,7 @@ def process_log_line(line, last_read_log_entry_ts):
 
 
 def process_last_logentries():
+  print('Process last log entires...')
   logfilepaths = get_all_logfile_names() # files returned are ordered by modification time
   for logfilepath in logfilepaths:
     print('Processing', logfilepath)

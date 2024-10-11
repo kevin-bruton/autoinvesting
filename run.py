@@ -12,6 +12,8 @@ from scripts.import_strategies import import_strategies
 from scripts.update_from_ib import update_from_ib
 from scripts.encrypt_text import do_decrypt, do_encrypt
 from scripts.create_templates import create_mt_templates
+from mc.log_analysis.read_logs import process_last_logentries as update_from_mc
+
 if platform.system() == 'Windows':
     from scripts.wifi_connector import check_connection
 
@@ -34,9 +36,9 @@ if __name__ == '__main__':
         'cron': run_cron if platform.system() == 'Windows' else lambda: print('winwifi not supported on this platform'),
         'update_from_mt': run_update_from_mt,
         'update_from_ib': update_from_ib,
+        'update_from_mc': update_from_mc,
         'create_mt_templates': create_mt_templates,
         'import_strategies': import_strategies,
-        'update_from_ib': update_from_ib,
         'encrypt': do_encrypt,
         'decrypt': do_decrypt,
         'wifi_connection': check_connection if platform.system() == 'Windows' else lambda: print('winwifi connection not supported on this platform')

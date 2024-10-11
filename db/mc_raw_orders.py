@@ -6,5 +6,11 @@ raw_order_fields = 'orderId, brokerId, strategyRef, action, category, generatedD
 RawOrder = namedtuple('RawMcOrder', raw_order_fields)
 
 def register_mc_raw_order (raw_order):
-  sql = f"INSERT INTO RawMcOrders ({raw_order_fields}) VALUES ({values_placeholder(raw_order_fields)})"
-  return mutate_one(sql, raw_order)
+  try:
+    sql = f"INSERT INTO RawMcOrders ({raw_order_fields}) VALUES ({values_placeholder(raw_order_fields)})"
+    return mutate_one(sql, raw_order)
+  except Exception as e:
+    if 'UNIQUE constraint failed' in repr(e):
+      return None
+    print(repr(e))
+    raise e
