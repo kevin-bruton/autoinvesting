@@ -67,6 +67,7 @@ def get_max_dd (start_dt, trades, balances):
   return max_dd, stagnation
 
 def get_performance_metrics (trades):
+  trades = [dict(t) for t in trades]
   if len(trades) < 3:
     return {
       'annualPctRet': 0,

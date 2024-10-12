@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from collections import namedtuple
 from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
 from fast.utils import normalize_position_sizes
@@ -75,25 +76,44 @@ def get_strategys_live_trades (strategyId, accountId):
     ORDER BY closeTime
   '''
   trades = query_many(sql, (strategyId, accountId,))
-  return normalize_position_sizes(trades)
+  return trades
 
-def get_strategys_backtest_trades (strategyId):
+def get_strategys_oos_start (strategyId):
   sql = '''
+    SELECT oosStart
+    FROM Strategies
+    WHERE strategyId = ?
+  '''
+  result = query_one(sql, (strategyId,))
+  return result['oosStart'] if result and 'oosStart' in result.keys() else None
+
+def get_strategys_backtest_trades (strategyId, up_until_date=None):
+  if up_until_date:
+    sql = '''
       SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
       FROM Trades
       INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
-      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest'
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest' AND closeTime < ?
       ORDER BY closeTime
     '''
-  trades = query_many(sql, (strategyId,))
-  return normalize_position_sizes(trades)
+    trades = query_many(sql, (strategyId, up_until_date,))
+  else:
+    sql = '''
+        SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+        FROM Trades
+        INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+        WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest'
+        ORDER BY closeTime
+      '''
+    trades = query_many(sql, (strategyId,))
+  return trades
 
 def get_strategys_combined_trades (strategyId, accountId):
-  trades = get_strategys_backtest_trades(strategyId)
-  trades = normalize_position_sizes(trades)
   live_trades = get_strategys_live_trades(strategyId, accountId)
-  live_trades = normalize_position_sizes(live_trades)
-  trades.extend(live_trades)
+  live_start = (datetime.strptime('%Y-%m-%d', live_trades[0]['closeTime'][:10]) - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
+  backtest_trades = get_strategys_backtest_trades(strategyId, up_until_date=live_start)
+  backtest_trades = normalize_position_sizes(backtest_trades, live_trades[0]['size'])
+  backtest_trades.extend(live_trades)
   return [dict(t) for t in trades]
 
 def save_trade (trade: Trade):

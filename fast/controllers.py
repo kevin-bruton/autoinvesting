@@ -1,13 +1,13 @@
 from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
-from db.strategy_runs import StrategyRun, get_strategyrun_id, save_strategyrun
+from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
 from fast.random_name import get_random_name
 from db.strategies import Strategy, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
-from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, save_trade
+from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, get_strategys_oos_start, save_trade
 from db.accounts import Account, get_mt_instance_dir_name, save_account
 from fast.utils import get_bt_kpis, get_performance_metrics, get_project_root_dir, normalize_position_sizes, dec2
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 from scripts.create_templates import create_mt_templates
 
@@ -74,6 +74,25 @@ def get_account_logs (account_id):
 def log(txt):
     with open("/home/admin/autoinvesting/back/correlation.log", "a") as f:
         f.write(txt + "\n")
+
+def get_strategy_detail (strategyId, accountId):
+  live_trades = get_strategys_live_trades(strategyId, accountId)
+  live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
+  positionSize = live_trades[0]['size'] if live_trades else 1
+  backtest_trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId, up_until_date=live_start), positionSize)
+  oos_start = get_strategys_oos_start(strategyId)
+  combined_trades = backtest_trades + live_trades
+  capital, start_date, end_date, metrics = get_performance_metrics(backtest_trades)
+  strategyRunId = get_strategyrunid_backtest(strategyId)
+  backtest = {'strategyRunId': strategyRunId, 'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': backtest_trades}
+  capital, start_date, end_date, metrics = get_performance_metrics(live_trades)
+  strategyRunId = get_strategyrunid(strategyId, accountId)
+  live = {'strategyRunId': strategyRunId, 'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': live_trades}
+  capital, start_date, end_date, metrics = get_performance_metrics(combined_trades)
+  combined = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': combined_trades}
+  return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start}
+
+
 
 def get_portfolio_evaluation (data_type, account_id, strategy_ids):
   trades = []

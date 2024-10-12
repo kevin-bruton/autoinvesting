@@ -21,6 +21,16 @@ def get_strategyrun_id (strategyId: str, runType: str) -> int:
     return result['strategyRunId']
   return None
 
+def get_strategyrunid (strategy_id: str, account_id: str) -> int:
+  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId = ?"
+  result = query_one(sql, (strategy_id, account_id))
+  if result and 'strategyRunId' in result.keys():
+    return result['strategyRunId']
+  return None
+
+def get_strategyrunid_backtest (strategy_id: str) -> int:
+  return get_strategyrun_id(strategy_id, 'backtest')
+
 def save_strategyrun (strategyrun: StrategyRun) -> int:
   sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
   return mutate_one(sql, strategyrun)

@@ -46,6 +46,7 @@ def init_db():
       CREATE TABLE IF NOT EXISTS Strategies (
           strategyId VARCHAR(255) NOT NULL,
           friendlyName VARCHAR(255),
+          oosStart TIMESTAMP,
           type VARCHAR(55),
           description TEXT,
           workflow VARCHAR(255),
