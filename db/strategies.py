@@ -14,6 +14,15 @@ def get_strategies ():
     FROM Strategies"""
   return query_many(sql)
 
+def get_active_strategyruns (account_id):
+  sql = '''
+      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startDate, startingBalance
+      FROM StrategyRuns
+      INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
+      WHERE Strategies.decommissioned is NULL AND accountId = ?
+    '''
+  return query_many(sql, (account_id,))
+
 def save_strategy (strategy: Strategy) -> int:
   print('save-strategy:', strategy)
   sql = f"INSERT INTO Strategies ({strategy_fields}) VALUES ({values_placeholder(strategy_fields)})"

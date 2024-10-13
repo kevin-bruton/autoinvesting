@@ -69,14 +69,24 @@ def get_max_dd (start_dt, trades, balances):
 def get_performance_metrics (trades):
   trades = [dict(t) for t in trades]
   if len(trades) < 3:
-    return {
+    if len(trades) > 0:
+      start = datetime.combine(trades[0]['openTime'], datetime.min.time())
+      end = datetime.combine(trades[-1]['closeTime'], datetime.min.time())
+      capital = 10000
+    else:
+      start = None
+      end = None
+      capital = 10000
+    return capital, start, end, {
+      'netProfit':'0',
       'annualPctRet': 0,
       'maxDD': 0,
       'maxPctDD': 0,
       'annPctRetVsDdPct': 0,
       'winPct': 0,
       'profitFactor': 0,
-      'numTrades': 0
+      'numTrades': 0,
+      'stagnation': 0
     }
   
   dt_format = '%Y-%m-%d %H:%M:%S'

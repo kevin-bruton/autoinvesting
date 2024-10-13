@@ -2,7 +2,7 @@ from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
 from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
 from fast.random_name import get_random_name
-from db.strategies import Strategy, save_strategy, \
+from db.strategies import Strategy, get_active_strategyruns, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
 from db.trades import Trade, get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, get_strategys_oos_start, save_trade
 from db.accounts import Account, get_mt_instance_dir_name, save_account
@@ -92,7 +92,24 @@ def get_strategy_detail (strategyId, accountId):
   combined = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': combined_trades}
   return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start}
 
-
+def get_strategies_summary (accountId):
+  position_sizes_normalized = 1
+  strategy_runs = get_active_strategyruns(accountId)
+  strategy_runs = [dict(s) for s in strategy_runs]
+  for strategy_run in strategy_runs:
+    trades = normalize_position_sizes(get_strategys_live_trades(strategy_run['strategyId'], accountId), position_sizes_normalized)
+    if trades:
+      startingBalance, startDate, endDate, metrics = get_performance_metrics(trades)
+      strategy_run['startingBalance'] = startingBalance
+      strategy_run['startDate'] = startDate
+      strategy_run['endDate'] = endDate
+      strategy_run['metrics'] = metrics
+    else:
+      strategy_run['startingBalance'] = 0
+      strategy_run['startDate'] = None
+      strategy_run['endDate'] = None
+      strategy_run['metrics'] = {}
+  return strategy_runs
 
 def get_portfolio_evaluation (data_type, account_id, strategy_ids):
   trades = []

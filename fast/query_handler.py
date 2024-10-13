@@ -5,7 +5,7 @@ from db.query import dbQuery
 from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
-from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail
+from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary
 from mc.log_analysis.read_logs import process_last_logentries
 
 async def handle_query (user, query_name, values):
@@ -25,6 +25,8 @@ async def handle_query (user, query_name, values):
         [strategyrun_id]
       )
       return trades
+    case 'get_strategies_summary':
+      return get_strategies_summary(accountId=values[0])
     case 'get_strategy_combined_trades':
       strategyId, accountId = values
       trades = get_strategys_combined_trades(strategyId, accountId)
