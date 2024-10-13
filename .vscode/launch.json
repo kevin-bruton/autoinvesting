@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "run.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "run.py",
+      "console": "integratedTerminal",
+      "args": [
+        "update_from_mt"
+      ]
+    },
+    {
       "name": "FastAPI",
       "type": "debugpy",
       "request": "launch",

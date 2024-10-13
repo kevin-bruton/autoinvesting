@@ -148,7 +148,7 @@ class read_and_save_trades():
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
-        register_mt_trades_update('Success')
+        register_mt_trades_update()
         print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 
         self.connector.ACTIVE = False

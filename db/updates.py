@@ -4,10 +4,14 @@ from db.common import query_one, mutate_one
 def register_mt_trades_update ():
   now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
   evName = 'mt_trades_updated'
-  sql = '''INSERT INTO Updates (eventName, eventDatetime) VALUES (?, ?)
-          ON CONFLICT(eventName)
-          DO UPDATE SET eventDatetime=?'''
-  return mutate_one(sql, (evName, now, now))
+  sql = 'SELECT eventName from Updates where eventName = ?'
+  exists = query_one(sql, (evName,))
+  if not exists:
+    sql = 'INSERT INTO Updates (eventName, eventDatetime) VALUES (?, ?)'
+    return mutate_one(sql, (evName, now))
+  else:
+    sql = 'UPDATE Updates SET eventDatetime=? WHERE eventName=?'
+    return mutate_one(sql, (now, evName))
 
 def get_last_mt_trades_update ():
   evName = 'mt_trades_updated'
