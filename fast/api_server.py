@@ -16,12 +16,12 @@ def run_api_server(mode='dev'):
       print('Browser thread waiting for api server...')
       sleep(15)
       print('Opening browser...')
-      webbrowser.open('http://localhost:8000')
+      webbrowser.open('http://autoinvesting.local:8000')
     threading.Thread(target=open_browser).start()
     print('Api server starting...')
     run(
         "fast.api_routes:app",
-        host="localhost",
+        host="autoinvesting.local",
         port=8000,
         reload=True,
         log_level="info",
