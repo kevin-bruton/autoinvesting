@@ -121,6 +121,7 @@ class read_and_save_trades():
         #print(' ***** RECEIVED HISTORIC DATA ***** ')
         mt_trades_dict = self.connector.historic_trades
         trades_by_magic = mt_to_db_format(mt_trades_dict, self.connector.account_info['balance'])
+        account_id = self.connector.account_info['number']
         #print(' ****** MT TRADES ****** ')
         #print('Magics of the trades retrieved:', trades_by_magic.keys())
 
@@ -148,7 +149,7 @@ class read_and_save_trades():
                 with open('../crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
-        register_mt_trades_update()
+        register_mt_trades_update(account_id)
         print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 
         self.connector.ACTIVE = False

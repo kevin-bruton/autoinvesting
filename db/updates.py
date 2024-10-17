@@ -1,22 +1,22 @@
 from datetime import datetime
 from db.common import query_one, mutate_one
 
-def register_mt_trades_update ():
+def register_mt_trades_update (account_id):
   now = datetime.strftime(datetime.now(), '%Y-%m-%d %H:%M:%S')
   evName = 'mt_trades_updated'
-  sql = 'SELECT eventName from Updates where eventName = ?'
-  exists = query_one(sql, (evName,))
+  sql = 'SELECT eventName from Updates where eventName = ? AND filename = ?'
+  exists = query_one(sql, (evName, account_id))
   if not exists:
-    sql = 'INSERT INTO Updates (eventName, eventDatetime) VALUES (?, ?)'
-    return mutate_one(sql, (evName, now))
+    sql = 'INSERT INTO Updates (eventName, eventDatetime, filename) VALUES (?, ?, ?)'
+    return mutate_one(sql, (evName, now, account_id))
   else:
-    sql = 'UPDATE Updates SET eventDatetime=? WHERE eventName=?'
-    return mutate_one(sql, (now, evName))
+    sql = 'UPDATE Updates SET eventDatetime=? WHERE eventName=? AND filename=?'
+    return mutate_one(sql, (now, evName, account_id))
 
-def get_last_mt_trades_update ():
+def get_last_mt_trades_update (account_id):
   evName = 'mt_trades_updated'
-  sql = 'SELECT eventDatetime FROM Updates WHERE eventName = ?;'
-  return query_one(sql, (evName,))
+  sql = 'SELECT eventDatetime FROM Updates WHERE eventName = ? AND filename = ?;'
+  return query_one(sql, (evName, account_id))
 
 def register_mc_logfile_modified_ts (logfilepath, modified_ts):
   prev_modified_ts = get_mc_logfile_modified_ts(logfilepath)
