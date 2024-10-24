@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 rates_start_dt = datetime(2024, 1, 1)
 num_bars = 1000
-symbol = "XAUUSD"
+symbol = "UK100"
 
 # Connect to MetaTrader
 if not mt.initialize():
@@ -21,6 +21,10 @@ rates = mt.copy_rates_from(symbol, mt.TIMEFRAME_H1, rates_start_dt, num_bars)
 
 # shut down connection to the MetaTrader 5 terminal
 mt.shutdown()
+if rates is None:
+    print("Could not retrieve rates from MetaTrader 5. Please check the symbol is available in the logged in account.")
+    print("Current symbol: ", symbol, "Number of bars to retrieve: ", num_bars)
+    quit()
 print(f'Got {len(rates)} rates. Closed MT5 connection.')
 
 rates_df = pd.DataFrame(rates)

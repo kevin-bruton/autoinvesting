@@ -10,7 +10,7 @@ import seaborn as sns
 
 # RatingParameter = 'Net profit'
 # RatingThreshold = 0
-RatingParameter = 'CAGR/Max DD %'
+RatingParameter = 'Profit factor'
 RatingThreshold = 1
 
 is_file = './IS_Databank.csv'
