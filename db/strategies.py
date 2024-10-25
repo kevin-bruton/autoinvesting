@@ -16,7 +16,7 @@ def get_strategies ():
 
 def get_active_strategyruns (account_id):
   sql = '''
-      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startDate, startingBalance
+      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startingBalance
       FROM StrategyRuns
       INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
       WHERE Strategies.decommissioned is NULL AND accountId = ?

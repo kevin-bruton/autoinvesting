@@ -55,7 +55,4 @@ if __name__ == '__main__':
         print('Invalid command. Available commands:', cmds.keys())
         sys.exit(1)
 
-    if len(sys.argv) > 2:
-        cmds[cmd](sys.argv[2])
-    else:
-        cmds[cmd]()
+    cmds[cmd](*sys.argv[2:])

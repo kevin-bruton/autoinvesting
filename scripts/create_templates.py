@@ -23,12 +23,13 @@ from random import randrange
 from fast.utils import get_project_root_dir
 from db.accounts import get_mt_files_dir, get_mt_instance_dir_name
 
-def create_mt_templates(mt_files_source_dir, tpl_destination_dir):
+def create_mt_templates(mt_instance_dir):
     """
     Create MT4 templates from the mq4 files in the source directory
     and place them in the account's MT4 instance's EaTemplates folder
     """
-
+    mt_files_source_dir = get_project_root_dir() + '/files/' + mt_instance_dir + "_eas_to_install/"
+    tpl_destination_dir = "C:/" + mt_instance_dir + "/MQL4/Files/EaTemplates/"
     if not mt_files_source_dir:
         raise Exception('MT directory not found for account {account_id}. Exiting...')
     template = '<chart>\n'
