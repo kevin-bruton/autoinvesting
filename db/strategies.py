@@ -16,12 +16,20 @@ def get_strategies ():
 
 def get_active_strategyruns (account_id):
   sql = '''
-      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startingBalance
+      SELECT strategyRunId, friendlyName, Strategies.strategyId, Strategies.type, Strategies.symbol, Strategies.timeframe, startingBalance
       FROM StrategyRuns
       INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
       WHERE Strategies.decommissioned is NULL AND accountId = ?
     '''
   return query_many(sql, (account_id,))
+
+def get_strategy_tf_symbol (strategyId):
+  sql = '''
+      SELECT timeframe, symbol FROM Strategies
+      WHERE strategyId = ?'''
+  result = query_one(sql, (strategyId,))
+  return result['timeframes'], result['symbol']
+
 
 def save_strategy (strategy: Strategy) -> int:
   print('save-strategy:', strategy)

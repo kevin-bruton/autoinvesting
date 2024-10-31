@@ -1,6 +1,7 @@
 from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
-from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, get_strategyruns_tf_symbol, save_strategyrun
+from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
+from db.strategies import get_strategy_tf_symbol
 from fast.random_name import get_random_name
 from db.strategies import Strategy, get_active_strategyruns, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
@@ -78,7 +79,7 @@ def log(txt):
 def get_strategy_detail (strategyId, accountId):
   normalized_position_size = 1
   live_trades = normalize_position_sizes(get_strategys_live_trades(strategyId, accountId), normalized_position_size)
-  timeframe, symbol = get_strategyruns_tf_symbol(strategyId, accountId)
+  timeframe, symbol = get_strategy_tf_symbol(strategyId)
   live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
   backtest_trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId, up_until_date=live_start), normalized_position_size)
   oos_start = get_strategys_oos_start(strategyId)

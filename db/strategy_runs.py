@@ -8,13 +8,16 @@ StrategyRun = namedtuple('Strategy', strategyrun_fields, defaults=(None, None, N
 
 def get_strategy_runs ():
   # sql = "SELECT strategyName, magic, symbols, timeframes, btStart, btEnd, btDeposit, btKpis, demoStart, demoKpis FROM Strategies"
-  sql = """SELECT strategyRunId, strategyId, accountId, type, symbol, timeframe,
+  sql = """SELECT strategyRunId, strategyId, accountId, Strategies.symbol, Strategies.timeframe,
     strftime('%Y-%m-%d %H:%i:%S', startDate) as startDate,
     strftime('%Y-%m-%d %H:%i:%S', endDate) as endDate,
-    FROM StrategyRuns"""
+    FROM StrategyRuns
+    INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId"""
   return query_many(sql)
 
+# This function is deprecated - Must use get_strategyrunid instead
 def get_strategyrun_id (strategyId: str, runType: str) -> int:
+  print('get_strategyrun_id is deprecated. Refactor to use get_strategyrunid instead')
   sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND type = ?"
   result = query_one(sql, (strategyId, runType))
   if result and 'strategyRunId' in result.keys():
@@ -28,13 +31,15 @@ def get_strategyrunid (strategy_id: str, account_id: str) -> int:
     return result['strategyRunId']
   return None
 
-def get_strategyruns_tf_symbol (strategyId, accountId):
-  sql = '''SELECT timeframes, symbol FROM StrategyRuns WHERE strategyId = ? AND accountId = ?'''
-  result = query_one(sql, (strategyId, accountId,))
-  return result['timeframes'], result['symbol']
-
 def get_strategyrunid_backtest (strategy_id: str) -> int:
   return get_strategyrun_id(strategy_id, 'backtest')
+
+def create_strategyrun (strategyId: str, accountId: str) -> int:
+  sql = "INSERT INTO StrategyRuns (strategyId, accountId) VALUES (?, ?)"
+  result = mutate_one(sql, (strategyId, accountId))
+  if result:
+    return get_strategyrunid(strategyId, accountId)
+  return None
 
 def save_strategyrun (strategyrun: StrategyRun) -> int:
   sql = f"INSERT INTO StrategyRuns ({strategyrun_fields}) VALUES ({values_placeholder(strategyrun_fields)})"
@@ -42,13 +47,9 @@ def save_strategyrun (strategyrun: StrategyRun) -> int:
 
 def get_account_strategyruns (account_id: str) -> list[StrategyRun]:
   sql = '''
-      SELECT strategyRunId, friendlyName, Strategies.strategyId, StrategyRuns.type, symbol, timeframes, startDate, startingBalance
+      SELECT strategyRunId, friendlyName, Strategies.strategyId, Strategies.symbol, Strategies.timeframe, startDate, startingBalance
       FROM StrategyRuns
       INNER JOIN Strategies ON Strategies.strategyId = StrategyRuns.strategyId
       WHERE Strategies.decommissioned is NULL AND accountId = ?
     '''
   return query_many(sql, (account_id,))
-
-def create_paper_strategyrun (strategyId: str) -> int:
-  sql = "INSERT INTO StrategyRuns (strategyId, type) VALUES (?, 'paper')"
-  return mutate_one(sql, (strategyId,))

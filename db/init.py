@@ -51,6 +51,8 @@ def init_db():
           description TEXT,
           workflow VARCHAR(255),
           decommissioned TIMESTAMP,
+          timeframe TEXT,
+          symbol TEXT,
           PRIMARY KEY (strategyId)
       );
       ''')
@@ -59,9 +61,6 @@ def init_db():
           strategyRunId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
           strategyId VARCHAR(255) NOT NULL,
           accountId VARCHAR(255),
-          type VARCHAR(55) CHECK(type in ('backtest', 'paper', 'live')),
-          symbol VARCHAR(255) NOT NULL,
-          timeframes VARCHAR(55) NOT NULL,
           startDate TIMESTAMP,
           endDate TIMESTAMP,
           startingBalance REAL,

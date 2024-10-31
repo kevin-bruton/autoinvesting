@@ -33,7 +33,7 @@ def old_to_new_magic_in_trades(trades_dict):
     trades_dict[order_id]['magic'] = old_to_new_magic(mt_magic)
   return trades_dict
 
-def mt_to_db_format(trades_dict, balance):
+def mt_to_db_format(trades_dict, balance, account_id):
     trades_dict = old_to_new_magic_in_trades(trades_dict)
     trades_by_magic = {}
     order_ids = trades_dict.keys()
@@ -42,13 +42,16 @@ def mt_to_db_format(trades_dict, balance):
         # trades_list.append(trades_dict[order_id])
         mt_trade = trades_dict[order_id]
         #account_id = f"{mt_trade['magic']}_D"
-        strategyId = str(mt_trade['magic'])
-        strategyRunId = db.get_trade_strategyrun_id(strategyId, 'paper')
-        if not strategyRunId:
-            db.create_paper_strategy_run(strategyId)
+        strategy_id = str(mt_trade['magic'])
+        strategyrun_id = db.strategy_runs.get_strategyrunid(strategy_id, account_id)
+        if not strategyrun_id:
+            strategyrun_id = db.strategy_runs.create_strategyrun(strategy_id, account_id)
+            if not strategyrun_id:
+                print('Error creating strategy run for strategy:', strategy_id, ' and account:', account_id)
+                continue
         trade = Trade(
-            orderId=f"{order_id}_{strategyRunId}",
-            strategyRunId=strategyRunId,
+            orderId=f"{order_id}_{strategyrun_id}",
+            strategyRunId=strategyrun_id,
             symbol=mt_trade['symbol'],
             orderType=mt_trade['type'][0].upper() + mt_trade['type'][1:],
             openTime=mt_trade['open_time'].replace('.', '-'),
@@ -94,7 +97,7 @@ class read_and_save_trades():
 
         self.last_open_time = datetime.utcnow()
         self.last_modification_time = datetime.utcnow()
-
+        self.mtDirectoryPath = MT4_directory_path
         self.connector = mt_connector_client(self, MT4_directory_path, sleep_delay, 
                               max_retry_command_seconds, verbose=verbose)
         sleep(1)
@@ -120,8 +123,8 @@ class read_and_save_trades():
     def on_historic_trades(self):
         #print(' ***** RECEIVED HISTORIC DATA ***** ')
         mt_trades_dict = self.connector.historic_trades
-        trades_by_magic = mt_to_db_format(mt_trades_dict, self.connector.account_info['balance'])
         account_id = self.connector.account_info['number']
+        trades_by_magic = mt_to_db_format(mt_trades_dict, self.connector.account_info['balance'], account_id)
         #print(' ****** MT TRADES ****** ')
         #print('Magics of the trades retrieved:', trades_by_magic.keys())
 
@@ -147,7 +150,7 @@ class read_and_save_trades():
             if num_trades_added > 0:
                 #print('For magic', magic, 'added', num_trades_added, 'trades')
                 with open('../crontab.log', 'a') as f:
-                        f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
+                        f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' AccountId: ' + str(account_id) + '; Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
         register_mt_trades_update(account_id)
         print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
@@ -159,8 +162,9 @@ def run_update_from_mt():
         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Starting update from MT4\n')
 
     username = getenv('DEFAULT_USERNAME')
-    account_id, account_name, mt_directories = db.users.get_users_accounts(username)
-    for mt_directory in mt_directories:
+    accounts = db.users.get_users_accounts(username)
+    for account_id, account_name, mt_directory in accounts:
+        print('Saving trades for account:', account_id, account_name)
         processor = read_and_save_trades(getenv('MT_INSTANCES_DIR') + mt_directory + '/MQL4/Files')
         while processor.connector.ACTIVE:
             sleep(1)
