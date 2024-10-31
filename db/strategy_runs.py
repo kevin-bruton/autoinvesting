@@ -28,6 +28,11 @@ def get_strategyrunid (strategy_id: str, account_id: str) -> int:
     return result['strategyRunId']
   return None
 
+def get_strategyruns_tf_symbol (strategyId, accountId):
+  sql = '''SELECT timeframes, symbol FROM StrategyRuns WHERE strategyId = ? AND accountId = ?'''
+  result = query_one(sql, (strategyId, accountId,))
+  return result['timeframes'], result['symbol']
+
 def get_strategyrunid_backtest (strategy_id: str) -> int:
   return get_strategyrun_id(strategy_id, 'backtest')
 

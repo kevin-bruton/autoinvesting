@@ -1,6 +1,6 @@
 from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
-from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
+from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, get_strategyruns_tf_symbol, save_strategyrun
 from fast.random_name import get_random_name
 from db.strategies import Strategy, get_active_strategyruns, save_strategy, \
   decommission_strategy as decom_strategy, reactivate_strategy as react_strategy
@@ -78,6 +78,7 @@ def log(txt):
 def get_strategy_detail (strategyId, accountId):
   normalized_position_size = 1
   live_trades = normalize_position_sizes(get_strategys_live_trades(strategyId, accountId), normalized_position_size)
+  timeframe, symbol = get_strategyruns_tf_symbol(strategyId, accountId)
   live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
   backtest_trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId, up_until_date=live_start), normalized_position_size)
   oos_start = get_strategys_oos_start(strategyId)
@@ -90,7 +91,7 @@ def get_strategy_detail (strategyId, accountId):
   live = {'strategyRunId': strategyRunId, 'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': live_trades}
   capital, start_date, end_date, metrics = get_performance_metrics(combined_trades)
   combined = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': combined_trades}
-  return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start}
+  return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start, 'timeframe': timeframe, 'symbol': symbol}
 
 def get_strategies_summary (accountId):
   position_sizes_normalized = 1

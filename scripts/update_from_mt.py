@@ -158,12 +158,12 @@ def run_update_from_mt():
     with open('logs/update_from_mt.log', 'a') as f:
         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' Starting update from MT4\n')
 
-    metatrader_files_dir = getenv('MT_DEMO_FILES_DIR')
-    #print('Metatrader files directory:', metatrader_files_dir)
-    processor = read_and_save_trades(metatrader_files_dir)
-
-    while processor.connector.ACTIVE:
-        sleep(1)
+    username = getenv('DEFAULT_USERNAME')
+    account_id, account_name, mt_directories = db.users.get_users_accounts(username)
+    for mt_directory in mt_directories:
+        processor = read_and_save_trades(getenv('MT_INSTANCES_DIR') + mt_directory + '/MQL4/Files')
+        while processor.connector.ACTIVE:
+            sleep(1)
 
 if __name__ == '__main__':
     run_update_from_mt()
