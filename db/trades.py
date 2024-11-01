@@ -93,7 +93,7 @@ def get_strategys_backtest_trades (strategyId, up_until_date=None):
       SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
       FROM Trades
       INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
-      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest' AND closeTime < ?
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId IS NULL AND closeTime < ?
       ORDER BY closeTime
     '''
     trades = query_many(sql, (strategyId, up_until_date,))
@@ -102,7 +102,7 @@ def get_strategys_backtest_trades (strategyId, up_until_date=None):
         SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
         FROM Trades
         INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
-        WHERE StrategyRuns.strategyId = ? AND StrategyRuns.type = 'backtest'
+        WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId IS NULL
         ORDER BY closeTime
       '''
     trades = query_many(sql, (strategyId,))

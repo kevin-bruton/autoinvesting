@@ -81,9 +81,9 @@ def get_strategy_detail (strategyId, accountId):
   live_trades = normalize_position_sizes(get_strategys_live_trades(strategyId, accountId), normalized_position_size)
   timeframe, symbol = get_strategy_tf_symbol(strategyId)
   live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
-  backtest_trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId, up_until_date=live_start), normalized_position_size)
+  backtest_trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId), normalized_position_size)
   oos_start = get_strategys_oos_start(strategyId)
-  combined_trades = backtest_trades + live_trades
+  combined_trades = [t for t in backtest_trades if t['closeTime'] < live_start] + live_trades
   capital, start_date, end_date, metrics = get_performance_metrics(backtest_trades)
   strategyRunId = get_strategyrunid_backtest(strategyId)
   backtest = {'strategyRunId': strategyRunId, 'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': backtest_trades}

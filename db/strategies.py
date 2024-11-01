@@ -28,7 +28,7 @@ def get_strategy_tf_symbol (strategyId):
       SELECT timeframe, symbol FROM Strategies
       WHERE strategyId = ?'''
   result = query_one(sql, (strategyId,))
-  return result['timeframes'], result['symbol']
+  return result['timeframe'], result['symbol']
 
 
 def save_strategy (strategy: Strategy) -> int:

@@ -32,7 +32,11 @@ def get_strategyrunid (strategy_id: str, account_id: str) -> int:
   return None
 
 def get_strategyrunid_backtest (strategy_id: str) -> int:
-  return get_strategyrun_id(strategy_id, 'backtest')
+  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId IS NULL"
+  result = query_one(sql, (strategy_id,))
+  if result and 'strategyRunId' in result.keys():
+    return result['strategyRunId']
+  return None
 
 def create_strategyrun (strategyId: str, accountId: str) -> int:
   sql = "INSERT INTO StrategyRuns (strategyId, accountId) VALUES (?, ?)"
