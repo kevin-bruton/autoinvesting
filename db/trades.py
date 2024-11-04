@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from collections import namedtuple
 from db.common import mutate_many, mutate_one, query_many, query_one, datetime_fmt, values_placeholder
+from db.strategy_runs import create_strategyrun, get_strategyrunid_backtest
 from fast.utils import normalize_position_sizes
 
 trade_fields = 'orderId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, strategyRunId, closeType, comment, sl, tp, swap, commission'
@@ -67,16 +68,31 @@ def get_strategys_demo_trades (strategyId):
   '''
   return query_many(sql, (strategyId,))
 
-def get_strategys_live_trades (strategyId, accountId):
-  sql = '''
-    SELECT orderId, accountId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
-    FROM Trades
-    INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
-    WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId = ?
-    ORDER BY closeTime
-  '''
-  trades = query_many(sql, (strategyId, accountId,))
-  return trades
+def get_strategys_live_trades (strategyId, accountId, from_date=None):
+  if from_date:
+    sql = '''
+      SELECT orderId, accountId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+      FROM Trades
+      INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId = ? AND closeTime >= ?
+      ORDER BY closeTime
+    '''
+    trades = query_many(sql, (strategyId, accountId, from_date,))
+  else:
+    sql = '''
+      SELECT orderId, accountId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+      FROM Trades
+      INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId = ?
+      ORDER BY closeTime
+    '''
+    trades = query_many(sql, (strategyId, accountId,))
+  return [
+      {**dict(trade), 
+       'openTime': datetime.strptime(trade['openTime'], '%Y-%m-%d %H:%M:%S'), 
+       'closeTime': datetime.strptime(trade['closeTime'], '%Y-%m-%d %H:%M:%S')}
+      for trade in trades
+    ]
 
 def get_strategys_oos_start (strategyId):
   sql = '''
@@ -87,7 +103,7 @@ def get_strategys_oos_start (strategyId):
   result = query_one(sql, (strategyId,))
   return result['oosStart'] if result and 'oosStart' in result.keys() else None
 
-def get_strategys_backtest_trades (strategyId, up_until_date=None):
+def get_strategys_backtest_trades (strategyId, up_until_date=None, from_date=None):
   if up_until_date:
     sql = '''
       SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
@@ -97,28 +113,57 @@ def get_strategys_backtest_trades (strategyId, up_until_date=None):
       ORDER BY closeTime
     '''
     trades = query_many(sql, (strategyId, up_until_date,))
+  elif from_date:
+    sql = '''
+      SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+      FROM Trades
+      INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
+      WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId IS NULL AND closeTime >= ?
+      ORDER BY closeTime
+    '''
+    trades = query_many(sql, (strategyId, from_date,))
   else:
     sql = '''
-        SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment
+        SELECT orderId, orderType, openTime, closeTime, openPrice, closePrice, size, profit, closeType, comment, Trades.strategyRunId
         FROM Trades
         INNER JOIN StrategyRuns ON Trades.strategyRunId = StrategyRuns.strategyRunId
         WHERE StrategyRuns.strategyId = ? AND StrategyRuns.accountId IS NULL
         ORDER BY closeTime
       '''
     trades = query_many(sql, (strategyId,))
-  return trades
+  return [
+    {**dict(trade), 
+      'openTime': datetime.strptime(trade['openTime'], '%Y-%m-%d %H:%M:%S'), 
+      'closeTime': datetime.strptime(trade['closeTime'], '%Y-%m-%d %H:%M:%S')}
+    for trade in trades
+  ]
 
 def get_strategys_combined_trades (strategyId, accountId):
   live_trades = get_strategys_live_trades(strategyId, accountId)
-  live_start = (datetime.strptime('%Y-%m-%d', live_trades[0]['closeTime'][:10]) - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
+  live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
   backtest_trades = get_strategys_backtest_trades(strategyId, up_until_date=live_start)
   backtest_trades = normalize_position_sizes(backtest_trades, live_trades[0]['size'])
   backtest_trades.extend(live_trades)
-  return [dict(t) for t in trades]
+  return backtest_trades
 
 def save_trade (trade: Trade):
   sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
   return mutate_one(sql, trade)
+
+def save_backtest_trades(strategy_id, headers: list[str], trades: list[list[str|int|float]]):
+  #trade_fields = 'orderId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, strategyRunId, closeType, comment, sl, tp, swap, commission'
+  strategy_run_id = get_strategyrunid_backtest(strategy_id)
+  if not strategy_run_id:
+    create_strategyrun(strategy_id, None)
+  else:
+    # delete existing trades
+    sql = 'DELETE FROM Trades WHERE strategyRunId = ?'
+    num_deleted = mutate_one(sql, (strategy_run_id,))
+    print('Number of old backtest trades deleted:', num_deleted)
+  for trade in trades:
+    trade[10] = strategy_run_id
+  sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
+  return mutate_many(sql, trades)
 
 def update_trade_magic (orderId, magic):
   sql = 'UPDATE Trades SET magic = ? WHERE orderId = ?'

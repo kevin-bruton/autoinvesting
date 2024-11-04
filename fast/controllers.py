@@ -92,7 +92,16 @@ def get_strategy_detail (strategyId, accountId):
   live = {'strategyRunId': strategyRunId, 'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': live_trades}
   capital, start_date, end_date, metrics = get_performance_metrics(combined_trades)
   combined = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'positionSize': live_trades[0]['size'], 'metrics': metrics, 'trades': combined_trades}
-  return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start, 'timeframe': timeframe, 'symbol': symbol}
+  return {'backtest': backtest, 'live': live, 'combined': combined, 'oosStart': oos_start, 'timeframe': timeframe, 'symbol': symbol, 'strategyId': strategyId}
+
+def get_strategyrun_metrics (strategyId, accountId, from_date):
+  normalized_position_size = 1
+  if accountId:
+    trades = normalize_position_sizes(get_strategys_live_trades(strategyId, accountId, from_date), normalized_position_size)
+  else:
+    trades = normalize_position_sizes(get_strategys_backtest_trades(strategyId, from_date), normalized_position_size)
+  capital, start_date, end_date, metrics = get_performance_metrics(trades)
+  return {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics}
 
 def get_strategies_summary (accountId):
   position_sizes_normalized = 1

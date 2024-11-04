@@ -2,15 +2,18 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from db.query import dbQuery
-from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades
+from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, save_backtest_trades
 from db.updates import get_last_mt_trades_update
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
-from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary
+from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategyrun_metrics
 from mc.log_analysis.read_logs import process_last_logentries
 
 async def handle_query (user, query_name, values):
   match query_name:
+    case 'save_backtest_trades':
+      strategy_id, headers, trades = values
+      return save_backtest_trades(strategy_id, headers, trades)
     case 'get_users_accounts':
       account_ids = get_users_accounts(user['username'])
       return account_ids
@@ -62,6 +65,9 @@ async def handle_query (user, query_name, values):
         'SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId = ?',
         [strategy_id, account_id]
       )
+    case 'get_strategyrun_metrics':
+      strategy_id, account_id, from_date = values
+      return get_strategyrun_metrics(strategy_id, account_id, from_date)
     case 'save_mc_latest_orders':
       print('save_mc_latest_orders: ', values)
       loop = asyncio.get_event_loop()
