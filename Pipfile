@@ -14,10 +14,10 @@ winwifi = "*"
 ib-insync = "*"
 cryptography = "*"
 ipython = "*"
-metatrader5 = "*"
 numpy = "<2.0"
 ipykernel = "*"
 sse-starlette = "*"
+metatrader5 = "*"
 
 [dev-packages]
 ipykernel = "*"
