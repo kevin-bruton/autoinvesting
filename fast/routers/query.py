@@ -27,4 +27,4 @@ async def query_request(request: Request):
   except Exception as e:
     print('Error executing query', query_name, ': ', e)
     print(traceback.format_exc())
-    return {'success': False }
+    return {'success': False, 'error': repr(e) }

@@ -32,3 +32,20 @@ def update_order_status (orderId, status):
 def delete_order (order_id):
   sql = 'DELETE From Orders WHERE orderId = ?'
   return mutate_many(sql, (order_id,))
+
+def save_mc_pasted_orders (headers, orders):
+  sql = '''
+      INSERT INTO McPastedOrders (generatedTime,filledTime,instrument,orderName,type,category,action,qtyFilled,stopPrice,limitPrice,filledPrice,account,orderId,strategyName)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    '''
+  # verify order data
+  for order in orders:
+    if len(order) != len(headers):
+      raise ValueError(f'Invalid order data. Expected {len(headers)} fields, got {len(order)} fields')
+  for order in orders:
+    mutate_one(sql, tuple(order))
+  return True
+
+def get_mc_raw_orders (account_id):
+  sql = 'SELECT * FROM McPastedOrders WHERE account = ?'
+  return query_many(sql, (account_id,))

@@ -3,6 +3,7 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from db.query import dbQuery
 from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, save_backtest_trades
+from db.orders import get_mc_raw_orders, save_mc_pasted_orders
 from db.updates import get_last_mt_trades_update
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
@@ -68,8 +69,14 @@ async def handle_query (user, query_name, values):
     case 'get_strategyrun_metrics':
       strategy_id, account_id, from_date = values
       return get_strategyrun_metrics(strategy_id, account_id, from_date)
-    case 'save_mc_latest_orders':
-      print('save_mc_latest_orders: ', values)
+    case 'save_mc_pasted_orders':
+      headers, orders = values
+      return save_mc_pasted_orders(headers, orders)
+    case 'get_mc_raw_orders':
+      account_id = values[0]
+      return get_mc_raw_orders(account_id)
+    case 'save_mc_log_orders':
+      print('save_mc_log_orders: ', values)
       loop = asyncio.get_event_loop()
       with ThreadPoolExecutor() as pool:
         await loop.run_in_executor(pool, process_last_logentries)

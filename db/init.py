@@ -134,6 +134,25 @@ def init_db():
       );
       ''')
     c.execute('''
+      CREATE TABLE IF NOT EXISTS McPastedOrders (
+          orderId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          generatedTime TEXT,
+          filledTime TEXT,
+          instrument TEXT,
+          orderName TEXT,
+          type TEXT,
+          category TEXT,
+          action TEXT,
+          qtyFilled TEXT,
+          stopPrice REAL,
+          limitPrice REAL,
+          filledPrice REAL,
+          account TEXT,
+          strategyName TEXT,
+          status TEXT DEFAULT 'not_processed' CHECK(status in ('not_processed', 'processed', 'discarded'))
+        );
+      ''')
+    c.execute('''
       CREATE TABLE IF NOT EXISTS McStrategyRefs (
           strategyRef INT NOT NULL PRIMARY KEY,
           chartSymbol,
