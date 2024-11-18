@@ -1,13 +1,14 @@
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from db.futures import get_symbol_info
 from db.query import dbQuery
 from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades, save_backtest_trades
 from db.orders import get_mc_raw_orders, save_mc_pasted_orders
 from db.updates import get_last_mt_trades_update
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
-from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategyrun_metrics
+from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategyrun_metrics, save_mc_trades
 from mc.log_analysis.read_logs import process_last_logentries
 
 async def handle_query (user, query_name, values):
@@ -75,6 +76,12 @@ async def handle_query (user, query_name, values):
     case 'get_mc_raw_orders':
       account_id = values[0]
       return get_mc_raw_orders(account_id)
+    case 'get_symbol_info':
+      symbol, account_id = values
+      return get_symbol_info(symbol, account_id)
+    case 'save_mc_trades':
+      strategy_id, symbol, account_id, trades, processed_order_ids = values
+      return save_mc_trades(strategy_id, symbol, account_id, trades, processed_order_ids)
     case 'save_mc_log_orders':
       print('save_mc_log_orders: ', values)
       loop = asyncio.get_event_loop()

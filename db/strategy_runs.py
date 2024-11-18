@@ -31,7 +31,7 @@ def get_strategyrunid (strategy_id: str, account_id: str) -> int:
   return None
 
 def get_strategyrunid_backtest (strategy_id: str) -> int:
-  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId IS NULL"
+  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId = 'sqx_bkt_original'"
   result = query_one(sql, (strategy_id,))
   if result and 'strategyRunId' in result.keys():
     return result['strategyRunId']

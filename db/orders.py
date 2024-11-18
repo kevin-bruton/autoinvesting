@@ -47,5 +47,17 @@ def save_mc_pasted_orders (headers, orders):
   return True
 
 def get_mc_raw_orders (account_id):
-  sql = 'SELECT * FROM McPastedOrders WHERE account = ?'
-  return query_many(sql, (account_id,))
+  sql = 'SELECT * FROM McPastedOrders WHERE account = ? AND status = "not_processed"'
+  results = query_many(sql, (account_id,))
+  transformed = []
+  for r in results:
+    r = dict(r)
+    r['filledPrice'] = float(r['filledPrice'].replace(',', '')) if r['filledPrice'] else None
+    r['stopPrice'] = float(r['stopPrice'].replace(',', '')) if r['stopPrice'] else None
+    r['limitPrice'] = float(r['limitPrice'].replace(',', '')) if r['limitPrice'] else None
+    transformed.append(r)
+  return transformed
+
+def set_order_as_processed (order_id):
+  sql = 'UPDATE McPastedOrders SET status = "processed" WHERE orderId = ?'
+  return mutate_one(sql, (order_id,))

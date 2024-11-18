@@ -29,9 +29,9 @@ def init_db():
     c.execute('''
       CREATE TABLE IF NOT EXISTS Accounts (
         accountId VARCHAR(55) NOT NULL,
-        accountType VARCHAR(55) CHECK(accountType IN ('paper', 'live')),
+        accountType VARCHAR(55) CHECK(accountType IN ('paper', 'live', 'backtest')),
         broker VARCHAR(55),
-        platform VARCHAR(55) CHECK(platform in ('MetaTrader', 'Multicharts')),
+        platform VARCHAR(55) CHECK(platform in ('MetaTrader', 'Multicharts', 'SQX')),
         platformDir VARCHAR(255),
         username VARCHAR(55) NOT NULL,
         balance FLOAT(9),
@@ -60,7 +60,7 @@ def init_db():
       CREATE TABLE IF NOT EXISTS StrategyRuns (
           strategyRunId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
           strategyId VARCHAR(255) NOT NULL,
-          accountId VARCHAR(255),
+          accountId VARCHAR(255) NOT NULL,
           startDate TIMESTAMP,
           endDate TIMESTAMP,
           startingBalance REAL,
@@ -143,14 +143,34 @@ def init_db():
           type TEXT,
           category TEXT,
           action TEXT,
-          qtyFilled TEXT,
-          stopPrice REAL,
-          limitPrice REAL,
-          filledPrice REAL,
+          qtyFilled INTEGER,
+          stopPrice FLOAT,
+          limitPrice FLOAT,
+          filledPrice FLOAT,
           account TEXT,
           strategyName TEXT,
           status TEXT DEFAULT 'not_processed' CHECK(status in ('not_processed', 'processed', 'discarded'))
         );
+      ''')
+    c.execute('''
+      CREATE TABLE IF NOT EXISTS FuturesSymbols (
+          symbol TEXT NOT NULL PRIMARY KEY,
+          name TEXT,
+          exchange TEXT,
+          currency TEXT,
+          tickSize REAL,
+          priceScale REAL,
+          minMovement INT,
+          bigPointValue REAL
+      );
+      ''')
+    c.execute('''
+      CREATE TABLE IF NOT EXISTS FuturesCommissions (
+          id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          symbol TEXT,
+          broker TEXT,
+          roundtrip REAL
+      );
       ''')
     c.execute('''
       CREATE TABLE IF NOT EXISTS McStrategyRefs (

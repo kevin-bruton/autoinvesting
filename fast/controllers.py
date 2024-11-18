@@ -1,5 +1,6 @@
 from os import getenv, listdir, mkdir, path, remove
 from shutil import copy2
+from db.orders import set_order_as_processed
 from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
 from db.strategies import get_strategy_tf_symbol
 from fast.random_name import get_random_name
@@ -55,7 +56,7 @@ def save_new_strategies (upload_folder):
       ]
       start_date = trades[0].openTime
       end_date = trades[-1].closeTime
-      backtestStrategyRun = StrategyRun(strategyId, None, symbol, timeframe, 'backtest', start_date, end_date)
+      backtestStrategyRun = StrategyRun(strategyId, 'sqx_bkt_original', symbol, timeframe, 'backtest', start_date, end_date)
       save_strategyrun(backtestStrategyRun)
       for trade in trades:
         strategyRunId = get_strategyrun_id(strategyId, 'backtest')
@@ -221,3 +222,35 @@ def apply_position_sizing (account_id, pos_sizes):
   # Build and create template files
   templates_folder = getenv('MT_INSTANCES_DIR') + get_mt_instance_dir_name(account_id) + '/MQL4/Files/EaTemplates/'
   create_mt_templates(mt_files_account_ea_folder, templates_folder)
+
+def save_mc_trades (strat_id, symbol, account_id, trades, processed_order_ids):
+  strategy_id = strat_id.strip('.').strip('#')
+  strategyrunid = get_strategyrunid(strategy_id, account_id)
+  print('Saving trades. StrategyId:', strategy_id, 'Symbol:', symbol, 'Account:', account_id, 'StrategyRunId:', strategyrunid)
+  if not strategyrunid:
+    raise Exception('No strategyrunid found for strategy', strategy_id, 'and account', account_id)
+  for t in trades:
+    order_id = f"{t['orderId']}_{strategyrunid}"
+    trade = (
+      order_id,
+      symbol,
+      t['orderType'],
+      t['entryTime'], # openTime
+      t['exitTime'], # closeTime
+      t['entryPrice'], # openPrice
+      t['exitPrice'], # closePrice
+      t['size'],
+      t['profit'],
+      None, # balance
+      strategyrunid,
+      t['closeType'],
+      None, # comment
+      None, # sl
+      None, # tp
+      None, # swap
+      t['commission']
+    )
+    save_trade(trade)
+  
+  for processed_order_id in processed_order_ids:
+    set_order_as_processed(processed_order_id)
