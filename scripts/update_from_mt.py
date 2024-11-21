@@ -171,9 +171,15 @@ def run_update_from_mt():
         if not getenv('MT_INSTANCES_DIR'):
             print('Error: Cannot update from MT: MT_INSTANCES_DIR not set in .env')
             break
-        processor = read_and_save_trades(getenv('MT_INSTANCES_DIR') + mt_directory + '/MQL4/Files')
+        try:
+            processor = read_and_save_trades(getenv('MT_INSTANCES_DIR') + mt_directory + '/MQL4/Files')
+        except Exception as e:
+            print('Error updating from MT:', repr(e))
         while processor.connector.ACTIVE:
             sleep(1)
 
 if __name__ == '__main__':
-    run_update_from_mt()
+    try:
+        run_update_from_mt()
+    except Exception as e:
+        print('Error updating from MT:', repr(e))
