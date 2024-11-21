@@ -165,6 +165,12 @@ def run_update_from_mt():
     accounts = db.users.get_users_accounts(username)
     for account_id, account_name, mt_directory in accounts:
         print('Saving trades for account:', account_id, account_name)
+        if not mt_directory:
+            print('Error: Cannot update from MT: No MT directory for account', account_id)
+            break
+        if not getenv('MT_INSTANCES_DIR'):
+            print('Error: Cannot update from MT: MT_INSTANCES_DIR not set in .env')
+            break
         processor = read_and_save_trades(getenv('MT_INSTANCES_DIR') + mt_directory + '/MQL4/Files')
         while processor.connector.ACTIVE:
             sleep(1)
