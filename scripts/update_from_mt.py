@@ -163,7 +163,9 @@ def run_update_from_mt():
 
     username = getenv('DEFAULT_USERNAME')
     accounts = db.users.get_users_accounts(username)
-    for account_id, account_name, mt_directory in accounts:
+    for account_id, account_name, platform, mt_directory in accounts:
+        if platform != 'MetaTrader':
+            continue
         print('Saving trades for account:', account_id, account_name)
         if not mt_directory:
             print('Error: Cannot update from MT: No MT directory for account', account_id)
