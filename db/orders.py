@@ -39,12 +39,18 @@ def save_mc_pasted_orders (headers, orders):
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     '''
   # verify order data
+  orders_saved = len(orders)
   for order in orders:
     if len(order) != len(headers):
       raise ValueError(f'Invalid order data. Expected {len(headers)} fields, got {len(order)} fields')
   for order in orders:
-    mutate_one(sql, tuple(order))
-  return True
+    try:
+      mutate_one(sql, tuple(order))
+    except Exception as e:
+      if 'UNIQUE constraint failed' in str(e):
+        orders_saved -= 1
+        continue
+  return { 'ordersSaved': orders_saved, 'totalOrders': len(orders) }
 
 def get_mc_raw_orders (account_id):
   sql = 'SELECT * FROM McPastedOrders WHERE account = ? AND status = "not_processed"'
