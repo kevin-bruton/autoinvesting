@@ -109,6 +109,7 @@ def get_strategies_summary (accountId):
   strategy_runs = get_active_strategyruns(accountId)
   strategy_runs = [dict(s) for s in strategy_runs]
   for strategy_run in strategy_runs:
+    print('Strategy run:', strategy_run)
     trades = normalize_position_sizes(get_strategys_live_trades(strategy_run['strategyId'], accountId), position_sizes_normalized)
     if trades:
       startingBalance, startDate, endDate, metrics = get_performance_metrics(trades)
