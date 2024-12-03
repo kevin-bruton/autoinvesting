@@ -236,8 +236,8 @@ def save_mc_trades (strat_id, symbol, account_id, trades, processed_order_ids):
       order_id,
       symbol,
       t['orderType'],
-      t['entryTime'], # openTime
-      t['exitTime'], # closeTime
+      t['entryTime'][:19], # openTime
+      t['exitTime'][:19], # closeTime
       t['entryPrice'], # openPrice
       t['exitPrice'], # closePrice
       t['size'],
