@@ -89,8 +89,8 @@ def get_strategys_live_trades (strategyId, accountId, from_date=None):
     trades = query_many(sql, (strategyId, accountId,))
   return [
       {**dict(trade), 
-       'openTime': datetime.strptime(trade['openTime'], '%Y-%m-%d %H:%M:%S'), 
-       'closeTime': datetime.strptime(trade['closeTime'], '%Y-%m-%d %H:%M:%S')}
+       'openTime': datetime.strptime(trade['openTime'][:19], '%Y-%m-%d %H:%M:%S'), 
+       'closeTime': datetime.strptime(trade['closeTime'][:19], '%Y-%m-%d %H:%M:%S')}
       for trade in trades
     ]
 
