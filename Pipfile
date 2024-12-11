@@ -18,6 +18,8 @@ numpy = "<2.0"
 ipykernel = "*"
 sse-starlette = "*"
 metatrader5 = "*"
+pywinauto = "*"
+pyqt5 = "*"
 
 [dev-packages]
 ipykernel = "*"
