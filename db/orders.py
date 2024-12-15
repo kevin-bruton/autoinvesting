@@ -42,7 +42,7 @@ def save_mc_pasted_orders (headers, orders):
   orders_saved = len(orders)
   for order in orders:
     if len(order) != len(headers):
-      raise ValueError(f'Invalid order data. Expected {len(headers)} fields, got {len(order)} fields')
+      raise ValueError(f'Invalid order data. Expected {len(headers)} fields, got {len(order)} fields. Expected: {headers}')
   for order in orders:
     try:
       mutate_one(sql, tuple(order))
