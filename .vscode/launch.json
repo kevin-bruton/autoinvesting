@@ -11,7 +11,7 @@
       "program": "run.py",
       "console": "integratedTerminal",
       "args": [
-        "update_from_mt"
+        "wifi_connection"
       ]
     },
     {
@@ -22,7 +22,7 @@
       "args": [
         "fast.api_routes:app",
         "--host",
-        "localhost",
+        "autoinvesting.local",
         "--port",
         "8000",
         "--log-level",
