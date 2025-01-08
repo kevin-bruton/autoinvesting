@@ -141,8 +141,10 @@ def get_portfolio_evaluation (data_type, account_id, strategy_ids):
   trades = normalize_position_sizes(trades)
   capital, start_date, end_date, metrics = get_performance_metrics(trades)
   print('Metrics:', metrics)
+  cum_profit = trades[0]['profit'] if len(trades) > 0 else 0
   for index, trade in enumerate(trades):
-    trades[index] = {'closeTime': trade['closeTime'], 'profits': dec2(trade['balance'] - capital)}
+    cum_profit += trade['profit']
+    trades[index] = {'closeTime': trade['closeTime'], 'profits': dec2(cum_profit)}
   df = pd.DataFrame(trades)
   #df = df[['closeTime', 'profit']]
   df = df.groupby(by=pd.Grouper(key='closeTime', freq='W')).last(skipna=True).ffill()
