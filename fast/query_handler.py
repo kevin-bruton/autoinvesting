@@ -10,6 +10,7 @@ from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
 from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategyrun_metrics, save_mc_trades
 from mc.log_analysis.read_logs import process_last_logentries
+from fast.monte_carlo import run_monte_carlo
 
 async def handle_query (user, query_name, values):
   match query_name:
@@ -82,6 +83,9 @@ async def handle_query (user, query_name, values):
     case 'save_mc_trades':
       strategy_id, symbol, account_id, trades, processed_order_ids = values
       return save_mc_trades(strategy_id, symbol, account_id, trades, processed_order_ids)
+    case 'run_monte_carlo':
+      balance, position_size, strategy_id, run_type, account_id, pct_trades, pct_confidence, num_simulations = values
+      return run_monte_carlo(balance, position_size, strategy_id, run_type, account_id, pct_trades, pct_confidence, num_simulations)
     case 'save_mc_log_orders':
       print('save_mc_log_orders: ', values)
       loop = asyncio.get_event_loop()
