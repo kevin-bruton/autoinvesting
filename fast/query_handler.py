@@ -8,7 +8,7 @@ from db.orders import get_mc_raw_orders, save_mc_pasted_orders
 from db.updates import get_last_mt_trades_update
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
-from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategyrun_metrics, save_mc_trades
+from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategies_metrics, get_strategyrun_metrics, save_mc_trades
 from mc.log_analysis.read_logs import process_last_logentries
 from fast.monte_carlo import run_monte_carlo
 
@@ -37,6 +37,10 @@ async def handle_query (user, query_name, values):
       return get_last_mt_trades_update (account_id)
     case 'get_strategies_summary':
       return get_strategies_summary(accountId=values[0])
+    case 'get_strategies_metrics':
+      print('Got strategy metrics query')
+      account_id, run_type, strategy_ids = values
+      return get_strategies_metrics(account_id, run_type, strategy_ids)
     case 'get_strategy_combined_trades':
       strategyId, accountId = values
       trades = get_strategys_combined_trades(strategyId, accountId)

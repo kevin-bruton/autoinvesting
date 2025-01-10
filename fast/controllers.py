@@ -124,6 +124,19 @@ def get_strategies_summary (accountId):
       strategy_run['metrics'] = {}
   return strategy_runs
 
+def get_strategies_metrics (account_id, run_type, strategy_ids):
+  strategy_metrics = {}
+  for strategy_id in strategy_ids:
+    if run_type == 'backtest':
+      trades = get_strategys_backtest_trades(strategy_id)
+    elif run_type == 'live':
+      trades = get_strategys_live_trades(strategy_id, account_id)
+    elif run_type == 'combined':
+      trades = get_strategys_combined_trades(strategy_id, account_id)
+    capital, start_date, end_date, metrics = get_performance_metrics(trades)
+    strategy_metrics[strategy_id] = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics}
+  return strategy_metrics
+
 def get_portfolio_evaluation (data_type, account_id, strategy_ids):
   trades = []
   for strategy_id in strategy_ids:
@@ -223,8 +236,9 @@ def apply_position_sizing (account_id, pos_sizes):
       f.write(new_content)
   
   # Build and create template files
-  templates_folder = getenv('MT_INSTANCES_DIR') + get_mt_instance_dir_name(account_id) + '/MQL4/Files/EaTemplates/'
-  create_mt_templates(mt_files_account_ea_folder, templates_folder)
+  # templates_folder = getenv('MT_INSTANCES_DIR') + get_mt_instance_dir_name(account_id) + '/MQL4/Files/EaTemplates/'
+  # create_mt_templates(mt_files_account_ea_folder, templates_folder)
+  create_mt_templates(get_mt_instance_dir_name(account_id))
 
 def save_mc_trades (strat_id, symbol, account_id, trades, processed_order_ids):
   strategy_id = strat_id.strip('.').strip('#')

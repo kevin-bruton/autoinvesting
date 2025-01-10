@@ -140,6 +140,8 @@ def get_strategys_backtest_trades (strategyId, up_until_date=None, from_date=Non
 
 def get_strategys_combined_trades (strategyId, accountId):
   live_trades = get_strategys_live_trades(strategyId, accountId)
+  if len(live_trades) == 0:
+    return get_strategys_backtest_trades(strategyId)
   live_start = (live_trades[0]['closeTime'] - timedelta(days=1)) if live_trades else datetime.now().strftime('%Y-%m-%d')
   backtest_trades = get_strategys_backtest_trades(strategyId, up_until_date=live_start)
   backtest_trades = normalize_position_sizes(backtest_trades, live_trades[0]['size'])
