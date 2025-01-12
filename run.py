@@ -13,6 +13,7 @@ from scripts.update_from_ib import update_from_ib
 from scripts.encrypt_text import do_decrypt, do_encrypt
 from scripts.create_templates import create_mt_templates
 from mc.log_analysis.read_logs import process_last_logentries as update_from_mc
+from mc.automation.titan_workspaces import create_mc_workspaces
 
 if platform.system() == 'Windows':
     from scripts.wifi_connector import check_connection
@@ -38,6 +39,7 @@ if __name__ == '__main__':
         'update_from_ib': update_from_ib,
         'update_from_mc': update_from_mc,
         'create_mt_templates': create_mt_templates,
+        'create_mc_workspaces': create_mc_workspaces,
         'import_strategies': import_strategies,
         'encrypt': do_encrypt,
         'decrypt': do_decrypt,
