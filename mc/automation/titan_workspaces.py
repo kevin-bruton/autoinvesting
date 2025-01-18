@@ -7,6 +7,9 @@ from pywinauto.application import Application
 from pywinauto.keyboard import send_keys
 from pywinauto import mouse
 
+multicharts_exec_file = r'C:/Multicharts/MultiCharts64.exe'
+titan_portfolio_file_path = 'mc/automation/titan_portfolio_2025.01.10.txt'
+
 Chart = namedtuple('Chart', ['symbol', 'strategy_name', 'timeframes', 'num_contracts'])
 
 class Multicharts:
@@ -25,14 +28,14 @@ class Multicharts:
     self.app.top_window().set_focus()
     send_keys('{INSERT}')  # Ctrl+T
     time.sleep(1)
-    mc.select_data_source(data_source)
-    mc.select_instrument(instrument)
-    mc.select_settings_tab(timeframes[0], tf_unit, days_back)
+    self.select_data_source(data_source)
+    self.select_instrument(instrument)
+    self.select_settings_tab(timeframes[0], tf_unit, days_back)
 
     if len(timeframes) > 1:
       send_keys('{F5}')
       time.sleep(1)
-      mc.select_settings_tab(timeframes[1], tf_unit, days_back)
+      self.select_settings_tab(timeframes[1], tf_unit, days_back)
 
   def print_control_ids(self):
     self.app.top_window().print_control_identifiers()
@@ -144,55 +147,59 @@ class Multicharts:
     
     time.sleep(1)
     
-    
-charts_defn = []
-print('Load Titan Portfolio into Multicharts')
-print('Requirements:')
-print(' - Chart symbols must be added (the continuous contracts)')
-print(' - Strategies must be compiled and available')
-print(' - Strategy names must be of the format {symbol}_{sub_cat}_{origin}_{num_id}_{root_symbol}_{timeframe}[_{timeframe_data2}]')
-print('     eg. CL_TOP_UA_195_CL_15_1440 or EC_TOP_UA_196_EC_5')
+def create_mc_workspaces():
+  charts_defn = []
+  print('Load Titan Portfolio into Multicharts')
+  print('Requirements:')
+  print(' - Chart symbols must be added (the continuous contracts)')
+  print(' - Strategies must be compiled and available')
+  print(' - Strategy names must be of the format {symbol}_{sub_cat}_{origin}_{num_id}_{root_symbol}_{timeframe}[_{timeframe_data2}]')
+  print(' - The number of contracts must be the first input of each strategy to be added')
+  print('     eg. CL_TOP_UA_195_CL_15_1440 or EC_TOP_UA_196_EC_5')
 
-print('\nReading Titan Portfolio from file "titan_portfolio.txt"...')
-count = 0
-with open('mc/automation/titan_portfolio.txt', 'r') as f:
-  for line in f:
-    count += 1
-    #if count > 1: continue
-    parts = line.split('\t')
-    if len(parts) == 3:
-        symbol = '@' + parts[1][:2]
-        strategy_name = parts[1][3:]
-        timeframes =  strategy_name.split('_')[4:6]
-        num_contracts = parts[2].split('(')[0].strip()
-        charts_defn.append(Chart(symbol, strategy_name, timeframes, num_contracts))
-""" 
-print("\nPaste here your Titan Portfolio. Leave a empty line at the end:")
-while True:
-    line = input()
-    if line == '':
-        break
-    parts = line.split('\t')
-    if len(parts) == 3:
-        symbol = parts[1][:2]
-        strategy_name = parts[1][3:]
-        timeframes =  strategy_name.split('_')[4:6]
-        num_contracts = parts[2].split('(')[0].strip()
-    charts_defn.append(Chart(symbol, strategy_name, timeframes, num_contracts))
- """
-print('Got these chart definitions:')
-for chart_def in charts_defn:
-  print(chart_def)
+  print(f'\nReading Titan Portfolio from file "{titan_portfolio_file_path}"...')
+  count = 0
+  with open(titan_portfolio_file_path, 'r') as f:
+    for line in f:
+      count += 1
+      #if count > 1: continue
+      parts = line.split('\t')
+      if len(parts) >= 3:
+          symbol = '@' + parts[1][:2]
+          strategy_name = parts[1][3:]
+          timeframes =  strategy_name.split('_')[4:6]
+          num_contracts = parts[2].split('(')[0].strip()
+          charts_defn.append(Chart(symbol, strategy_name, timeframes, num_contracts))
+  """ 
+  print("\nPaste here your Titan Portfolio. Leave a empty line at the end:")
+  while True:
+      line = input()
+      if line == '':
+          break
+      parts = line.split('\t')
+      if len(parts) == 3:
+          symbol = parts[1][:2]
+          strategy_name = parts[1][3:]
+          timeframes =  strategy_name.split('_')[4:6]
+          num_contracts = parts[2].split('(')[0].strip()
+      charts_defn.append(Chart(symbol, strategy_name, timeframes, num_contracts))
+  """
+  if len(charts_defn) == 0:
+    print('\nNo charts found in Titan Portfolio!')
+    return
+  print('Got these chart definitions:')
+  for chart_def in charts_defn:
+    print(chart_def)
 
-num_charts_per_workspace = 4
-mc = Multicharts(multicharts_path=r'C:/Multicharts.15r6/MultiCharts64.exe')
-for idx, chart_def in enumerate(charts_defn):
-  if idx%num_charts_per_workspace == 0:
-    mc.open_new_workspace()
-  mc.new_chart(data_source='TradeStation', instrument=chart_def.symbol, timeframes=chart_def.timeframes, tf_unit='Minute', days_back='90')
-  mc.insert_signal(chart_def.strategy_name, num_contracts=chart_def.num_contracts)
-  print('Done!')
-  time.sleep(3)
+  num_charts_per_workspace = 4
+  mc = Multicharts(multicharts_path=multicharts_exec_file)
+  for idx, chart_def in enumerate(charts_defn):
+    if idx%num_charts_per_workspace == 0:
+      mc.open_new_workspace()
+    mc.new_chart(data_source='TradeStation', instrument=chart_def.symbol, timeframes=chart_def.timeframes, tf_unit='Minute', days_back='90')
+    mc.insert_signal(chart_def.strategy_name, num_contracts=chart_def.num_contracts)
+    print('Done!')
+    time.sleep(3)
 
 
 #mc.print_control_ids()
