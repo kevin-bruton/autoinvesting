@@ -1,5 +1,6 @@
 import random
 from db.trades import get_strategys_backtest_trades, get_strategys_combined_trades, get_strategys_live_trades
+from fast.utils import normalize_position_sizes
 
 
 def run_monte_carlo (balance, position_size, strategy_id, run_type, account_id, pct_trades, pct_confidence, num_simulations):
@@ -11,6 +12,7 @@ def run_monte_carlo (balance, position_size, strategy_id, run_type, account_id, 
   else:
     trades = get_strategys_combined_trades(strategy_id, account_id)
   
+  trades = normalize_position_sizes(trades, position_size)
   simulations = []
   for i in range(num_simulations):
     # print('running simulation: ', i)
@@ -106,7 +108,8 @@ def get_strategy_metrics(account_balance, size, trades):
     account_balance = float(account_balance)
     
     size_multiplier = size / trades[0]['size']
-    trades = [{**t, 'profit': t['profit'] * size_multiplier} for t in trades]
+    if size_multiplier != 1:
+        trades = [{**t, 'profit': t['profit'] * size_multiplier} for t in trades]
     
     profits = [t['profit'] for t in trades]
     start_date = trades[0]['openTime'] - timedelta(days=1)
@@ -187,7 +190,7 @@ def get_mc_metrics(simulations, pct_confidence):
 def get_confidence_value(simulations, percentile, metric_name):
     sort_order = {
         'annualPctRet': lambda x: sorted(x),
-        'maxPctDD': lambda x: sorted(x, reverse=True),
+        'maxPctDD': lambda x: sorted(x),
         'profitFactor': lambda x: sorted(x),
         'stagnation': lambda x: sorted(x, reverse=True),
         'ulcerNumber': lambda x: sorted(x, reverse=True)
