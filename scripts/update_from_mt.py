@@ -153,7 +153,7 @@ class read_and_save_trades():
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' AccountId: ' + str(account_id) + '; Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
         register_mt_trades_update(account_id)
-        print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
+        print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': --> Update from MT. Number of trades added: ' + str(num_trades_added) + '; Already existing: ' + str(already_existing_trades))
 
         self.connector.ACTIVE = False
 
@@ -166,7 +166,7 @@ def run_update_from_mt():
     for account_id, account_name, platform, mt_directory in accounts:
         if platform != 'MetaTrader':
             continue
-        print('Saving trades for account:', account_id, account_name)
+        print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Saving trades for account:', account_id, account_name)
         if not mt_directory:
             print('Error: Cannot update from MT: No MT directory for account', account_id)
             break

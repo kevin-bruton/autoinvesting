@@ -50,6 +50,7 @@ def _connect_to_wifi(ssid):
   return _test_connection()
 
 def check_connection():
+  #print(datetime.now(), 'Checking wifi connection...')
   last_wifi_change, last_status = _get_last_wifi_status()
   current_wifi = _get_wifi_connected_to()
   if last_status != current_wifi:

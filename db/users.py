@@ -13,7 +13,7 @@ def get_users () -> list[User]:
   return query_many(sql)
 
 def get_users_accounts (username: str) -> list[str]:
-  sql = 'SELECT accountId, name, platform, platformDir FROM Accounts WHERE username = ?'
+  sql = 'SELECT accountId, name, platform, platformDir FROM Accounts WHERE username = ? AND platformDir IS NOT NULL'
   return query_many(sql, (username,))
 
 def save_user (user:User) -> int:
