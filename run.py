@@ -1,5 +1,7 @@
 
 from dotenv import load_dotenv
+from scripts.insert_trades_from_csvs import insert_trades_from_csvs
+from scripts.all_trades_to_file_backup import save_all_trades_to_file
 
 load_dotenv()
 import sys
@@ -43,7 +45,9 @@ if __name__ == '__main__':
         'import_strategies': import_strategies,
         'encrypt': do_encrypt,
         'decrypt': do_decrypt,
-        'wifi_connection': check_connection if platform.system() == 'Windows' else lambda: print('winwifi connection not supported on this platform')
+        'wifi_connection': check_connection if platform.system() == 'Windows' else lambda: print('winwifi connection not supported on this platform'),
+        'save_all_trades_to_file': save_all_trades_to_file,
+        'insert_trades_from_csvs': insert_trades_from_csvs
     }
 
     if len(sys.argv) < 2:

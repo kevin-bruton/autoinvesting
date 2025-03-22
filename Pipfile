@@ -4,7 +4,6 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-python-dotenv = "*"
 quantstats = "*"
 pyjwt = "*"
 fastapi = "*"
@@ -20,8 +19,9 @@ sse-starlette = "*"
 metatrader5 = "*"
 pywinauto = "*"
 pyqt5 = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.13"
+python_version = "3.12"

@@ -14,6 +14,10 @@ def get_trade_strategyrun_id(strategyId, runType):
     return result['strategyRunId']
   return None
 
+def get_strategyrunid_trades (strategy_run_id):
+  sql = 'SELECT * FROM Trades WHERE strategyRunId = ?'
+  return query_many(sql, (strategy_run_id,))
+
 def get_trades ():
   sql = f'SELECT {trade_fields} FROM Trades'
   trades = query_many(sql)
@@ -151,6 +155,11 @@ def get_strategys_combined_trades (strategyId, accountId):
 def save_trade (trade: Trade):
   sql = f"INSERT INTO Trades ({trade_fields}) VALUES ({values_placeholder(trade_fields)})"
   return mutate_one(sql, trade)
+
+# Function to check if a trade already exists in the database
+def trade_exists(order_id):
+  sql = 'SELECT 1 FROM trades WHERE orderId = ?'
+  return query_one(sql, (order_id,)) is not None
 
 def save_backtest_trades(strategy_id, headers: list[str], trades: list[list[str|int|float]]):
   #trade_fields = 'orderId, symbol, orderType, openTime, closeTime, openPrice, closePrice, size, profit, balance, strategyRunId, closeType, comment, sl, tp, swap, commission'

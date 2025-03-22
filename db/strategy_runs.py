@@ -23,6 +23,10 @@ def get_strategyrun_id (strategyId: str, runType: str) -> int:
     return result['strategyRunId']
   return None
 
+def get_strategyrunids (strategyId: str) -> list[int]:
+  sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ?"
+  return [r['strategyRunId'] for r in query_many(sql, (strategyId,))]
+
 def get_strategyrunid (strategy_id: str, account_id: str) -> int:
   sql = "SELECT strategyRunId FROM StrategyRuns WHERE strategyId = ? AND accountId = ?"
   result = query_one(sql, (strategy_id, account_id))
