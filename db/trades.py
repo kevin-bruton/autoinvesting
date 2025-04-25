@@ -14,6 +14,10 @@ def get_trade_strategyrun_id(strategyId, runType):
     return result['strategyRunId']
   return None
 
+def get_strategyrunid_trades (strategy_run_id):
+  sql = 'SELECT * FROM Trades WHERE strategyRunId = ?'
+  return query_many(sql, (strategy_run_id,))
+
 def get_trades ():
   sql = f'SELECT {trade_fields} FROM Trades'
   trades = query_many(sql)

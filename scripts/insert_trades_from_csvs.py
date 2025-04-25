@@ -2,8 +2,6 @@ import os
 import csv
 from db.trades import save_trade, trade_exists, Trade
 
-from db.trades import trade_exists
-
 # Directory containing the CSV files
 data_dir = './data'
 
@@ -20,10 +18,12 @@ def insert_trades_from_csvs():
         reader = csv.DictReader(csvfile)
         for row in reader:
           order_id = row['orderId']
+          trade_details = str(row)
           trade = Trade(**row)
           if not trade_exists(order_id):
             #save_trade()
             print(f"Saved trade: {row}")
             save_trade(trade)
             trades_saved += 1
+            print(f"Saved trade: {trade_details}")
       print(f"Saved {trades_saved} trades from {filename}")

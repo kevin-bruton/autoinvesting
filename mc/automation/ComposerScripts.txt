@@ -1,0 +1,1855 @@
+_OHLCMulti5
+
+
+// _OHLCMulti5()
+// Transforms past prices in Session-OHCL-Prices for the last 5 sessions plus the actual session
+// Inputs: Start and end time of session
+//         Ref array for returning caculated values
+// Written by Michael Bruns; Copyright by Andrea Unger and Michael Bruns
+
+input: StartTime(numericsimple), EndTimeParameter(numericsimple), ohlcValues[X](NumericArrayRef);
+
+vars: 	actO(0), actH(0), actL(0), actC(0), actDayIdx(0), EndTime0(0),t0(0), retIdx(0), lastCurrentBar(-1);
+vars: isBarTimeEndTime(True), oneDaySession(true), inSessionTime(false),isStartOfSession(false);
+vars: splitBrokenSessions(True); // if true a session is split in two, if a) in a oneDaySession the day changes b) in a twoDaySession a missing day is in session
+vars: isBrokenSession(false), timeStarted(false), timeNotEnded(false), prevTimeLessSTime(false);
+vars: EndTime(EndTimeParameter);
+vars: dayRef(0),valRef(0),Counter(0);
+vars: overrideWithOldMode(False);
+vars: dayShift(0);
+array: pastdays[4, 20](0); // max 20 days back
+
+if BarType > 1 then RaiseRuntimeError("Function just makes sense on intraday bars");
+{if (StartTime = EndTime) then begin 
+	EndTime = EndTime-1;
+	if (EndTime = -1) then EndTime = 2359;
+	if (Mod(EndTime,100) = 99) then EndTime = EndTime - 40;
+end;}
+
+oneDaySession = StartTime < EndTime; // if it's not a oneDaySession(e.g. 8 till 20 o'clock), it's a twoDaySession(e.g. 17 till 1659 o'clock)
+
+if actO=0 then begin // init prices on first time
+	actO = O; actH = H; actL = L; actC = C;
+end;
+
+if(isBarTimeEndTime) then begin
+	timeStarted = t > StartTime;	timeNotEnded = t <= EndTime;	prevTimeLessSTime = t[1] <= StartTime;
+end else begin
+	timeStarted = t >= StartTime;	timeNotEnded = t < EndTime;	prevTimeLessSTime = t[1] < StartTime;
+end;
+
+// old mode (mixture of barEndtime and barStarttime logic)
+if(overrideWithOldMode) then begin
+	timeStarted = t >= StartTime;	timeNotEnded = t <= EndTime;	prevTimeLessSTime = t[1] < StartTime;
+end;
+
+if (oneDaySession) then begin
+	inSessionTime = timeStarted And timeNotEnded;
+end else begin // session goes over 2 days becaus EndTime <= StartTime
+	inSessionTime = timeStarted Or timeNotEnded;
+end;
+isStartOfSession = inSessionTime And timeStarted And prevTimeLessSTime;
+
+if (not oneDaySession) then begin // if 2 day session and previous day had no prices for it
+	isStartOfSession = isStartOfSession Or (inSessionTime And d<>d[1] And prevTimeLessSTime);
+end;
+
+// A session is split in two, if a) in a oneDaySession the day changes b) in a twoDaySession a missing day occours in session
+if (oneDaySession) then begin
+	isStartOfSession = isStartOfSession Or (inSessionTime And d<>d[1]);
+end else begin
+	isStartOfSession = isStartOfSession Or (inSessionTime And d>CalcDate(d[1],1));
+end;
+
+
+pastdays[1, actDayIdx]=actO; pastdays[2, actDayIdx]=actH; pastdays[3, actDayIdx]=actL; pastdays[4, actDayIdx]=actC;
+
+// update high-low-close of the day
+if inSessionTime then begin
+	actL = minlist(actL, L); actH = maxlist(actH, H); actC = C;
+end;
+
+// resets on session start
+if (isStartOfSession) then begin
+	actO = O; actH = H; actL = L; actC = C;
+	actDayIdx = mod(actDayIdx+1,20); // move pointer to next day slot
+	isBrokenSession = false;
+end;
+
+// fill return values
+ohlcValues[0] = actO; ohlcValues[1] = actH; ohlcValues[2] = actL; ohlcValues[3] = actC;
+for dayRef=1 to 5 Begin
+	retIdx = mod(20+actDayIdx-dayRef+(5*dayShift),20);
+	for valRef=1 to 4 Begin
+		ohlcValues[4*dayRef+valRef-1] = pastdays[valRef,retIdx];
+	end;
+end;
+
+_OHLCMulti5 = isStartOfSession;
+
+
+
+
+CLTrendDevelop
+
+
+input: MyPtnLY(41),MyPtnSY(41),MyPtnLN(42),MyPtnSN(42);
+input: MyStartLETrade(0), MyEndLETrade(0), MyStartLPause(1200), MyEndLPause(1100);
+input: MyStartSETrade(0), MyEndSETrade(0), MyStartSPause(1200), MyEndSPause(1100);
+input: MyStop(1500),MyProfit(0), MyLXTime(1545), MySXTime(1645);
+
+vars: LETimeWindow(false), SETimeWindow(false);
+
+if MyStartLETrade>MyEndLETrade then LETimeWindow = t>MyStartLETrade or t<MyEndLETrade
+else LETimeWindow = t>MyStartLETrade and t<MyEndLETrade;
+
+if MyStartSETrade>MyEndSETrade then SETimeWindow = t>MyStartSETrade or t<MyEndSETrade
+else SETimeWindow = t>MyStartSETrade and t<MyEndSETrade;
+
+if LETimeWindow and (t<MyStartLPause or t>MyEndLPause) and ptnbasesa(myptnly) and ptnbasesa(myptnln)=false
+then buy next bar highs(0) stop;
+
+if SETimeWindow and (t<MyStartSPause or t>MyEndSPause) and ptnbasesa(myptnsy) and ptnbasesa(myptnsn)=false
+then sellshort next bar lows(0) stop;
+
+setstopcontract;
+if mystop>0 then setstoploss(mystop);
+if MyProfit>0 then setprofittarget(myprofit);
+
+if t=MyLXTime then sell("EODLX") next bar market;
+if t=MySXTime then buytocover("EODSX") next bar market;
+
+
+
+Develop
+
+
+//Works using 60-minute bars
+Input: MyPtnLY(6), MyPtnSY(4), MyPtnLN(18), MyPtnSN(19);
+Input: MyStartTrade(400), MyEndTrade(1330), MyStartPause(1200), MyEndPause(1100);
+Input: MyStop(0.011), MyProfit(0.035);
+Input: MyNoLongDay(0), MyNoShortDay(0);
+{}
+If Time > MyStartTrade And time < MyEndTrade and (Time < MyStartPause or time > MyEndPause) and ptnbasesa(1) then begin
+	If (PtnBaseSA(MyPtnLY) or PtnBaseSA(39)) and PtnBaseSA(MyPtnLN)=False and dayofweek(date)<>MyNoLongDay then buy next bar at Highd(0) stop;
+	If (PtnBaseSA(MyPtnSY) or PtnBaseSA(39)) and PtnBaseSA(MyPtnSN)=False and dayofweek(date)<>MyNoShortDay then sellshort next bar at lowd(0) stop;
+end;
+Setstopcontract;
+If MyStop > 0 then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+
+DevelopID
+
+
+Input: MyPtnLY(1), MyPtnSY(1), MyPtnLN(35), MyPtnSN(35);
+Input: MyStartTrade(300), MyEndTrade(500), MyStartPause(1200), MyEndPause(1100);
+Input: MyStop(0.0075), MyProfit(0.025);
+
+If Time > MyStartTrade And time < MyEndTrade and (Time < MyStartPause or time > MyEndPause) then begin
+	If PtnBaseSA(MyPtnLY) and PtnBaseSA(MyPtnLN)=False then buy next bar at Highd(0) stop;
+	If PtnBaseSA(MyPtnSY) and PtnBaseSA(MyPtnSN)=False then sellshort next bar at lowd(0) stop;
+end;
+
+Setstopcontract;
+If MyStop > 0 then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+setexitonclose;
+
+
+
+DevelopRev
+
+
+//Works using 30-minute bars
+
+inputs:
+	MyPtnLY(41), MyPtnSY(41),
+	MyPtnLN(42), MyPtnSN(42),
+	MyStartTime(0), duration(48), MyEndTime(2359),
+	DaytoFilter(0),
+	MyStop(0.01), MyProfit(0),
+	Length( 20 ), NumDevs( 2);
+
+variables:
+	UpperBand( 0 ),LowerBand( 0 ), mycount(0) ;
+
+UpperBand = BollingerBand( c, Length, +NumDevs ) ;
+LowerBand = BollingerBand( c, Length, -NumDevs ) ;
+
+if time = MyStartTime then mycount = 0;
+mycount= mycount +1;
+
+{}
+if dayofweek(date) <> DaytoFilter and time > MyStartTime and mycount < duration then begin
+	if C crosses under UpperBand and PtnBaseSA(MyptnSY) and (PtnBaseSA(myptnsn)=false) then Sell Short next bar at market ;
+	if C crosses over LowerBand  and PtnBaseSA(MyptnLY) and (PtnBaseSA(myptnLn)=false) then Buy next bar at market ;
+End;
+
+setstopcontract;
+if MyStop > 0 then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+ESCounter
+
+
+// @ES 15M+1440M exchange time
+input: MyLoss(1100), MyProfit(1750), MyBars(1), starttime(1800), endtime(600);
+vars: tw(false), mylow(0), myhigh(0);
+
+if starttime>endtime then tw = t>starttime or t<endtime;
+if starttime<endtime then tw = t>starttime and t<endtime;
+
+setstopcontract;
+if MyLoss>0 then setstoploss(myloss);
+if MyProfit>0 then setprofittarget(myprofit);
+
+if t=starttime then begin
+	mylow = l data2;
+	myhigh = h data2;
+end;
+
+if l data2=Lowest(l data2,mybars) and tw and c crosses above mylow then buy next bar market;
+//if h data2 = highest(h data2,mybars) and tw and c crosses below myhigh then sellshort next bar market;
+
+//if l data2=Lowest(l data2,mybars) and tw and c crosses above l data2 then buy next bar market;
+//if h data2 = highest(h data2,mybars) and tw and c crosses below h data2 then sellshort next bar market;
+
+
+
+
+FxFader
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC & ADX Calculation begin
+array: ohlcValues[23](0), adxCalcValues[3](0);
+var: adxVal(0), isStartOfSession(false);
+var: sessionStartTimeA(1700), sessionEndTimeA(1600);		//Set here your session Time!
+isStartOfSession = _OHLCMulti5(sessionStartTimeA, sessionEndTimeA, ohlcValues);
+
+var: opend0(0),opend1(0),opend2(0),opend3(0),opend4(0), opend5(0);
+var: highd0(0),highd1(0),highd2(0),highd3(0),highd4(0), highd5(0);
+var: lowd0(0),lowd1(0),lowd2(0),lowd3(0),lowd4(0), lowd5(0);
+var: closed0(0),closed1(0),closed2(0),closed3(0),closed4(0), closed5(0);
+var: body1d(0),range1d(0),body5d(0),range5d(0);
+
+opend0 = ohlcValues[0]; highd0 = ohlcValues[1]; lowd0 = ohlcValues[2]; closed0 = ohlcValues[3];  
+opend1 = ohlcValues[4]; highd1 = ohlcValues[5]; lowd1 = ohlcValues[6]; closed1 = ohlcValues[7];
+opend2 = ohlcValues[8]; highd2 = ohlcValues[9]; lowd2 = ohlcValues[10]; closed2 = ohlcValues[11];  
+opend3 = ohlcValues[12]; highd3 = ohlcValues[13]; lowd3 = ohlcValues[14]; closed3 = ohlcValues[15];
+opend4 = ohlcValues[16]; highd4 = ohlcValues[17]; lowd4 = ohlcValues[18]; closed4 = ohlcValues[19];  
+opend5 = ohlcValues[20]; highd5 = ohlcValues[21]; lowd5 = ohlcValues[22]; closed5 = ohlcValues[23];
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC & ADX Calculation end
+
+//Works on all CME Forex Futures - session 17:00 to 16:00 (Next day) - Chicago Time
+//Display chart exchange
+
+input: MyContracts(1),PtnLY(41), PtnSY(41), PtnLN(42), PtnSN(42);
+input: BegTime(1900), EndTime(1400);
+input: stoploss(0.01), BreakEven(0), TakeProfit(0);
+
+// 0.01 in stoploss means = 100 pips for stoploss
+
+if (Time>=BegTime or Time<EndTime) and (highd1-lowd1)<(highd2-lowd2) then begin
+	if PtnBaseSAFast(PtnLY, ohlcvalues) and PtnBaseSAFast(PtnLN, ohlcvalues)=false and Close crosses over lowd1 then buy("LE") MyContracts contracts next bar market;
+	if PtnBaseSAFast(PtnSY, ohlcvalues) and PtnBaseSAFast(PtnSN, ohlcvalues)=false and Close crosses under highd1 then sellshort("SE") MyContracts contracts next bar market;
+end;
+
+setstopcontract;
+if stoploss>0 then setstoploss(stoploss*bigpointvalue);
+if BreakEven>0 then setbreakeven(BreakEven*bigpointvalue);
+if TakeProfit>0 then setprofittarget(TakeProfit*bigpointvalue);
+
+
+
+
+
+
+iADXOnArray
+
+// iADXOnArray() return type == numeric
+// calculates ADX
+// Inputs: ADXPeriod and actual HLC and previous HLC
+// Ref array for static storage of caculated values
+// Written by Michael Bruns; Copyright by Andrea Unger and Michael Bruns
+
+input: ADXPeriod(numericsimple), curHigh(numericsimple), curLow(numericsimple), curClose(numericsimple), prevHigh(numericsimple), prevLow(numericsimple), prevC(numericsimple), calcValues[X](NumericArrayRef);
+var: pdm(0.0),mdm(0.0),atrVal(0.0),pdmAvg(0.0),mdmAvg(0.0),atrValAvg(0.0),pdi(0.0),mdi(0.0),dx(0.0),adxVal(0.0);
+//lastAdx(0), lastATRAvg(1), lastPDMAvg(2), lastMDMAvg(3);
+
+atrVal = Maxlist(Absvalue(curHigh-curLow), Absvalue(curHigh-prevC));
+atrVal = Maxlist(atrVal, Absvalue(curLow-prevC));
+atrValAvg = calcValues[1] - (calcValues[1]/ADXPeriod) + atrVal;
+
+pdm=curHigh-prevHigh;
+mdm=prevLow-curLow;
+if(pdm<0) then pdm=0; if(mdm<0) then mdm=0;
+
+if(pdm=mdm or atrVal = 0) then begin
+pdm=0; mdm=0;
+end else begin
+if(pdm<mdm) then begin
+pdm=0;
+end else if(mdm<pdm) then mdm=0;
+end;
+pdmAvg = calcValues[2] - (calcValues[2]/ADXPeriod) + pdm;
+mdmAvg = calcValues[3] - (calcValues[3]/ADXPeriod) + mdm;
+
+pdi = (pdmAvg / atrValAvg)*100;
+mdi = (mdmAvg / atrValAvg)*100;
+dx = Absvalue((pdi-mdi)/(pdi+mdi));
+adxVal = (calcValues[0]*(ADXPeriod-1)+dx)/ADXPeriod;
+
+calcValues[1] = atrValAvg; calcValues[2] = pdmAvg; calcValues[3] = mdmAvg; calcValues[0] = adxVal;
+iADXOnArray = calcValues[0];
+
+//Read more: http://skilledacademy.proboards.com/thread/252/crude-oil-intraday-breakout-strategy#ixzz4PY5NXCFg
+
+
+
+
+Identifying Markets
+
+buy next bar high stop;
+sellshort next bar low stop;
+
+
+
+
+IntraToOver
+
+Input: MyPtnLY(41), MyPtnSY(41), MyPtnLN(42), MyPtnSN(42);
+Input: MyStartTrade(0300), MyEndTrade(0500), MyStartPause(1200), MyEndPause(1100);
+Input: MyStop(0.0075), MyProfit(0.025), MycheckGain(0), MycheckTime(1645);
+
+var: ExitID(0);
+
+if Time = MyStartTrade then ExitID = 0;
+
+If Time > MyStartTrade And time < MyEndTrade and (Time < MyStartPause or time > MyEndPause) then begin
+	If PtnBaseSA(MyPtnLY)=True and PtnBaseSA(MyPtnLN)=False then buy next bar at highd(0) stop;
+	If PtnBaseSA(MyPtnSY)=True and PtnBaseSA(MyPtnSN)=False then sellshort next bar at lowd(0) stop;
+end;
+
+Setstopcontract;
+If MyStop > 0 then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+if time = MycheckTime then begin
+	if openpositionprofit > MycheckGain then exitID = 1;
+end;
+
+if ExitID = 0 then setexitonclose;
+
+
+
+
+MyGapFinder
+
+// QGC#C - 5 minutes - exchange time
+
+input: sBeg(2005), sEnd(1600);
+input: MyLoss(2000), MyProfit(0);
+input: MyPtnLY(41), MyPtnSY(41), MyPtnLN(42), MyPtnSN(42), MyExit(1);
+
+var: myHigh(0), myLow(0), myOpen(0), mytimewindow(false);
+
+if time = sBeg then begin
+	myHigh = _daydefinition(0, sbeg, send, high, 2);
+	myLow = _daydefinition(0, sbeg, send, low, 3);
+	myOpen = open;
+end;
+
+if sBeg > sEnd then mytimewindow = (Time>sBeg or time<sEnd);
+if sBeg < sEnd then mytimewindow = (Time>sBeg and time<send);
+
+if mytimewindow and TradesToday(d)=0 then begin
+	if myOpen>myHigh {and ptnbasesa(MyPtnSY) and ptnbasesa(MyPtnSN)=false} then sellshort("SE") next bar myHigh stop;
+	if myOpen<myLow {and ptnbasesa(MyPtnLY) and ptnbasesa(MyPtnLN)=false} then buy("LE") next bar myLow stop;
+end;
+
+setstopcontract;
+if MyLoss>0 then setstoploss(myloss);
+if MyProfit>0 then setprofittarget(myprofit);
+
+if MyExit=1 then setexitonclose;
+
+
+
+
+PatternDirectionalFast
+
+{21.11.2011 Attention: indexes modifies with respect to original by AU 
+15.02.2017 Modified by Andrea Nebiolo under Michael Bruns's suggestion:
+	- specular pattern order
+	- using functions created by Michael Bruns
+	- changed code structure from "else if" to "switch => case:"} 
+
+[LegacyColorValue = true]; 
+
+input: numeropattern(numericsimple), ohlcValues[X](NumericArray);
+
+var: opend0(0),opend1(0),opend2(0),opend3(0),opend4(0), opend5(0);
+var: highd0(0),highd1(0),highd2(0),highd3(0),highd4(0), highd5(0);
+var: lowd0(0),lowd1(0),lowd2(0),lowd3(0),lowd4(0), lowd5(0);
+var: closed0(0),closed1(0),closed2(0),closed3(0),closed4(0), closed5(0);
+var: range1d(0);
+
+opend0 = ohlcValues[0]; highd0 = ohlcValues[1]; lowd0 = ohlcValues[2]; closed0 = ohlcValues[3];  
+opend1 = ohlcValues[4]; highd1 = ohlcValues[5]; lowd1 = ohlcValues[6]; closed1 = ohlcValues[7];
+opend2 = ohlcValues[8]; highd2 = ohlcValues[9]; lowd2 = ohlcValues[10]; closed2 = ohlcValues[11];  
+opend3 = ohlcValues[12]; highd3 = ohlcValues[13]; lowd3 = ohlcValues[14]; closed3 = ohlcValues[15];
+opend4 = ohlcValues[16]; highd4 = ohlcValues[17]; lowd4 = ohlcValues[18]; closed4 = ohlcValues[19];  
+opend5 = ohlcValues[20]; highd5 = ohlcValues[21]; lowd5 = ohlcValues[22]; closed5 = ohlcValues[23];
+
+range1d = (highd1-lowd1);
+
+Switch(numeropattern) Begin
+	case 1: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*0.25);
+	case -1:	 	PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*0.25);
+	case 2: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*0.5);
+	case -2:	 	PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*0.5);
+	case 3: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*0.75);
+	case -3:		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*0.75);
+	case 4: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*1);
+	case -4:		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*1);
+	case 5:	 	PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*1.5);
+	case -5: 		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*1.5);
+	case 6: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*2);
+	case -6: 		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*2);
+	case 7:	 	PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*2.5);
+	case -7: 		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*2.5); 
+	case 8: 		PatternDirectionalFast = (highd0-opend0)> ((highd1-opend1)*3);
+	case -8: 		PatternDirectionalFast = (opend0-lowd0)> ((opend1-lowd1)*3);
+
+	case 9: 		PatternDirectionalFast = (highd0-opend0)< (highd1-opend1);
+	case -9: 		PatternDirectionalFast = (opend0-lowd0)< (opend1-lowd1);
+
+	case 10:	 	PatternDirectionalFast = closed1>closed2 and closed2>closed3 and closed3>closed4;
+	case -10:		PatternDirectionalFast = closed1<closed2 and closed2<closed3 and closed3<closed4;
+	case 11: 		PatternDirectionalFast = closed1>closed2 and closed2>closed3 and closed3>closed4 and closed4>closed5;
+	case -11:		PatternDirectionalFast = closed1<closed2 and closed2<closed3 and closed3<closed4 and closed4<closed5;
+	case 12:		PatternDirectionalFast = highd1>highd2 and lowd1>lowd2;
+	case -12:		PatternDirectionalFast = highd1<highd2 and lowd1<lowd2;
+
+	case 13:	 	PatternDirectionalFast = closed1>closed2;
+	case -13:		PatternDirectionalFast = closed1<closed2;
+	case 14:		PatternDirectionalFast = closed1>opend1;
+	case -14:		PatternDirectionalFast = closed1<opend1;
+
+
+	case 15: 		PatternDirectionalFast = closed1>(closed2+closed2*0.5*0.01);
+	case -15:		PatternDirectionalFast = closed1<(closed2-closed2*0.5*0.01);
+	case 16: 		PatternDirectionalFast = closed1>(closed2+closed2*1  *0.01);
+	case -16:		PatternDirectionalFast = closed1<(closed2-closed2*1  *0.01);
+	case 17: 		PatternDirectionalFast = closed1>(closed2+closed2*1.5*0.01);
+	case -17:		PatternDirectionalFast = closed1<(closed2-closed2*1.5*0.01);
+	case 18:		PatternDirectionalFast = closed1>(closed2+closed2*2  *0.01);
+	case -18:		PatternDirectionalFast = closed1<(closed2-closed2*2  *0.01);
+	case 19:		PatternDirectionalFast = closed1>(closed2+closed2*2.5*0.01);
+	case -19:		PatternDirectionalFast = closed1<(closed2-closed2*2.5*0.01);
+	case 20:		PatternDirectionalFast = closed1>(closed2+closed2*3  *0.01);
+	case -20:		PatternDirectionalFast = closed1<(closed2-closed2*3  *0.01);
+
+
+	case 21:		PatternDirectionalFast = highd0>highd1;
+	case -21:		PatternDirectionalFast = lowd0<lowd1;	
+	case 22:		PatternDirectionalFast = highd0>(highd1+highd1*0.25*0.01);
+	case -22:		PatternDirectionalFast = lowd0<(lowd1-lowd1*0.25*0.01);	
+	case 23:		PatternDirectionalFast = highd0>(highd1+highd1*0.5 *0.01);
+	case -23:		PatternDirectionalFast = lowd0<(lowd1-lowd1*0.5 *0.01);	
+	case 24:		PatternDirectionalFast = highd0>(highd1+highd1*0.75*0.01);
+	case -24:		PatternDirectionalFast = lowd0<(lowd1-lowd1*0.75*0.01);	
+	case 25:		PatternDirectionalFast = highd0>(highd1+highd1*1   *0.01);
+	case -25:		PatternDirectionalFast = lowd0<(lowd1-lowd1*1   *0.01);	
+	case 26:		PatternDirectionalFast = highd0>(highd1+highd1*1.5 *0.01);
+	case -26:		PatternDirectionalFast = lowd0<(lowd1-lowd1*1.5   *0.01);
+	
+	case 27:		PatternDirectionalFast = lowd0>lowd1;
+	case -27:		PatternDirectionalFast = highd0<highd1;
+	
+	case 28:		PatternDirectionalFast = lowd0>(lowd1+lowd1*0.5*0.01);	
+	case -28:		PatternDirectionalFast = highd0<(highd1-highd1*0.5*0.01);
+	case 29:		PatternDirectionalFast = lowd0>(lowd1+lowd1*1  *0.01);	
+	case -29:		PatternDirectionalFast = highd0<(highd1-highd1*1  *0.01);
+	case 30:		PatternDirectionalFast = lowd0>(lowd1+lowd1*1.5*0.01);	
+	case -30:		PatternDirectionalFast = highd0<(highd1-highd1*1.5*0.01);
+	case 31:		PatternDirectionalFast = lowd0>(lowd1+lowd1*2  *0.01);		
+	case -31:		PatternDirectionalFast = highd0<(highd1-highd1*2  *0.01);
+	case 32:		PatternDirectionalFast = lowd0>(lowd1+lowd1*2.5*0.01);	
+	case -32:		PatternDirectionalFast = highd0<(highd1-highd1*2.5*0.01);
+
+	case 33:		PatternDirectionalFast = highd1>highd5;
+	case -33:		PatternDirectionalFast = lowd1<lowd5;	
+	
+	case 34:		PatternDirectionalFast = highd1<highd5;
+	case -34:		PatternDirectionalFast = lowd1>lowd5;
+
+	case 35:		PatternDirectionalFast = highd1> highd2 and highd1> highd3 and highd1> highd4;
+	case -35:		PatternDirectionalFast = lowd1 < lowd2 and lowd1 < lowd3 and lowd1 < lowd4;	
+	case 36:		PatternDirectionalFast = lowd1 > lowd2 and lowd1 > lowd3 and lowd1 > lowd4;
+	case -36:		PatternDirectionalFast = highd1< highd2 and highd1< highd3 and highd1< highd4;
+
+	case 37:		PatternDirectionalFast = closed1>closed2 and closed2>closed3 and opend0>closed1;
+	case -37:		PatternDirectionalFast = closed1<closed2 and closed2<closed3 and opend0<closed1;
+
+	case 38:		PatternDirectionalFast = (highd1-closed1)<0.20*range1d;
+	case -38:		PatternDirectionalFast = (closed1-lowd1)<0.20*range1d;
+
+	case 39:		PatternDirectionalFast = opend0>highd1;
+	case -39:		PatternDirectionalFast = opend0<lowd1;
+	
+	case 40:		PatternDirectionalFast = opend0>(closed1+closed1*0.25*0.01);	 
+	case -40:		PatternDirectionalFast = opend0<(closed1-closed1*0.25*0.01);
+	case 41:		PatternDirectionalFast = opend0>(closed1+closed1*0.5 *0.01);
+	case -41:		PatternDirectionalFast = opend0<(closed1-closed1*0.5 *0.01);
+	case 42:		PatternDirectionalFast = opend0>(closed1+closed1*0.75*0.01);	
+	case -42:		PatternDirectionalFast = opend0<(closed1-closed1*0.75*0.01);
+	case 43:		PatternDirectionalFast = opend0>(closed1+closed1*1   *0.01);	
+	case -43:		PatternDirectionalFast = opend0<(closed1-closed1*1   *0.01);
+
+	case 44:		PatternDirectionalFast = lowd1>lowd2;
+	case -44:		PatternDirectionalFast = highd1<highd2;
+
+	case 45:		PatternDirectionalFast = closed1 > opend1 and  closed2 > opend2;
+	case -45:		PatternDirectionalFast = closed1 < opend1 and  closed2 < opend2;	
+	case 46:		PatternDirectionalFast = closed1 > opend1 and  closed2 < opend2;	
+	case -46:		PatternDirectionalFast = closed1 < opend1 and  closed2 > opend2;
+
+
+	case 47:		PatternDirectionalFast = C>opend0*0.99;
+	case -47:		PatternDirectionalFast = C<opend0*1.01;	
+	case 48:		PatternDirectionalFast = C>opend0*0.995;
+	case -48:		PatternDirectionalFast = C<opend0*1.005;	
+	case 49:		PatternDirectionalFast = C>opend0;
+	case -49:		PatternDirectionalFast = C<opend0;	
+	case 50:		PatternDirectionalFast = C>opend0*1.005;
+	case -50:		PatternDirectionalFast = C<opend0*0.995;	
+	case 51:		PatternDirectionalFast = C>opend0*1.01;
+	case -51:		PatternDirectionalFast = C<opend0*0.99;
+
+	case 52:		PatternDirectionalFast = true;
+	case -52:		PatternDirectionalFast = true;
+	case >52:		PatternDirectionalFast = false;
+	case <-52:		PatternDirectionalFast = false;
+end;
+
+
+
+
+
+PatternFast
+
+{21.11.2011 Attention: indexes modifies with respect to original by AU 
+29.12.2016 Modified by Andrea Nebiolo:
+	- using functions created by Michael Bruns
+	- changed code structure from "else if" to "switch => case:"
+	- corrected and renumbered from Pattern 40 (repeated twice in previous version)
+	- added Patterns 140 to 151} 
+
+[LegacyColorValue = true]; 
+
+input: numeropattern(numericsimple), ohlcValues[X](NumericArray);
+
+var: opend0(0),opend1(0),opend2(0),opend3(0),opend4(0), opend5(0);
+var: highd0(0),highd1(0),highd2(0),highd3(0),highd4(0), highd5(0);
+var: lowd0(0),lowd1(0),lowd2(0),lowd3(0),lowd4(0), lowd5(0);
+var: closed0(0),closed1(0),closed2(0),closed3(0),closed4(0), closed5(0);
+var: body1d(0),range1d(0),body5d(0),range5d(0);
+
+opend0 = ohlcValues[0]; highd0 = ohlcValues[1]; lowd0 = ohlcValues[2]; closed0 = ohlcValues[3];  
+opend1 = ohlcValues[4]; highd1 = ohlcValues[5]; lowd1 = ohlcValues[6]; closed1 = ohlcValues[7];
+opend2 = ohlcValues[8]; highd2 = ohlcValues[9]; lowd2 = ohlcValues[10]; closed2 = ohlcValues[11];  
+opend3 = ohlcValues[12]; highd3 = ohlcValues[13]; lowd3 = ohlcValues[14]; closed3 = ohlcValues[15];
+opend4 = ohlcValues[16]; highd4 = ohlcValues[17]; lowd4 = ohlcValues[18]; closed4 = ohlcValues[19];  
+opend5 = ohlcValues[20]; highd5 = ohlcValues[21]; lowd5 = ohlcValues[22]; closed5 = ohlcValues[23];
+
+body1d = absvalue(opend1-closed1);
+range1d = (highd1-lowd1);
+body5d = absvalue(opend5-closed1);
+range5d = maxlist(highd1, highd2, highd3, highd4, highd5) - minlist(lowd1, lowd2, lowd3, lowd4, lowd5);
+
+
+Switch(numeropattern) Begin
+	case 1: PatternFast  = body1d < 0.1  * range1d;
+	case 2: PatternFast  = body1d < 0.25 * range1d;  
+	case 3: PatternFast  = body1d < 0.5  * range1d ;   
+	case 4: PatternFast  = body1d < 0.75 * range1d  ;
+
+	case 5: PatternFast  = body1d > 0.25 * range1d   ;
+	case 6: PatternFast  = body1d > 0.5  * range1d ;
+	case 7: PatternFast  = body1d > 0.75 * range1d  ;  
+	case 8: PatternFast  = body1d > 0.9  * range1d ;
+
+	case 9: PatternFast  = body5d < 0.1  * (highd5-lowd1)   ;
+	case 10: PatternFast = body5d < 0.25 * (highd5-lowd1)  ;
+	case 11: PatternFast = body5d < 0.5  * (highd5-lowd1)   ; 
+	case 12: PatternFast = body5d < 0.75 * (highd5-lowd1)  ;
+	case 13: PatternFast = body5d < 1    * (highd5-lowd1)   ;
+	case 14: PatternFast = body5d < 1.5  * (highd5-lowd1)  ;
+	case 15: PatternFast = body5d < 2    * (highd5-lowd1)   ;
+
+	case 16: PatternFast = body5d > 0.25 * (highd5-lowd1)   ;
+	case 17: PatternFast = body5d > 0.5  * (highd5-lowd1)  ;
+	case 18: PatternFast = body5d > 0.75 * (highd5-lowd1)   ; 
+	case 19: PatternFast = body5d > 1    * (highd5-lowd1)  ;
+	case 20: PatternFast = body5d > 1.5  * (highd5-lowd1)  ;
+	case 21: PatternFast = body5d > 2    * (highd5-lowd1)  ;
+	case 22: PatternFast = body5d > 2.5  * (highd5-lowd1)   ;
+
+	case 23: PatternFast = body5d < 0.1  * range5d  ;
+	case 24: PatternFast = body5d < 0.25 * range5d ;
+	case 25: PatternFast = body5d < 0.5  * range5d  ;
+	case 26: PatternFast = body5d < 0.75 * range5d   ;
+
+	case 27: PatternFast = body5d > 0.9  * range5d  ;
+	case 28: PatternFast = body5d > 0.25 * range5d  ;
+	case 29: PatternFast = body5d > 0.5  * range5d  ;
+	case 30: PatternFast = body5d > 0.75 * range5d   ;
+
+	case 31: PatternFast = ((highd0-opend0)> ((highd1-opend1)*0.25))  ;
+	case 32: PatternFast = ((highd0-opend0)> ((highd1-opend1)*0.5))   ;
+	case 33: PatternFast = ((highd0-opend0)> ((highd1-opend1)*0.75))   ;
+	case 34: PatternFast = ((highd0-opend0)> ((highd1-opend1)*1))   ;
+	case 35: PatternFast = ((highd0-opend0)> ((highd1-opend1)*1.5))  ;
+	case 36: PatternFast = ((highd0-opend0)> ((highd1-opend1)*2))   ;
+	case 37: PatternFast = ((highd0-opend0)> ((highd1-opend1)*2.5))  ;
+	case 38: PatternFast = ((highd0-opend0)> ((highd1-opend1)*3))   ;
+
+	case 39: PatternFast = ((highd0-opend0)< ((highd1-opend1)))   ;
+	case 40: PatternFast = ((opend0-lowd0)< ((opend1-lowd1))) ;
+
+	case 41: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*0.5))   ;
+	case 42: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*1)) ;
+	case 43: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*1.5));   
+	case 44: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*2)) ;
+	case 45: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*2.5));   
+	case 46: PatternFast = ((opend0-lowd0)> ((opend1-lowd1)*3)) ;
+
+	case 47: PatternFast = closed1>closed2 and closed2>closed3 and closed3>closed4 ;
+	case 48: PatternFast = closed1<closed2 and closed2<closed3 and closed3<closed4;
+	case 49: PatternFast = closed1>closed2 and closed2>closed3 and closed3>closed4 and closed4 > closed5;
+	case 50: PatternFast = closed1<closed2 and closed2<closed3 and closed3<closed4 and closed4<closed5;
+	case 51: PatternFast = highd1>highd2 and lowd1>lowd2;
+	case 52: PatternFast = highd1<highd2 and lowd1<lowd2;
+
+	case 53: PatternFast = ((highd0>(lowd0+lowd0*0.5 *0.01)));
+	case 54: PatternFast = ((highd0>(lowd0+lowd0*0.75*0.01)));
+	case 55: PatternFast = ((highd0>(lowd0+lowd0*1   *0.01)));
+	case 56: PatternFast = ((highd0>(lowd0+lowd0*1.5 *0.01)));
+	case 57: PatternFast = ((highd0>(lowd0+lowd0*2   *0.01)));
+	case 58: PatternFast = ((highd0>(lowd0+lowd0*2.5 *0.01)));	
+	case 59: PatternFast = ((highd0>(lowd0+lowd0*3   *0.01)));
+
+	case 60: PatternFast = ((highd0<(lowd0+lowd0*0.5 *0.01)));
+	case 61: PatternFast = ((highd0<(lowd0+lowd0*0.75*0.01)));
+	case 62: PatternFast = ((highd0<(lowd0+lowd0*1   *0.01)));
+	case 63: PatternFast = ((highd0<(lowd0+lowd0*1.5 *0.01)));
+	case 64: PatternFast = ((highd0<(lowd0+lowd0*2   *0.01)));
+	case 65: PatternFast = ((highd0<(lowd0+lowd0*2.5 *0.01)));
+	case 66: PatternFast = ((highd0<(lowd0+lowd0*3   *0.01)));
+
+	case 67: PatternFast = (closed1>closed2);
+	case 68: PatternFast = (closed1<closed2);
+	case 69: PatternFast = (closed1<opend1);
+	case 70: PatternFast = (closed1>opend1);
+
+	case 71: PatternFast = ((closed1<(closed2-closed2*0.5*0.01)));
+	case 72: PatternFast = ((closed1<(closed2-closed2*1  *0.01)));
+	case 73: PatternFast = ((closed1<(closed2-closed2*1.5*0.01)));
+	case 74: PatternFast = ((closed1<(closed2-closed2*2  *0.01)));
+	case 75: PatternFast = ((closed1<(closed2-closed2*2.5*0.01)));
+	case 76: PatternFast = ((closed1<(closed2-closed2*3  *0.01)));
+
+	case 77: PatternFast = ((closed1>(closed2+closed2*0.5*0.01)));
+	case 78: PatternFast = ((closed1>(closed2+closed2*1  *0.01)));
+	case 79: PatternFast = ((closed1>(closed2+closed2*1.5*0.01)));
+	case 80: PatternFast = ((closed1>(closed2+closed2*2  *0.01)));
+
+	case 81: PatternFast = (highd0>(highd1));
+	case 82: PatternFast = (highd0>(highd1+highd1*0.25*0.01));
+	case 83: PatternFast = (highd0>(highd1+highd1*0.5 *0.01));
+	case 84: PatternFast = (highd0>(highd1+highd1*0.75*0.01));
+	case 85: PatternFast = (highd0>(highd1+highd1*1   *0.01));
+	case 86: PatternFast = (highd0>(highd1+highd1*1.5 *0.01));
+
+	case 87: PatternFast = (highd0<(highd1)); 
+	case 88: PatternFast = (highd0<(highd1-highd1*0.5*0.01));
+	case 89: PatternFast = (highd0<(highd1-highd1*1  *0.01));
+	case 90: PatternFast = (highd0<(highd1-highd1*1.5*0.01));
+	case 91: PatternFast = (highd0<(highd1-highd1*2  *0.01));
+	case 92: PatternFast = (highd0<(highd1-highd1*2.5*0.01));
+
+	case 93: PatternFast = (highd1>highd5);
+	case 94: PatternFast = (highd1<highd5);
+
+	case 95: PatternFast = (lowd0<lowd1);
+	case 96: PatternFast = (lowd0<(lowd1-lowd1*0.25*0.01));
+	case 97: PatternFast = (lowd0<(lowd1-lowd1*0.5 *0.01));
+	case 98: PatternFast = (lowd0<(lowd1-lowd1*0.75*0.01));
+	case 99: PatternFast = (lowd0<(lowd1-lowd1*1   *0.01));
+
+	case 100: PatternFast  = (lowd0>lowd1);
+	case 101: PatternFast = (lowd0>(lowd1+lowd1*0.5*0.01));
+	case 102: PatternFast = (lowd0>(lowd1+lowd1*1  *0.01));
+	case 103: PatternFast = (lowd0>(lowd1+lowd1*1.5*0.01));
+	case 104: PatternFast = (lowd0>(lowd1+lowd1*2  *0.01));
+	case 105: PatternFast = (lowd0>(lowd1+lowd1*2.5*0.01));
+
+	case 106: PatternFast = (lowd1<lowd5);
+	case 107: PatternFast = (lowd1>lowd5);
+
+	case 108: PatternFast = (highd1> highd2) and (highd1> highd3) and (highd1> highd4) ;
+	case 109: PatternFast = (highd1< highd2) and (highd1< highd3) and (highd1< highd4) ;
+	case 110: PatternFast = ((lowd1 < lowd2) and (lowd1 < lowd3) and (lowd1 < lowd4));
+	case 111: PatternFast = ((lowd1 > lowd2) and (lowd1 > lowd3) and (lowd1 > lowd4));
+	case 112: PatternFast = (closed1>closed2 and closed2>closed3 and opend0>closed1);
+	case 113: PatternFast = (closed1<closed2 and closed2<closed3 and opend0<closed1);
+
+	case 114: PatternFast = ((highd1-closed1)<0.20*range1d);
+	case 115: PatternFast = ((closed1-lowd1)<0.20*range1d);
+
+	case 116: PatternFast = (opend0<lowd1 or opend0>highd1);
+	case 117: PatternFast = (opend0<lowd1) ;
+	case 118: PatternFast = (opend0>highd1);
+	 
+	case 119: PatternFast = ((opend0<(closed1-closed1*0.25*0.01)));
+	case 120: PatternFast = ((opend0<(closed1-closed1*0.5 *0.01)));
+	case 121: PatternFast = ((opend0<(closed1-closed1*0.75*0.01)));
+	case 122: PatternFast = ((opend0<(closed1-closed1*1   *0.01)));
+
+	case 123: PatternFast = ((opend0>(closed1+closed1*0.25*0.01)));
+	case 124: PatternFast = ((opend0>(closed1+closed1*0.5 *0.01)));
+	case 125: PatternFast = ((opend0>(closed1+closed1*0.75*0.01)));
+	case 126: PatternFast = ((opend0>(closed1+closed1*1   *0.01)));
+
+	case 127: PatternFast = (highd0<highd1 and lowd0>lowd1);
+	case 128: PatternFast = range1d < (((highd2-lowd2)+(highd3-lowd3))/3);
+	case 129: PatternFast = range1d < (highd2-lowd2) and (highd2-lowd2) < (highd3-lowd3) ;
+	case 130: PatternFast = (highd2>highd1 and lowd2<lowd1);
+	case 131: PatternFast = (highd1<highd2);
+	case 132: PatternFast = (lowd1>lowd2);
+	case 133: PatternFast = (highd1<highd2 or lowd1>lowd2);
+	case 134: PatternFast = (highd2<highd1 and lowd2>lowd1);
+	case 135: PatternFast = (highd0>highd1 and lowd0<lowd1);
+
+	case 136: PatternFast = (closed1 > opend1 and  closed2 > opend2);
+	case 137: PatternFast = (closed1 < opend1 and  closed2 > opend2);
+	case 138: PatternFast = (closed1 > opend1 and  closed2 < opend2);
+	case 139: PatternFast = (closed1 < opend1 and  closed2 < opend2);
+	
+	case 140: PatternFast = (highd1-lowd1)<(highd2-lowd2);
+	case 141: PatternFast = (highd1-lowd1)>(highd2-lowd2);
+
+	case 142: PatternFast = (C>opend0*0.99);
+	case 143: PatternFast = (C>opend0*0.995);
+	case 144: PatternFast = (C>opend0);
+	case 145: PatternFast = (C>opend0*1.005);
+	case 146: PatternFast = (C>opend0*1.01);
+
+	case 147: PatternFast = (C<opend0*1.01);
+	case 148: PatternFast = (C<opend0*1.005);
+	case 149: PatternFast = (C<opend0);
+	case 150: PatternFast = (C<opend0*0.995);
+	case 151: PatternFast = (C<opend0*0.99);
+
+	case 152: PatternFast = true;
+	case >152: PatternFast = false;
+end;
+
+
+
+
+
+
+PatternNeutralFast
+
+{21.11.2011 Attention: indexes modifies with respect to original by AU 
+13.01.2017 Modified by Andrea Nebiolo:
+	- using functions created by Michael Bruns
+	- changed code structure from "else if" to "switch => case:"
+	- only neutral pattern function} 
+
+[LegacyColorValue = true]; 
+
+input: numeropattern(numericsimple), ohlcValues[X](NumericArray);
+
+var: opend0(0),opend1(0),opend2(0),opend3(0),opend4(0), opend5(0);
+var: highd0(0),highd1(0),highd2(0),highd3(0),highd4(0), highd5(0);
+var: lowd0(0),lowd1(0),lowd2(0),lowd3(0),lowd4(0), lowd5(0);
+var: closed0(0),closed1(0),closed2(0),closed3(0),closed4(0), closed5(0);
+var: body1d(0),range1d(0),body5d(0),range5d(0);
+
+opend0 = ohlcValues[0]; highd0 = ohlcValues[1]; lowd0 = ohlcValues[2]; closed0 = ohlcValues[3];  
+opend1 = ohlcValues[4]; highd1 = ohlcValues[5]; lowd1 = ohlcValues[6]; closed1 = ohlcValues[7];
+opend2 = ohlcValues[8]; highd2 = ohlcValues[9]; lowd2 = ohlcValues[10]; closed2 = ohlcValues[11];  
+opend3 = ohlcValues[12]; highd3 = ohlcValues[13]; lowd3 = ohlcValues[14]; closed3 = ohlcValues[15];
+opend4 = ohlcValues[16]; highd4 = ohlcValues[17]; lowd4 = ohlcValues[18]; closed4 = ohlcValues[19];  
+opend5 = ohlcValues[20]; highd5 = ohlcValues[21]; lowd5 = ohlcValues[22]; closed5 = ohlcValues[23];
+
+body1d = absvalue(opend1-closed1);
+range1d = (highd1-lowd1);
+body5d = absvalue(opend5-closed1);
+range5d = maxlist(highd1, highd2, highd3, highd4, highd5) - minlist(lowd1, lowd2, lowd3, lowd4, lowd5);
+
+
+Switch(numeropattern) Begin
+	case 1: PatternNeutralFast  = body1d < 0.1  * range1d;
+	case 2: PatternNeutralFast  = body1d < 0.25 * range1d;  
+	case 3: PatternNeutralFast  = body1d < 0.5  * range1d ;   
+	case 4: PatternNeutralFast  = body1d < 0.75 * range1d  ;
+
+	case 5: PatternNeutralFast  = body1d > 0.25 * range1d   ;
+	case 6: PatternNeutralFast  = body1d > 0.5  * range1d ;
+	case 7: PatternNeutralFast  = body1d > 0.75 * range1d  ;  
+	case 8: PatternNeutralFast  = body1d > 0.9  * range1d ;
+
+	case 9: PatternNeutralFast  = body5d < 0.1  * (highd5-lowd1)   ;
+	case 10: PatternNeutralFast = body5d < 0.25 * (highd5-lowd1)  ;
+	case 11: PatternNeutralFast = body5d < 0.5  * (highd5-lowd1)   ; 
+	case 12: PatternNeutralFast = body5d < 0.75 * (highd5-lowd1)  ;
+	case 13: PatternNeutralFast = body5d < 1    * (highd5-lowd1)   ;
+	case 14: PatternNeutralFast = body5d < 1.5  * (highd5-lowd1)  ;
+	case 15: PatternNeutralFast = body5d < 2    * (highd5-lowd1)   ;
+
+	case 16: PatternNeutralFast = body5d > 0.25 * (highd5-lowd1)   ;
+	case 17: PatternNeutralFast = body5d > 0.5  * (highd5-lowd1)  ;
+	case 18: PatternNeutralFast = body5d > 0.75 * (highd5-lowd1)   ; 
+	case 19: PatternNeutralFast = body5d > 1    * (highd5-lowd1)  ;
+	case 20: PatternNeutralFast = body5d > 1.5  * (highd5-lowd1)  ;
+	case 21: PatternNeutralFast = body5d > 2    * (highd5-lowd1)  ;
+	case 22: PatternNeutralFast = body5d > 2.5  * (highd5-lowd1)   ;
+
+	case 23: PatternNeutralFast = body5d < 0.1  * range5d  ;
+	case 24: PatternNeutralFast = body5d < 0.25 * range5d ;
+	case 25: PatternNeutralFast = body5d < 0.5  * range5d  ;
+	case 26: PatternNeutralFast = body5d < 0.75 * range5d   ;
+
+	case 27: PatternNeutralFast = body5d > 0.9  * range5d  ;
+	case 28: PatternNeutralFast = body5d > 0.25 * range5d  ;
+	case 29: PatternNeutralFast = body5d > 0.5  * range5d  ;
+	case 30: PatternNeutralFast = body5d > 0.75 * range5d   ;
+
+	case 31: PatternNeutralFast = ((highd0>(lowd0+lowd0*0.5 *0.01)));
+	case 32: PatternNeutralFast = ((highd0>(lowd0+lowd0*0.75*0.01)));
+	case 33: PatternNeutralFast = ((highd0>(lowd0+lowd0*1   *0.01)));
+	case 34: PatternNeutralFast = ((highd0>(lowd0+lowd0*1.5 *0.01)));
+	case 35: PatternNeutralFast = ((highd0>(lowd0+lowd0*2   *0.01)));
+	case 36: PatternNeutralFast = ((highd0>(lowd0+lowd0*2.5 *0.01)));	
+	case 37: PatternNeutralFast = ((highd0>(lowd0+lowd0*3   *0.01)));
+
+	case 38: PatternNeutralFast = ((highd0<(lowd0+lowd0*0.5 *0.01)));
+	case 39: PatternNeutralFast = ((highd0<(lowd0+lowd0*0.75*0.01)));
+	case 40: PatternNeutralFast = ((highd0<(lowd0+lowd0*1   *0.01)));
+	case 41: PatternNeutralFast = ((highd0<(lowd0+lowd0*1.5 *0.01)));
+	case 42: PatternNeutralFast = ((highd0<(lowd0+lowd0*2   *0.01)));
+	case 43: PatternNeutralFast = ((highd0<(lowd0+lowd0*2.5 *0.01)));
+	case 44: PatternNeutralFast = ((highd0<(lowd0+lowd0*3   *0.01)));
+
+	case 45: PatternNeutralFast = (opend0<lowd1 or opend0>highd1);
+
+	case 46: PatternNeutralFast = (highd0<highd1 and lowd0>lowd1);
+	case 47: PatternNeutralFast = range1d < (((highd2-lowd2)+(highd3-lowd3))/3);
+	case 48: PatternNeutralFast = range1d < (highd2-lowd2) and (highd2-lowd2) < (highd3-lowd3) ;
+	case 49: PatternNeutralFast = (highd1<highd2 and lowd1>lowd2);
+	
+	case 50: PatternNeutralFast = (highd1<highd2 or lowd1>lowd2);
+	case 51: PatternNeutralFast = (highd1>highd2 and lowd1<lowd2);
+	case 52: PatternNeutralFast = (highd0>highd1 and lowd0<lowd1);
+
+	
+	case 53: PatternNeutralFast = (range1d)<(highd2-lowd2);
+	case 54: PatternNeutralFast = (range1d)>(highd2-lowd2);
+
+
+	case 55: PatternNeutralFast = true;
+	case >55: PatternNeutralFast = false;
+end;
+
+
+
+
+
+
+ProgStopDevelop
+
+[LegacyColorValue = true]; 
+
+input: oraX(1600);
+input: MyGain(2000), MyLoss(1000), MyPtnLY(41), MyPtnSY(41), MyPtnLN(42), MyPtnSN(42);
+input: StopFactor(0), Gainfactor(0);
+
+var: TP(0), SL(0), MP(0), daysintrade(0);
+
+MP = marketposition;
+
+if time = oraX  then begin
+	if  PtnBaseSA(MyPtnLY) and (PtnBaseSA(MyPtnLN) = false) then Buy Next Bar  at high stop;
+	if  PtnBaseSA(MyPtnSY) and (PtnBaseSA(MyPtnSN) = false) then sellshort Next Bar  at Low stop;
+end;
+
+if MP = 0 then begin
+	TP = MyGain;
+	SL = MyLoss;
+end;
+
+if MP<>MP[1] then daysintrade=0;
+if MP<>0 and d>d[1] then daysintrade=daysintrade+1;
+
+if MP<>0 and daysintrade>0 then begin
+       TP = MyGain * (1 - 0.01*Gainfactor*daysintrade);
+       SL = MyLoss * (1 - 0.01*StopFactor*daysintrade);
+end;
+
+setstopcontract;
+if MyLoss>0 {}and marketposition<>0 then setstoploss(SL );
+if MyGain>0 then setprofittarget(TP);
+
+
+
+
+
+
+PtnBaseSA
+
+[LegacyColorValue = true]; 
+
+input: numeropattern(numericsimple);
+var: opend0(0),opend1(0),opend2(0),opend3(0),opend4(0), opend5(0);
+var: highd0(0),highd1(0),highd2(0),highd3(0),highd4(0), highd5(0);
+var: lowd0(0),lowd1(0),lowd2(0),lowd3(0),lowd4(0), lowd5(0);
+var: closed0(0),closed1(0),closed2(0),closed3(0),closed4(0), closed5(0);
+{
+opend0= OpenD(0);
+opend1= OpenD(1);
+opend2= OpenD(2);
+opend3= OpenD(3);
+opend4= OpenD(4);
+opend5= OpenD(5);
+
+highd0= HighD(0);
+highd1= HighD(1);
+highd2= HighD(2);
+highd3= HighD(3);
+highd4= HighD(4);
+highd5= HighD(5);
+
+lowd0= LowD(0);
+lowd1= LowD(1);
+lowd2= LowD(2);
+lowd3= LowD(3);
+lowd4= LowD(4);
+lowd5= LowD(5);
+
+closed0= CloseD(0);
+closed1= CloseD(1);
+closed2= CloseD(2);
+closed3= CloseD(3);
+closed4= CloseD(4);
+closed5= CloseD(5);
+}
+
+opend0= OpenS(0);
+opend1= OpenS(1);
+opend2= OpenS(2);
+opend3= OpenS(3);
+opend4= OpenS(4);
+opend5= OpenS(5);
+
+highd0= HighS(0);
+highd1= HighS(1);
+highd2= HighS(2);
+highd3= HighS(3);
+highd4= HighS(4);
+highd5= HighS(5);
+
+lowd0= LowS(0);
+lowd1= LowS(1);
+lowd2= LowS(2);
+lowd3= LowS(3);
+lowd4= LowS(4);
+lowd5= LowS(5);
+
+closed0= CloseS(0);
+closed1= CloseS(1);
+closed2= CloseS(2);
+closed3= CloseS(3);
+closed4= CloseS(4);
+closed5= CloseS(5);
+
+Switch(numeropattern)
+Begin
+	case 1:
+	PtnBaseSA = absvalue(opend1-closed1)<0.5*(highd1-lowd1)  ;  
+	case 2:
+	PtnBaseSA = absvalue(opend1-closed5)<0.5*(highd5-closed1)  ;  
+	case 3:
+	PtnBaseSA = absvalue(opend5-closed1) <0.5*(maxlist(highd1,highd2,highd3,highd4,highd5) - minlist(lowd1,lowd2,lowd3,lowd4,lowd5))  ;
+	case 4:
+	PtnBaseSA = ((highd0-opend0)> ((highd1-opend1)*1))  ; 
+	case 5:
+	PtnBaseSA = ((highd0-opend0)> ((highd1-opend1)*1.5)) ; 
+	case 6:
+	PtnBaseSA =  ((opend0-lowd0)> ((opend1-lowd1)*1)) ;
+	case 7:
+	PtnBaseSA =  ((opend0-lowd0)> ((opend1-lowd1)*1.5))  ; 
+	case 8:
+	PtnBaseSA =  closed1>closed2 and closed2>closed3 and closed3>closed4; 
+	case 9:
+	PtnBaseSA =  closed1<closed2 and closed2<closed3 and closed3<closed4;
+	case 10:
+	PtnBaseSA =  highd1>highd2 and lowd1>lowd2;
+	case 11:
+	PtnBaseSA =  highd1<highd2 and lowd1<lowd2;
+	case 12:
+	PtnBaseSA = ((highd0>(lowd0+lowd0*0.75/100)));
+	case 13:
+	PtnBaseSA = ((highd0<(lowd0+lowd0*0.75/100)));
+	case 14:
+	PtnBaseSA = (closed1>closed2);
+	case 15:
+	PtnBaseSA = (closed1<closed2);
+	case 16:
+	PtnBaseSA = (closed1<opend1);
+	case 17:
+	PtnBaseSA = (closed1>opend1);
+	case 18:
+	PtnBaseSA = ((closed1<(closed2-closed2*0.5/100)));
+	case 19:
+	PtnBaseSA = ((closed1>(closed2+closed2*0.5/100)));
+	case 20:
+	PtnBaseSA = (highd0>(highd1));
+	case 21:
+	PtnBaseSA = (highd1>highd5);
+	case 22:
+	PtnBaseSA =(lowd0<lowd1);
+	case 23:
+	PtnBaseSA =(lowd1<lowd5);
+	case 24:
+	PtnBaseSA =(highd1> highd2) and (highd1> highd3) and (highd1> highd4); 
+	case 25:
+	PtnBaseSA =(highd1< highd2) and (highd1< highd3) and (highd1< highd4); 
+	case 26:
+	PtnBaseSA =((lowd1 < lowd2) and (lowd1 < lowd3) and (lowd1 < lowd4));
+	case 27:
+	PtnBaseSA =((lowd1 > lowd2) and (lowd1 > lowd3) and (lowd1 > lowd4));
+	case 28:
+	PtnBaseSA =(closed1>closed2 and closed2>closed3 and opend0>closed1);
+	case 29:
+	PtnBaseSA =(closed1<closed2 and closed2<closed3 and opend0<closed1);
+	case 30:
+	PtnBaseSA =((highd1-closed1)<0.20*(highd1-lowd1));
+	case 31:
+	PtnBaseSA =((closed1-lowd1)<0.20*(highd1-lowd1));
+	case 32:
+	PtnBaseSA =(opend0<lowd1 or opend0>highd1);
+	case 33:
+	PtnBaseSA =((opend0<(closed1-closed1*0.5/100)));
+	case 34:
+	PtnBaseSA =((opend0>(closed1+closed1*0.5/100)));
+	case 35:
+	PtnBaseSA =(highd0<highd1 and lowd0>lowd1);
+	case 36:
+	PtnBaseSA =(highd1-lowd1)< (((highd2-lowd2)+ (highd3-lowd3))/3);
+	case 37:
+	PtnBaseSA =(highd1-lowd1)< (highd2-lowd2) and (highd2-lowd2) < (highd3-lowd3); 
+	case 38:
+	PtnBaseSA =(highd2>highd1 and lowd2<lowd1);
+	case 39:
+	PtnBaseSA =(highd1<highd2 or lowd1>lowd2);
+	case 40:
+	PtnBaseSA =(highd2<highd1 and lowd2>lowd1);
+	case 41:
+	PtnBaseSA =true;
+	case 42:
+	PtnBaseSA =false;
+	case is > 42:
+	PtnBaseSA =false;
+end;
+
+
+
+
+
+UA_DivergenceMACDSpotter
+
+//MACD Divergence spotter coded by Andrea Nebiolo
+//Return type: Numeric
+
+inputs:
+	MinBars(NumericSimple), MaxBars(NumericSimple), FastEmaLen(NumericSimple),
+	SlowEmaLen(NumericSimple), SmoothLen(NumericSimple), k_value(NumericRef);
+
+vars: MACD_val(0), MACD_hist(0), k(0);
+
+//MACD and MACD Histogram calculation
+MACD_val = MACD(C, FastEmaLen, SlowEmaLen);
+MACD_hist = MACD_val - XAverage(MACD_val, SmoothLen);
+
+//Divergence check for bars "MinBars" to "MaxBars"
+UA_DivergenceMACD_Spotter = 0;
+for k = MinBars To MaxBars begin
+	//Check if there's a divergence and assign a new output value to the function
+	if MACD_hist<0 and L<L[k] and MACD_hist>MACD_hist[k] and MACD_hist[k]<0 and MACD_hist[k]<=Lowest(MACD_hist,k) 
+		then UA_DivergenceMACD_Spotter = 1
+	else if MACD_hist>0 and H>H[k] and MACD_hist<MACD_hist[k] and MACD_hist[k]>0 and MACD_hist[k]>=Highest(MACD_hist,k) 
+		then UA_DivergenceMACD_Spotter = -1;
+	
+	//stop the "for" cycle when the 1st divergence is spotted
+	if UA_DivergenceMACD_Spotter<>0 then begin
+		k_value = k;
+		break;
+	end;
+end;
+
+
+
+
+
+
+UA_DivergenceRSISpotter
+
+//RSI Divergence spotter coded by Andrea Nebiolo
+//Return type: Numeric
+
+inputs: 
+	MinBars(NumericSimple), MaxBars(NumericSimple), 
+	OverBought(NumericSimple), Len(NumericSimple),
+	k_value(NumericRef);
+
+vars: RSI_val(0), k(0);
+
+RSI_val = RSI(C, Len); //RSI value calculation
+
+//Divergence check for bars "MinBars" to "MaxBars"
+UA_DivergenceRSI_Spotter = 0;
+for k = MinBars To MaxBars begin
+	//Check if there's a divergence and assign a new output value to the function
+	if L<L[k] and RSI_val>RSI_val[k] and RSI_val[k]<=Lowest(RSI_val,k) 
+	and RSI_val[k]<=(100-OverBought) and RSI_val>100-OverBought
+		then UA_DivergenceRSI_Spotter = 1
+	else if H>H[k] and RSI_val<RSI_val[k] and RSI_val[k]>=Highest(RSI_val,k)
+	and RSI_val[k]>=OverBought and RSI_val<OverBought
+		then UA_DivergenceRSI_Spotter = -1;
+	
+	//stop the "for" cycle when the 1st divergence is spotted
+	if UA_DivergenceRSI_Spotter<>0 then begin
+		k_value = k;
+		break;
+	end;
+end;
+
+
+
+
+
+
+UA_BiasExplorer
+
+//Works using 30 minute bars (or other taking the number of daily bars into account)
+inputs:
+	testphase(0),
+	mycounter(0),
+	MyLETime(1000),
+	MyLXTime(200), 
+	MySETime(200),
+	MySXTime(1000),
+	MyPtnLY(41),
+	MyPtnSY(41),
+	MyPtnLN(42),
+	MyPtnSN(42),
+	MyNotLEDay(0),
+	MyNotSEDay(0),
+	MyStop(0),
+	MyProfit(0),
+	entrytype(1),
+	NHigh(1),
+	NLow(1),
+	endlong(130), endshort(930),
+	mycontracts(1);
+input: sessionStartTimeA(1800), sessionEndTimeA(1700);
+variables:
+	mycount(0), entrywindowL(false), entrywindowS(false), OKLOng(false), OKShort(false)  ;
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation begin
+array: ohlcValues[23](0);
+
+var: isStartOfSession(false);
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation end
+
+isStartOfSession = _OHLCMulti5(sessionStartTimeA, sessionStartTimeA, ohlcValues);
+
+if time > time[1] then begin
+	if T[1]<sessionStartTimeA and T>=sessionStartTimeA then begin
+		mycount = 0;
+		OKLOng = false;
+		OKShort = false;
+	end;
+end
+else begin
+	if  T>=sessionStartTimeA then begin
+		mycount = 0;
+		OKLOng = false;
+		OKShort = false;
+	end;
+end;
+mycount= mycount +1;
+
+if testphase = 1 then begin
+
+	if mycounter = mycount then buy next bar at market;
+
+	if marketposition = 1 then sell next bar at market;
+end;
+
+if testphase = 0 then begin  //using inputs discovered during previous routine we now develop
+	
+	if entrytype = 1 then begin //this is the typical entry on time of BIAS
+		if time = MyLETime and PtnBaseSA2(MyPtnLY,ohlcvalues) and (PtnBaseSA2(MyPtnLN,ohlcvalues) = false) 
+		and dayofweek(date) <> MyNotLEDay 
+		then buy("BIASLEMKT") mycontracts contracts next bar at market;
+		if Time = MyLXTime then sell("BIASLX1") next bar at market;
+		if time = MySETime and PtnBaseSA2(MyPtnSY,ohlcvalues) and (PtnBaseSA2(MyPtnSN,ohlcvalues) = false) 
+	 	and dayofweek(date) <> MyNotSEDay 
+	 	then sellshort("BIASSEMKT") mycontracts contracts next bar at market;
+		if time = MySXTime then buytocover("BIASSX1") next bar at market;
+	end;
+	
+	
+	if entrytype > 1 then begin
+		if MyLEtime < endlong then begin
+			if (time  >= MyLETime and time < endlong) then begin
+				entrywindowL = true;
+			end
+			else begin
+				entrywindowL = false;
+			end;
+		end
+		else begin
+			if (time  >= MyLETime or time < endlong) then begin
+				entrywindowL = true;
+			end
+			else begin
+				entrywindowL = false;
+			end;
+		end;
+		if MySETime< endshort then begin
+			if (time  >= MySETime and time < endshort ) then begin;
+				entrywindowS = true;
+			end
+			else begin
+				entrywindowS = false;
+			end;
+		end
+		else begin
+			if (time  >= MySETime or time < endshort ) then begin;
+				entrywindowS = true;
+			end
+			else begin
+				entrywindowS = false;
+			end;
+		end;
+		
+		if time = MyLETime and PtnBaseSA2(MyPtnLY,ohlcvalues) 
+		and (PtnBaseSA2(MyPtnLN,ohlcvalues) = false) 
+		and dayofweek(date) <> MyNotLEDay  then OKLOng = true;
+	
+		If time = MySETime and PtnBaseSA2(MyPtnSY,ohlcvalues) 
+		and (PtnBaseSA2(MyPtnSN,ohlcvalues) = false) 
+	 	and dayofweek(date) <> MyNotSEDay then OKSHort = true;
+	 
+	 	if entrywindowl and marketposition > 0 then oklong = false;
+	 	if entrywindows and marketposition < 0 then oKShort = false;
+	 end;
+
+	if entrytype = 2 then begin //here we look for a breakout entry inside BIAS windows
+		if entrywindowL= true then begin
+			if OKLOng then buy("BIASLESTP") mycontracts contracts next bar at highest(h,Nhigh)stop;
+		end;
+		if time = MyLXTime then sell("BIASLX2") next bar at market;
+		if entrywindowS = true then begin
+			if OKShort then sellshort("BIASSESTP") mycontracts contracts next bar at lowest(l,NLow) stop;
+	 	end;
+		if time = MySXTime then buytocover("BIASSX2") next bar at market;	
+	end;
+
+	if entrytype = 3 then begin //here we look for a retracement entry inside BIAS windows
+		if entrywindowL= true then begin
+			if OKLOng then buy("BIASLELIM") mycontracts contracts next bar at lowest(l,NLow) limit;
+		end;
+		if time = MyLXTime then sell("BIASLX3") next bar at market;
+		if entrywindowS = true then begin
+			if OKShort then sellshort("BIASSELIM") mycontracts contracts next bar at highest(h,Nhigh) limit;
+	 	end;
+		if time = MySXTime then buytocover("BIASSX3") next bar at market;
+	end;
+end;
+
+
+setstopcontract;
+if MyStop > 0   then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+
+
+UABollBandFader
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation begin
+array: ohlcValues[23](0);
+
+var: isStartOfSession(false);
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation end
+input: sessionStartTimeA(1800), sessionEndTimeA(1700);
+input: PtnDirYes(52), PtnNeutYes(55), PtnNeutNo(56); 
+
+isStartOfSession = _OHLCMulti5(sessionStartTimeA, sessionStartTimeA, ohlcValues);
+
+
+inputs:
+	MyPtnLY(41),
+	MyPtnSY(41),
+	MyPtnLN(42),
+	MyPtnSN(42),
+	MyStartTime(0),
+	duration(48),
+	DaytoFilter(0),
+	MyStop(1500),
+	MyProfit(0),
+	Length( 20 ),
+	NumDevs( 2), 
+	MyContracts(1);
+
+variables:
+	UpperBand( 0 ),LowerBand( 0 ), mycount(0) ;
+
+UpperBand = BollingerBand( c, Length, NumDevs ) ;
+LowerBand = BollingerBand( c, Length, -NumDevs ) ;
+
+if time = MyStartTime then mycount = 0;
+mycount= mycount +1;
+
+if dayofweek(date) <> DaytoFilter 
+and time > MyStartTime and mycount < duration
+and PatternNeutralFast(PtnNeutYes,ohlcvalues)
+and (PatternNeutralFast(PtnNeutno,ohlcvalues) = false)
+then begin
+	if C crosses under UpperBand and 
+	PtnBaseSA2(MyPtnSY,ohlcvalues) and PtnBaseSA2(MyPtnSN,ohlcvalues)=false and PatternDirectionalFast(-PtnDirYes,ohlcvalues)
+	then Sell Short MyContracts contracts next bar at market ;
+	if C crosses over LowerBand  and
+	PtnBaseSA2(MyPtnLY,ohlcvalues) and PtnBaseSA2(MyPtnLN,ohlcvalues)=false and PatternDirectionalFast(+PtnDirYes,ohlcvalues)
+	then Buy MyContracts contracts next bar at market ;
+End;
+
+setstopcontract;
+if   MyStop > 0   then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+
+
+UALevelFader
+
+// 15 Minutes time frame Exchange Time
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation begin
+array: ohlcValues[23](0);
+
+
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>	Michael OHLC Calculation end
+
+input: sessionStartTimeA(1600), sessionEndTimeA(1559);
+Input: LevelChoice(1), LevelShift(0),MyTick(0.1);
+input: PtnDirYes(52), PtnNeutYes(55), PtnNeutNo(56); 
+input: PtnLY(41), PtnLN(42), PtnSY(41), PtnSN(42); 
+Input: MyStop(0), MyProfit(0), ID(0);
+inputs: mydayNolong(0), mydayNoshort(0), MyContracts(1);
+input: MyStartTrade(0), MyEndTrade(400), CloseAtTime(2500), sesstest(0);
+var:  endsession(0);
+var: calcstart(0), calcend(0),timewindow(false);
+var: mypivot(0), myR1(0), myS1(0), myR2(0), myS2(0);
+var: MyLETrigger(0), MySETrigger(99999), MyEndTime(0);
+vars: isStartOfSession(false), hDay0(0),lDay0(0),hDay1(0),lDay1(0),cDay1(0),hDay2(0),lDay2(0), closed1(0), oDay0(0), oDay1(0);
+
+//end of session setting////////////////////////
+if sessionEndTimeA >= 2400 then begin
+	endsession = sessionStartTimeA;
+end
+else begin
+	endsession = sessionEndTimeA;
+end;
+////////////////////////////////////////////////
+
+
+// setting of time to close positions on ID trading
+if (time > time[1]) and (Time[1]<endsession and Time>=endsession) then begin
+	MyEndtime = t[2];
+end
+else begin
+if (time < time[1]) and (time >= endsession) then begin
+	MyEndtime = t[2];
+end;
+end;
+
+if CloseAtTime <> 2500 then MyEndTime = CloseAtTime;//only if we want a specific time of the day to close trades
+////////////////////////////////////////////////
+
+// setting of time window depending on a number of conditions
+if sesstest = 0 then begin //during normal test we set them as inputs
+	calcstart = MyStartTrade;
+	calcend = MyEndTrade;
+end
+else begin // with sesstest = 1 we set start and end 2 hours after start and 2 hours before end of session
+	calcstart = sessionStartTimeA + 200; //2 hours after session start
+	if calcstart > 2359 then calcstart = calcstart - 2400;
+	calcend = endsession - 200; //2 hours before session end
+	if calcend < 0 then calcend = calcend + 2400;
+end;
+
+if (calcstart > calcend ) then begin
+	if ((time >= calcstart ) or (time <= calcend )) then begin
+		timewindow = true;
+	end
+	else begin
+		timewindow = false;
+	end;
+end
+else begin
+	if  ((time >= calcstart ) and (time <= calcend )) then begin
+		timewindow = true;
+	end
+	else begin
+		timewindow = false;
+	end;
+End;
+////////////////////////////////////////////////
+
+isStartOfSession = _OHLCMulti5(sessionStartTimeA, endsession, ohlcValues);
+
+
+hDay0 = ohlcValues[1]; lDay0 = ohlcValues[2]; hDay1 = ohlcValues[5]; lDay1 = ohlcValues[6]; cDay1 = ohlcValues[7]; hDay2 = ohlcValues[9]; lDay2 = ohlcValues[10];
+closed1 = ohlcValues[7]; oDay0 = ohlcValues[0]; oDay1 = ohlcValues[4];
+
+
+//levels choice/////////////////////////////////
+
+if isstartofsession then begin//T[1]<sessionStartTimeA and T>=sessionStartTimeA then begin
+    mypivot  = (hDay1+lDay1+cDay1)/3;
+    myR1 = 2*mypivot - lDay1;
+    myS1 = 2*mypivot - hDay1;
+    myR2 = mypivot + (hDay1-lDay1);
+    myS2 = mypivot - (hDay1-lDay1);
+
+end;
+
+if LevelChoice = 1 then begin
+    MySETrigger= myR1 + LevelShift*MyTick;
+    MyLETrigger= myS1- LevelShift*MyTick;
+end;
+
+if LevelChoice = 2 then begin
+    MySETrigger = hDay1 + LevelShift*MyTick;
+    MyLETrigger = lDay1 - LevelShift*MyTick;
+end;
+////////////////////////////////////////////////
+
+
+if  PatternNeutralFast(PtnNeutYes,ohlcvalues) and (PatternNeutralFast(PtnNeutno,ohlcvalues)  =false) and timewindow then begin 
+
+	If dayofweek(date) <> mydayNolong  and
+	PtnBaseSA2(PtnLY,ohlcvalues) and PtnBaseSA2(PtnLN,ohlcvalues)=false and PatternDirectionalFast(+PtnDirYes,ohlcvalues)
+	and  (c[1] < MyLETrigger and 	
+	c > MyLETrigger) then
+    	Buy MyContracts contracts next bar at the market;
+   
+	If dayofweek(date) <> mydayNoshort and 
+	PtnBaseSA2(PtnSY,ohlcvalues) and PtnBaseSA2(PtnSN,ohlcvalues)=false and PatternDirectionalFast(-PtnDirYes,ohlcvalues)
+	and ( c[1] > MySETrigger and 
+	c < MySETrigger ) then
+    	Sellshort MyContracts contracts next bar at the market;
+end;
+
+if ID = 0 then begin
+	if  time =MyEndTime then begin
+		buytocover("EOSessSX") next bar at market;
+		sell("EOSessLX") next bar at market;
+	end;
+end;
+
+Setstopcontract;
+if mystop > 0 then setstoploss(mystop);
+if MyProfit> 0 then Setprofittarget(MyProfit);
+
+
+
+
+
+
+Unger Webinair DAX First Hour
+
+// EasyLanguage (TradeStation) / PowerLanguage (MultiCharts) code
+// basic code to play around with :-)
+
+// DAX, 5min time frame, default settings, exchange time
+
+input: 
+	RangeMultiplier(0.95),
+	BegTime(0900),
+	EndTime(0955),
+	CloseTime(2155),
+	SkipDay(Friday),
+	MyContracts(1);
+
+variables:
+	minSetup(0), maxSetup(0),
+	slLong(0), slShort(0),
+	daily_factor(false);
+
+
+If Date <> Date[1] then begin
+	maxSetup = 0;
+	minSetup = 0;
+
+	daily_factor = absvalue(opend(1)-closed(1))<0.75*(highd(1)-lowd(1));
+end;
+
+If daily_factor and Time >= BegTime and Time <= EndTime and Dayofweek(date) <> SkipDay and EntriesToday(date) = 0 then begin
+
+	If maxSetup = 0 then begin
+		// do once @ BegTime
+		maxSetup = HighD(0) + RangeMultiplier * (HighD(0) - LowD(0));
+		slLong = HighD(0);
+	end;
+
+	Buy("LEx") MyContracts contracts Next Bar at maxSetup stop;
+
+
+	If minSetup = 0 then begin
+		// do once @ BegTime
+		minSetup = LowD(0) - RangeMultiplier * (HighD(0) - LowD(0));
+		slShort = LowD(0);
+	end;
+
+	SellShort("SEx") MyContracts contracts Next Bar at minSetup stop;
+
+end;
+
+Sell("LXx") from entry("LEx") Next Bar at slLong stop;
+BuyToCover("SXx") from entry("SEx") Next Bar at slShort stop;
+
+If Time >= CloseTime then begin
+	Sell("TimeLXx") from entry("LEx") Next Bar market;
+	BuyToCover("TimeSXx") from entry("SEx") Next Bar at market;
+end;
+
+Setstopcontract;
+SetStopLoss(1000);
+SetExitOnClose;
+
+
+
+
+
+
+Unger Webinair FIB Night
+
+// EasyLanguage (TradeStation) / PowerLanguage (MultiCharts) code
+// basic code to play around with :-)
+
+//FTSEMIB Future, Time Frame 5 min data1 and 1440 min Data2, exchange time, default settings
+
+input: MyETime(1730);
+Input: MyXtime(0920);
+input: Mylows(2), myperc(0.5);
+
+var: conditionLow(false);
+var: filtrion(false);
+
+
+conditionLow = low of data2 = lowest(low of data2,mylows);
+filtrion = ((conditionLow and c<l of data2) or (opend(0) < closed(1)*(1-myperc/100)));
+
+
+if time = MyETime and filtrion then buy next bar at market;
+if time = MyXtime then sell next bar at market;
+
+
+
+
+
+
+WeeklyBump
+
+//Works on Weekly bars Gold Future - COMEX
+//Display chart Exchange Time
+
+input MyContracts(1), WF(0.5), Perc(0.5), ran(2), TP(2.5), portionSL(3), ExitEOWMode(0);
+var WeeklyFactor(false), ATR(1), MyRange(1);
+
+Myrange = Range;
+ATR = averagetruerange(maxlist(1,ran));
+WeeklyFactor = absvalue(C-O)WF(MyRange);
+
+if WeeklyFactor and WeeklyFactor[1] then begin
+	if C(L+PercMyRange) then buy(LEWB2) MyContracts contracts next bar H stop;
+	if C(H-PercMyRange) then sellshort(SEWB2) MyContracts contracts next bar L stop;
+end;
+
+setstopcontract;
+
+if ran=0 then begin
+	setstoploss((MyRangeportionSL)bigpointvalue);
+	setprofittarget(MyRangeTPbigpointvalue);
+end
+else begin
+	setstoploss((ATRportionSL)bigpointvalue);
+	setprofittarget(ATRTPbigpointvalue);
+end;
+
+if ExitEOWMode=0 then setexitonclose		for EOWMode=0 you have to cut your friday end time to 1659 from Quote Manager
+else begin
+	if marketposition = 1 then sell(EOWLX) next bar open;
+	if marketposition = -1 then buytocover(EOWSX) next bar open;
+end;
+
+
+
+
+
+
+
+WeeklyBump2
+
+// Works on Weekly bars Gold Future - COMEX
+// Display chart Exchange Time
+
+input: MyContracts(1), WF(0.5), Consecutives(2), Perc(0.5), ran(2), TP(2.5), portionSL(3), ExitEOWMode(0);
+var: WeeklyFactor(false), ATR(1), MyRange(1), ConsecWF(0);
+
+Myrange = Range;
+ATR = averagetruerange(maxlist(1,ran));
+WeeklyFactor = absvalue(C-O)<WF*(MyRange);
+
+if WeeklyFactor then ConsecWF = ConsecWF + 1
+else ConsecWF = 0;
+
+if ConsecWF >= Consecutives then begin
+	if C>(L+Perc*MyRange) then buy("LEWB2") MyContracts contracts next bar H stop;
+	if C<(H-Perc*MyRange) then sellshort("SEWB2") MyContracts contracts next bar L stop;
+end;
+
+setstopcontract;
+
+if ran=0 then begin
+	setstoploss((MyRange/portionSL)*bigpointvalue);
+	setprofittarget(MyRange*TP*bigpointvalue);
+end
+else begin
+	setstoploss((ATR/portionSL)*bigpointvalue);
+	setprofittarget(ATR*TP*bigpointvalue);
+end;
+
+if ExitEOWMode=0 then setexitonclose		//for EOWMode=0 you have to cut your friday end time to 16:59 from Quote Manager
+else begin
+	if marketposition = 1 then sell("EOWLX") next bar open;
+	if marketposition = -1 then buytocover("EOWSX") next bar open;
+end;
+
+
+
+
+
+
+
+UA_Engine_Pullback
+
+{Unger Academy Pullback Engine
+Logic: Pullback on bull trend 
+Setup: RSi Based
+Exits: RSI Based
+Works on daily time frame on stocks and equity futures}
+
+input: RSI_Length(2), RSI_Entry_trigger(15),RSI_exit_trigger(70);
+
+condition1 = c > average(c,200);// bull trend
+condition2 = rsi(c,Rsi_Length)<RSI_Entry_trigger; //Pull Back
+condition3 = rsi(c,Rsi_Length)>RSI_Exit_trigger;
+
+
+		// Entry
+if condition1 and condition2 then buy this bar on c;
+
+		// Exit
+if condition3 then sell this bar on c;
+
+
+
+
+
+
+
+UA_Engine_Swing_Point
+
+{Unger Academy Swing Point Engine
+Logic: Breakout 
+Setup: Swing Point
+Exits: time based, end of day, stoploss, take profit
+Works on bars from 15 minutes to daily}
+
+Inputs: Mycontracts(1);
+inputs: strength_L(2),strength_S(2);
+Input: n_days(10), stop_loss(0),profit_target(0);
+Vars: sLVal(0), sHVal(0), KeepsL(0), KeepsH(0),mp(0);
+
+sHVal = swingHigh(1, H, strength_l, strength_l+1);
+if sHVal > -1 then KeepsH = sHVal;
+sLVal = swingLow(1, L, strength_S, strength_s+1);
+if sLVal > -1 then KeepsL = sLVal;
+
+//the above block looks for swing values, the "-1" check depends on multicharts functions used in the instructions
+mp = marketposition;
+
+if keepsh<>keepsh[1] then condition2 = true;
+if keepsl<>keepsl[1] then condition1 = true;
+//here above we check if new values are set	
+					
+					{ ENTRY ORDERS }
+if condition1 and c > keepsl  then sellshort MyContracts contracts next bar at keepsl  stop;
+if condition2  and c < keepsh then buy MyContracts contracts  next bar at keepsh  stop;
+//entry orders check whether the entry levels have already been exceeded or not, only if not they are placed
+
+if marketposition = 1 then condition2 = false;
+if marketposition = -1 then condition1 = false;
+//here above, once in the market, entry conditions are set back to false
+					
+					{ EXIT ORDERS }
+					
+	// Exit based on bars
+if barssinceentry>=n_days then begin
+	sell next bar at open;
+	buytocover next bar at open;
+end;
+
+	// End of session exit (you can choose whether to use it or not)
+//setexitonclose;
+
+	//stop loss and profit target exits	
+setstopcontract;
+//setstopposition
+if stop_loss<> 0 then setstoploss(stop_loss);
+if profit_target <> 0 then setprofittarget(profit_target);
+
+
+
+
+
+
+
+UA_Engine_Volatility_Regime
+
+{Unger Academy Volatility Regime Engine
+Logic: Switch Beetween Mean Reverting and Breakout logic based on Volatility Regime 
+Setup: Volatilty based
+Exits: end of day
+Works on daily time frame: data1 @ES Globex data2 Vix Index}
+
+Inputs: Mycontracts(1);
+input: Trigger_Hi_vol(0.7),  Trigger_Low_vol(0.4), Percent_Rank(100),Perc_Truerange(0.5),Switch_Vol(2);
+
+value1= fastpercentrank(c data2, c data2,percent_rank);
+value2 = truerange*Perc_Truerange;
+
+condition1 = value1 > Trigger_Hi_vol;//Hi Vol Regime
+condition2 = value1 < Trigger_Low_vol;//Low Vol Regime
+
+ //Breakout during High Vol Regime
+if condition1 and (Switch_Vol = 0 or Switch_Vol = 2) and absvalue(c-o)< range*0.5 then begin
+	buy ("Long_Hi_Vol") MyContracts contracts next bar at h + value2 stop;
+	sellshort ("Short_Hi_Vol") MyContracts contracts next bar at l - value2 stop;
+end;
+
+
+// Mean reverting during Low Vol regime
+if condition2 and (Switch_Vol = 1 or Switch_Vol = 2) and truerange > AvgTrueRange(10)then begin
+	buy ("Long_Low_Vol") MyContracts contracts next bar at l  limit;
+	sellshort("Short_Low_Vol") MyContracts contracts next bar at h  limit;
+end;
+
+
+setexitonclose;
+
+
+
+
+
+
+
+
+_UA_Jumper
+
+//works on 60 minutes bars
+input: MyTime(0);
+var: IsStartOfSession(true);
+array: ohlcValues[23](0);
+
+inputs: MyContracts(1);
+inputs: sessionStartTimeC(0),sessionEndTimeC(2359);
+inputs: MyPtnLY(152), MyPtnSY(152), MyPtnLN(153), MyPtnSN(153), MyNotLEDay(-1), MyNotSEDay(-1), MyStop(0), MyProfit(0);
+
+IsStartOfSession = _OHLCMulti5(sessionStartTimeC, sessionEndTimeC, ohlcValues);
+
+if time = MyTime then begin //We look for a time in the day when the 60 minute bar breakout is effective
+	if PatternFast(MyPtnLY, ohlcValues) and PatternFast(MyPtnLN, ohlcValues)=False and dayofweek(date) <> MyNotLEDay then buy MyContracts contracts next bar at H stop;
+	if PatternFast(MyPtnSY, ohlcValues) and PatternFast(MyPtnSN, ohlcValues)=False and dayofweek(date) <> MyNotSEDay then sellshort MyContracts contracts next bar at L stop;
+end;
+
+setstopcontract;
+if MyStop > 0   then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+
+
+
+_UA_Ranger
+
+//works on 60 minutes bars
+input: MyTime(0);
+var: IsStartOfSession(true);
+array: ohlcValues[23](0);
+
+inputs: MyContracts(1);
+inputs: sessionStartTimeC(0),sessionEndTimeC(2359);
+inputs: MyPtnLY(152), MyPtnSY(152), MyPtnLN(153), MyPtnSN(153), MyNotLEDay(-1), MyNotSEDay(-1), MyStop(0), MyProfit(0), mult(0);
+
+IsStartOfSession = _OHLCMulti5(sessionStartTimeC, sessionEndTimeC, ohlcValues);
+
+if time = MyTime then begin //We look for a time in the day when the 60 minute bar inversion is effective
+	if PatternFast(MyPtnLY, ohlcValues) and PatternFast(MyPtnLN, ohlcValues)=False and dayofweek(date) <> MyNotLEDay then buy MyContracts contracts next bar at L - mult*range limit;
+	if PatternFast(MyPtnSY, ohlcValues) and PatternFast(MyPtnSN, ohlcValues)=False and dayofweek(date) <> MyNotSEDay then sellshort MyContracts contracts next bar at h + mult*range limit;
+end;
+
+setstopcontract;
+if MyStop > 0   then setstoploss(MyStop);
+If MyProfit > 0 then setprofittarget(MyProfit);
+
+
+
+
+
