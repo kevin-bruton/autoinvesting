@@ -149,7 +149,7 @@ class read_and_save_trades():
                         already_existing_trades += 1
             if num_trades_added > 0:
                 #print('For magic', magic, 'added', num_trades_added, 'trades')
-                with open('../crontab.log', 'a') as f:
+                with open('./logs/crontab.log', 'a') as f:
                         f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ' AccountId: ' + str(account_id) + '; Num trades added for magic ' + str(magic) + ': ' + str(num_trades_added) + "\n")
                 #update_strategy_run_demo_kpis(magic)
         register_mt_trades_update(account_id)

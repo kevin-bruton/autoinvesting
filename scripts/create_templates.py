@@ -121,7 +121,8 @@ name=main
             'XAUUSD': 2,
             'WS30':   0,
             'NDX':    1,
-            'AUDUSD': 5
+            'AUDUSD': 5,
+            'USDJPY': 3,
         }
         if not (symbol in symbols_decimals.keys()):
             raise Exception("Error: symbol " + symbol + " decimals not registered in create_templates")

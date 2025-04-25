@@ -3,7 +3,7 @@ from collections import namedtuple
 from db.common import query_many, query_one, mutate_one, values_placeholder, datetime_fmt
 from db.trades import get_trades_of_account
 
-strategy_fields = 'strategyId, friendlyName, type, description, workflow, decommissioned'
+strategy_fields = 'strategyId, friendlyName, symbol, timeframe, type, description, workflow, decommissioned'
 Strategy = namedtuple('Strategy', strategy_fields, defaults=(None, None, None, None))
 
 def get_strategies ():

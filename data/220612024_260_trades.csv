@@ -1,0 +1,2 @@
+orderId,strategyRunId,symbol,orderType,openTime,closeTime,openPrice,closePrice,size,profit,balance,closeType,comment,sl,tp,swap,commission
+86621564_260,260,WS30,Buy,2025-01-10 13:13:04,2025-01-10 13:57:29,42675.0,42625.0,3.87,-187.84,28815.14,WS30_H1_220612024sl,WS30_H1_220612024[sl],42625.0,43075.0,0,-2.63

@@ -2,8 +2,8 @@ from datetime import datetime
 from collections import namedtuple
 from db.common import query_many, query_one, mutate_one, values_placeholder, datetime_fmt
 
-strategyrun_fields = 'strategyId, accountId, symbol, timeframes, type, startDate, endDate, strategyRunId'
-StrategyRun = namedtuple('Strategy', strategyrun_fields, defaults=(None, None, None, None, None, None, None))
+strategyrun_fields = 'strategyId, accountId, startDate, endDate, strategyRunId'
+StrategyRun = namedtuple('Strategy', strategyrun_fields, defaults=(None, None, None, None, None))
 
 def get_strategy_runs ():
   # sql = "SELECT strategyName, magic, symbols, timeframes, btStart, btEnd, btDeposit, btKpis, demoStart, demoKpis FROM Strategies"

@@ -25,7 +25,7 @@ def save_new_strategies (upload_folder):
     base_filename = filename[:-4]
     symbol, timeframe, strategyId = base_filename.split('_')
     friendlyName = get_random_name()
-    strategy = Strategy(strategyId, friendlyName)
+    strategy = Strategy(strategyId.strip(), friendlyName, symbol, timeframe)
     save_strategy(strategy)
     print('Saved strategy', friendlyName, base_filename)
     with open(f"{folder}/{filename}") as f:
@@ -56,10 +56,10 @@ def save_new_strategies (upload_folder):
       ]
       start_date = trades[0].openTime
       end_date = trades[-1].closeTime
-      backtestStrategyRun = StrategyRun(strategyId, 'sqx_bkt_original', symbol, timeframe, 'backtest', start_date, end_date)
+      backtestStrategyRun = StrategyRun(strategyId, 'sqx_bkt_original', start_date, end_date)
       save_strategyrun(backtestStrategyRun)
       for trade in trades:
-        strategyRunId = get_strategyrun_id(strategyId, 'backtest')
+        strategyRunId = get_strategyrunid(strategyId, 'sqx_bkt_original')
         trade = trade._replace(strategyRunId=strategyRunId)
         save_trade(trade)
   return True

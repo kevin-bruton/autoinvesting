@@ -18,7 +18,7 @@
       "program": "run.py",
       "console": "integratedTerminal",
       "args": [
-        "wifi_connection"
+        "insert_trades_from_csvs"
       ]
     },
     {

@@ -1,0 +1,2 @@
+orderId,strategyRunId,symbol,orderType,openTime,closeTime,openPrice,closePrice,size,profit,balance,closeType,comment,sl,tp,swap,commission
+86632092_239,239,XAUUSD,Buy,2025-01-16 01:03:45,2025-01-16 01:04:11,2698.53,2691.59,0.18,-121.36,14370.44,XAUUSD_M30_220604001sl,XAUUSD_M30_220604001[sl],2691.7,2713.56,0,-2.36

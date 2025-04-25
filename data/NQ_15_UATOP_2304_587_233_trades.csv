@@ -1,0 +1,5 @@
+orderId,strategyRunId,symbol,orderType,openTime,closeTime,openPrice,closePrice,size,profit,balance,closeType,comment,sl,tp,swap,commission
+980508608_983096197_233,233,MNQ,Buy,2024-11-26 12:52:23.10,2024-11-27 03:30:01.31,20930.75,20936.25,1,11,None,Market,None,None,None,None,1.24
+984629334_988990237_233,233,MNQ,Buy,2024-11-28 08:08:10.66,2024-12-02 03:30:07.41,20867.0,21043.0,1,352,None,LX_MaxDays,None,None,None,None,1.24
+992172716_993834560_233,233,MNQ,Buy,2024-12-04 09:53:18,2024-12-05 03:30:12,21382.25,21534.25,1,304,None,LX_MaxDays,None,None,None,None,1.24
+1016612208_1016612295_233,233,MNQ,Sell,2024-12-11 08:26:24,2024-12-11 03:02:45,21419.5,21544.75,1,-250.5,None,Stop Loss,None,None,None,None,1.24
