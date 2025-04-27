@@ -198,6 +198,10 @@ def get_confidence_value(simulations, percentile, metric_name):
     
     simulated_metrics = sort_order([sim[metric_name] for sim in simulations])
     cutoff_idx = percentile / 100 * len(simulations)
-    lower_idx_value = simulated_metrics[int(cutoff_idx // 1)]
-    higher_idx_value = simulated_metrics[int(cutoff_idx // 1) + 1]
+    lower_idx = int(cutoff_idx // 1)
+    higher_idx = int(cutoff_idx // 1) + 1
+    if higher_idx >= len(simulated_metrics):
+        higher_idx = len(simulated_metrics) - 1
+    lower_idx_value = simulated_metrics[lower_idx]
+    higher_idx_value = simulated_metrics[higher_idx >= len(simulated_metrics) - 1] if higher_idx >= len(simulated_metrics) else simulated_metrics[higher_idx]
     return lower_idx_value + (higher_idx_value - lower_idx_value) * (cutoff_idx % 1)

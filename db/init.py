@@ -173,6 +173,17 @@ def init_db():
       );
       ''')
     c.execute('''
+      CREATE TABLE IF NOT EXISTS Portfolios (
+          portfolioId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+          name TEXT,
+          description TEXT,
+          accountId TEXT,
+          strategyIds TEXT,
+          positionSizes TEXT,
+          creationDate TEXT
+      );
+      ''')
+    c.execute('''
       CREATE TABLE IF NOT EXISTS McStrategyRefs (
           strategyRef INT NOT NULL PRIMARY KEY,
           chartSymbol,

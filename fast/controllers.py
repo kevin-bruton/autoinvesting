@@ -110,6 +110,7 @@ def get_strategies_summary (accountId):
   strategy_runs = [dict(s) for s in strategy_runs]
   for strategy_run in strategy_runs:
     print('Strategy run:', strategy_run)
+    strategy_run['positionSize'] = 1
     trades = normalize_position_sizes(get_strategys_live_trades(strategy_run['strategyId'], accountId), position_sizes_normalized)
     if trades:
       startingBalance, startDate, endDate, metrics = get_performance_metrics(trades)
@@ -137,21 +138,20 @@ def get_strategies_metrics (account_id, run_type, strategy_ids):
     strategy_metrics[strategy_id] = {'startingBalance': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics}
   return strategy_metrics
 
-def get_portfolio_evaluation (data_type, account_id, strategy_ids):
+def get_portfolio_evaluation (data_type:str, account_id:str, portfolio: list[str, float]):
   trades = []
-  for strategy_id in strategy_ids:
+  for strategy in portfolio:
+    strategy_id, position_size = strategy.values()
     if data_type == 'backtest':
-      strat_trades = get_strategys_backtest_trades(strategy_id)
+      strat_trades = get_strategys_backtest_trades(strategy_id, position_size=position_size)
     elif data_type == 'live':
-      strat_trades = get_strategys_live_trades(strategy_id, account_id)
+      strat_trades = get_strategys_live_trades(strategy_id, account_id, position_size=position_size)
     elif data_type == 'combined':
-      strat_trades = get_strategys_combined_trades(strategy_id, account_id)
+      strat_trades = get_strategys_combined_trades(strategy_id, account_id, position_size=position_size)
     trades.extend(strat_trades)
 
   # Order all trades of the different strategies
   trades = sorted(trades, key=lambda t: t['closeTime'])
-  # Adjust profits for a position size of 1 for all trades
-  trades = normalize_position_sizes(trades)
   capital, start_date, end_date, metrics = get_performance_metrics(trades)
   print('Metrics:', metrics)
   cum_profit = trades[0]['profit'] if len(trades) > 0 else 0
@@ -160,6 +160,9 @@ def get_portfolio_evaluation (data_type, account_id, strategy_ids):
     trades[index] = {'closeTime': trade['closeTime'], 'profits': dec2(cum_profit)}
   df = pd.DataFrame(trades)
   #df = df[['closeTime', 'profit']]
+  if df.empty:
+    return { 'capital': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics, 'chartData': [] }
+  
   df = df.groupby(by=pd.Grouper(key='closeTime', freq='W')).last(skipna=True).ffill()
   #df[strategyId] = df['profit'].cumsum().astype(float)
   return { 'capital': capital, 'startDate': start_date, 'endDate': end_date, 'metrics': metrics, 'chartData': df }
