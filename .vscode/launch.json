@@ -18,7 +18,7 @@
       "program": "run.py",
       "console": "integratedTerminal",
       "args": [
-        "insert_trades_from_csvs"
+        "update_from_mt"
       ]
     },
     {

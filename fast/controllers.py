@@ -21,6 +21,9 @@ def save_new_strategies (upload_folder):
   files = listdir(folder)
   csv_files = [f for f in files if f[-3:] == 'csv']
   deposit = 1000
+  print('Found', len(csv_files), 'csv files in', folder)
+  if len(csv_files) == 0:
+    raise Exception('No csv files found in', folder)
   for filename in csv_files:
     base_filename = filename[:-4]
     symbol, timeframe, strategyId = base_filename.split('_')

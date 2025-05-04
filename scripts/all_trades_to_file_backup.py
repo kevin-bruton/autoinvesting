@@ -14,7 +14,8 @@ def save_all_trades_to_file ():
       with open(filename, 'w') as f:
         f.write('orderId,strategyRunId,symbol,orderType,openTime,closeTime,openPrice,closePrice,size,profit,balance,closeType,comment,sl,tp,swap,commission\n')
         for t in trades:
-          #line = ','.join([str(v) for v in dict(trade).values()]) + '\n'
-          line = f'{t['orderId']},{t['strategyRunId']},{t['symbol']},{t['orderType']},{t['openTime']},{t['closeTime']},{t['openPrice']},{t['closePrice']},{t['size']},{t['profit']},{t['balance']},{t['closeType']},{t['comment']},{t['sl']},{t['tp']},{t['swap']},{t['commission']}\n'
+          #line = ','.join([str(v) for v in dict(t).values()]) + '\n'
+          #print(line)
+          line = f"{t['orderId']},{t['strategyRunId']},{t['symbol']},{t['orderType']},{t['openTime']},{t['closeTime']},{t['openPrice']},{t['closePrice']},{t['size']},{t['profit']},{t['balance']},{t['closeType']},{t['comment']},{t['sl']},{t['tp']},{t['swap']},{t['commission']}\n"
           f.write(line)
       print(f'Saved trades to {filename}')
