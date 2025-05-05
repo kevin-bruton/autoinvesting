@@ -1,12 +1,12 @@
 import sqlite3
 from os import getenv
 
-db_path = getenv('DB_FILE')
 datetime_fmt = '%Y-%m-%d %H:%M:%S'
 values_placeholder = lambda fields: ','.join(['?'] * len(fields.split(',')))
 
 def mutate_one(sql, values: tuple):
   ''' UPDATE, INSERT, DELETE'''
+  db_path = getenv('DB_FILE')
   conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
   rows_affected = 0
   try:
@@ -20,6 +20,7 @@ def mutate_one(sql, values: tuple):
 
 def mutate_many(sql, values: list[tuple]):
   ''' UPDATE, INSERT, DELETE'''
+  db_path = getenv('DB_FILE')
   conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
   rows_affected = 0
   try:
@@ -32,6 +33,7 @@ def mutate_many(sql, values: list[tuple]):
   return rows_affected
 
 def query_one(sql, values=()):
+  db_path = getenv('DB_FILE')
   conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
   try:
     conn.row_factory = sqlite3.Row
@@ -44,6 +46,7 @@ def query_one(sql, values=()):
 
 
 def query_many(sql, values: list[tuple] = None):
+  db_path = getenv('DB_FILE')
   conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
   try:
     conn.row_factory = sqlite3.Row
