@@ -8,9 +8,18 @@ from db.orders import get_mc_raw_orders, save_mc_pasted_orders
 from db.updates import get_last_mt_trades_update
 from db.users import get_users, get_users_accounts
 from db.strategy_runs import get_account_strategyruns
-from fast.controllers import calc_correlation_matrix, get_portfolio_evaluation, get_strategy_detail, get_strategies_summary, get_strategies_metrics, get_strategyrun_metrics, save_mc_trades
 from mc.log_analysis.read_logs import process_last_logentries
 from fast.monte_carlo import run_monte_carlo
+from fast.controllers import (
+  apply_position_sizing,
+  calc_correlation_matrix,
+  get_portfolio_evaluation,
+  get_strategy_detail,
+  get_strategies_summary,
+  get_strategies_metrics,
+  get_strategyrun_metrics,
+  save_mc_trades,
+)
 
 async def handle_query (user, query_name, values):
   match query_name:
@@ -96,6 +105,8 @@ async def handle_query (user, query_name, values):
       with ThreadPoolExecutor() as pool:
         await loop.run_in_executor(pool, process_last_logentries)
       return {'message': 'Started processing latest MC log entries'}
-      
+    case 'generate_mt_templates':
+      account_id, position_sizes = values
+      return apply_position_sizing(account_id, position_sizes)
     case _:
       return 'Unknown query name'

@@ -1,5 +1,7 @@
 from os import getenv, listdir, mkdir, path, remove
+from operator import itemgetter
 from shutil import copy2
+from typing import List
 from db.orders import set_order_as_processed
 from db.strategy_runs import StrategyRun, get_strategyrun_id, get_strategyrunid, get_strategyrunid_backtest, save_strategyrun
 from db.strategies import get_strategy_tf_symbol
@@ -206,7 +208,11 @@ def decommission_strategy (magic):
 def reactivate_strategy (magic):
   react_strategy(magic)
 
-def apply_position_sizing (account_id, pos_sizes):
+class StrategyPositionSize:
+  strategyId: str
+  positionSize: float
+
+def apply_position_sizing (account_id: str, pos_sizes: List[StrategyPositionSize]):
   mt_files_account_ea_folder = f"{get_project_root_dir()}/files/{get_mt_instance_dir_name(account_id)}_eas_to_install/"
   src_folder = f"{get_project_root_dir()}/files/all_eas/"
   if not path.exists(src_folder):
@@ -225,7 +231,7 @@ def apply_position_sizing (account_id, pos_sizes):
       remove(mt_files_account_ea_folder + filename)
   print('  Deleted existing EA files in', mt_files_account_ea_folder)
 
-  for strategyId, size in pos_sizes.items():
+  for strategyId, size in map(itemgetter("strategyId", "positionSize"), pos_sizes):
     found_filenames = [f for f in src_folder_filenames if str(strategyId) in f]
     if len(found_filenames) == 0:
       raise Exception("Could not find demo file with strategyId", strategyId)
