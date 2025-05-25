@@ -28,7 +28,7 @@ void OnStart()
          if (GetLastError() != ERR_FILE_IS_DIRECTORY)
          {
             OpenChartWithTemplate(filename);
-            Sleep(5000);
+            Sleep(1000);
          }
         }
       while(FileFindNext(search_handle,filename));

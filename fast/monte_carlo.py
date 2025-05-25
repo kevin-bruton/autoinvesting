@@ -23,6 +23,7 @@ def run_monte_carlo (balance, position_size, strategy_id, run_type, account_id, 
     simulations.append(metrics)
   
   mc_metrics = get_mc_metrics(simulations, pct_confidence)
+  print('Monte Carlo metrics: ', mc_metrics)
   return mc_metrics
 
 def shuffle_list (lst):
