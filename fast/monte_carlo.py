@@ -4,7 +4,7 @@ from fast.utils import normalize_position_sizes
 
 
 def run_monte_carlo (balance, position_size, strategy_id, run_type, account_id, pct_trades, pct_confidence, num_simulations):
-  print('run_monte_carlo: ', balance, position_size, strategy_id, run_type, account_id, pct_trades, pct_confidence, num_simulations)
+  print(f'run_monte_carlo. Balance: {balance}; PosSize: {position_size}; StratId: {strategy_id}; Type: {run_type}; AccId: {account_id}; %Trades: {pct_trades}; %Confid: {pct_confidence}; NumSims: {num_simulations}')
   if run_type == 'live':
     trades = get_strategys_live_trades(strategy_id, account_id)
   elif run_type == 'backtest':
