@@ -45,7 +45,7 @@ def query_one(sql, values=()):
     conn.close()
 
 
-def query_many(sql, values: list[tuple] = None):
+def query_many(sql, values: tuple|None = None):
   db_path = getenv('DB_FILE')
   conn = sqlite3.connect(db_path, detect_types=sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES)
   try:
